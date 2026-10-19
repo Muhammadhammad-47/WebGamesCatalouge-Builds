@@ -34,34 +34,106 @@ html, body {
   -webkit-user-select: none;
 }
 
+/* =========================================
+   MAIN LAYOUT — Full Viewport Container
+   ========================================= */
+
 #unity-container {
-  position: absolute;
-  width: 100%;
-  height: 100%;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
 }
 
 #unity-container.unity-desktop {
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  left: 0;
+  top: 0;
+  transform: none;
 }
 
 #unity-canvas {
   background: #000;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
   display: block;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  touch-action: none;
+  object-fit: contain;
+  max-width: 100vw;
+  max-height: 100vh;
+  max-height: 100dvh;
+  transition: width 0.12s ease-out, height 0.12s ease-out;
+}
+
+/* Landscape Games — Responsive Full Width */
+.game-landscape #unity-canvas {
+  max-width: 100vw;
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+
+/* Portrait Games — Responsive Full Height */
+.game-portrait #unity-canvas {
+  height: 100%;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  max-width: 100vw;
+}
+
+/* Fullscreen Mode (Native & Browser) */
+:fullscreen #unity-canvas,
+:-webkit-full-screen #unity-canvas,
+.fullscreen-active #unity-canvas {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.game-landscape:fullscreen #unity-canvas,
+.game-landscape:-webkit-full-screen #unity-canvas,
+.game-landscape.fullscreen-active #unity-canvas {
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  object-fit: contain;
+}
+
+.game-portrait:fullscreen #unity-canvas,
+.game-portrait:-webkit-full-screen #unity-canvas,
+.game-portrait.fullscreen-active #unity-canvas {
+  height: 100vh !important;
+  height: 100dvh !important;
+  width: auto !important;
+  max-width: 100vw !important;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+/* Mobile Devices */
+.unity-mobile #unity-container {
+  padding: 0 !important;
 }
 
 .unity-mobile #unity-canvas {
+  border-radius: 0 !important;
+  box-shadow: none !important;
   width: 100% !important;
   height: 100% !important;
-  border-radius: 0;
-  box-shadow: none;
+}
+
+.unity-mobile.game-portrait #unity-canvas {
+  height: 100dvh !important;
 }
 
 /* Loading Bar */
@@ -127,23 +199,39 @@ html, body {
   text-transform: uppercase;
 }
 
-/* Footer Bar */
+/* Footer Bar — floating responsive bar */
 #unity-footer {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  max-width: 100%;
-  margin-top: 12px;
-  padding: 8px 16px;
-  background: rgba(22, 25, 38, 0.65);
-  backdrop-filter: blur(8px);
+  min-width: 240px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  padding: 6px 16px;
+  background: rgba(22, 25, 38, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--glass-border);
-  border-radius: 10px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+  opacity: 0.92;
+  transition: opacity 0.2s ease, width 0.15s ease-out;
 }
 
-.unity-mobile #unity-footer {
-  display: none;
+#unity-footer:hover {
+  opacity: 1;
+}
+
+.unity-mobile #unity-footer,
+:fullscreen #unity-footer,
+:-webkit-full-screen #unity-footer,
+.fullscreen-active #unity-footer {
+  display: none !important;
 }
 
 #unity-build-title {
