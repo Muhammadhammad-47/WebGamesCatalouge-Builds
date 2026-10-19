@@ -505,16 +505,20 @@ header {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Portrait Game Modal (e.g. BusStop 9:16 mobile aspect) */
+/* Portrait Game Modal — Full Height on Portrait */
 .modal-container.portrait-mode {
-  max-width: min(calc((90vh - 60px) * 0.625), 520px);
-  height: 90vh;
+  width: min(calc((95vh - 55px) * (9 / 16)), 94vw);
+  max-width: 580px;
+  height: 95vh;
+  max-height: 96vh;
 }
 
-/* Landscape Game Modal (16:9 wide aspect) */
+/* Landscape Game Modal — Full Width on Landscape */
 .modal-container.landscape-mode {
-  max-width: 960px;
-  height: min(90vh, 600px);
+  width: 96vw;
+  max-width: 1400px;
+  height: min(94vh, calc(96vw * (9 / 16) + 55px));
+  max-height: 94vh;
 }
 
 .modal-header {
