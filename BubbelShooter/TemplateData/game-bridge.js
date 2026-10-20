@@ -98,6 +98,9 @@
           if (window.checkDeviceOrientation) {
             window.checkDeviceOrientation();
           }
+          if (window.resizeCanvas) {
+            window.resizeCanvas();
+          }
           if (callback) callback(data);
         })
         .catch(function(err) {

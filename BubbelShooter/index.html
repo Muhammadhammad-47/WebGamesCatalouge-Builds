@@ -3,9 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Bubbel Shooter | CIEL WebGames</title>
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover">
+    <title>Bubble Shooter | CIEL WebGames</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
+    <link rel="stylesheet" href="TemplateData/style.css?v=4">
 
     <!-- ======================================================== -->
     <!-- GOOGLE H5 GAMES ADS / AD PLACEMENT API SCRIPT            -->
@@ -43,9 +44,17 @@
       <!-- Footer Bar -->
       <div id="unity-footer">
         <div id="unity-build-title">
-          <span>🎮</span> Bubbel Shooter
+          <span class="game-badge-icon">🫧</span>
+          <span class="game-title-text">Bubble Shooter</span>
         </div>
-        <div id="unity-fullscreen-button" title="Toggle Fullscreen"></div>
+        <button id="unity-fullscreen-button" type="button" title="Toggle Fullscreen" aria-label="Toggle Fullscreen">
+          <svg class="fs-icon fs-icon-enter" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+          </svg>
+          <svg class="fs-icon fs-icon-exit" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -96,9 +105,124 @@
       </div>
     </div>
 
-    <!-- Unity 6 WebGL Runtime Loader -->
+        <!-- Unity 6 WebGL Runtime Loader -->
+        <!-- Unity WebGL Universal Responsive Loader & Sizing Engine -->
     <script>
       var canvas = document.querySelector("#unity-canvas");
+
+      // Dynamic orientation detection from canvas attributes (600x960)
+      var rawW = parseInt(canvas.getAttribute("width")) || 600;
+      var rawH = parseInt(canvas.getAttribute("height")) || 960;
+      var isPortraitGame = rawH >= rawW;
+
+      // Mobile Device Detection
+      var isMobileDevice = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (isMobileDevice) {
+        var meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover';
+        document.getElementsByTagName('head')[0].appendChild(meta);
+        document.querySelector("#unity-container").classList.add("unity-mobile");
+        document.body.classList.add("unity-mobile");
+        canvas.classList.add("unity-mobile");
+      }
+
+      // Universal Responsive Resize Engine
+      // - Adheres strictly to the game's native aspect ratio (600:960 portrait)
+      // - Bottom bar is ALWAYS visible and neatly docked below the game canvas
+      // - Prevents any clipping or stretching on all devices and window sizes
+      function resizeCanvas() {
+        var canvas = document.querySelector("#unity-canvas");
+        var footer = document.querySelector("#unity-footer");
+        var container = document.querySelector("#unity-container");
+        if (!canvas) return;
+
+        var winW = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+        var winH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+
+        if (!winW || !winH) {
+          winW = document.documentElement.clientWidth;
+          winH = document.documentElement.clientHeight;
+        }
+
+        var isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+
+        if (window.GameBridge && window.GameBridge.gameData) {
+          if (window.GameBridge.gameData.playerSettings) {
+            var oriSetting = window.GameBridge.gameData.playerSettings.defaultWebScreenOrientation;
+            var cfgW = window.GameBridge.gameData.playerSettings.defaultScreenWidth;
+            var cfgH = window.GameBridge.gameData.playerSettings.defaultScreenHeight;
+            if (cfgW && cfgH) isPortraitGame = (cfgH >= cfgW);
+            else if (oriSetting === "Portrait") isPortraitGame = true;
+            else if (oriSetting === "Landscape") isPortraitGame = false;
+          }
+          if (window.GameBridge.gameData.productName) {
+            var titleEl = document.querySelector(".game-title-text");
+            if (titleEl) titleEl.textContent = window.GameBridge.gameData.productName;
+          }
+        }
+
+        // Apply helper classes for styling
+        document.body.classList.toggle("game-portrait", isPortraitGame);
+        document.body.classList.toggle("game-landscape", !isPortraitGame);
+        document.body.classList.toggle("fullscreen-active", isFullscreen);
+
+        if (container) {
+          container.classList.toggle("game-portrait", isPortraitGame);
+          container.classList.toggle("game-landscape", !isPortraitGame);
+          container.classList.toggle("fullscreen-active", isFullscreen);
+        }
+
+        // Exact native aspect ratio (600 / 960)
+        var targetAspect = isPortraitGame ? (rawW / rawH) : (16 / 9);
+
+        // Reserved vertical space for bottom bar + gap + safe margins
+        var footerH = 44;
+        var gapY = 8;
+        var padX = isFullscreen ? 6 : (winW < 500 ? 6 : 14);
+        var padY = isFullscreen ? 6 : (winH < 650 ? 6 : 14);
+
+        var availW = Math.max(winW - (padX * 2), 120);
+        var availH = Math.max(winH - footerH - gapY - (padY * 2), 120);
+
+        var renderW, renderH;
+
+        if ((availW / availH) > targetAspect) {
+          // Viewport is wider than target aspect: fit to available height
+          renderH = Math.floor(availH);
+          renderW = Math.round(renderH * targetAspect);
+        } else {
+          // Viewport is taller than target aspect: fit to available width
+          renderW = Math.floor(availW);
+          renderH = Math.round(renderW / targetAspect);
+        }
+
+        // Safety clamp against any single-pixel overflow
+        if (renderW > availW) {
+          renderW = availW;
+          renderH = Math.round(renderW / targetAspect);
+        }
+        if (renderH > availH) {
+          renderH = availH;
+          renderW = Math.round(renderH * targetAspect);
+        }
+
+        canvas.style.setProperty("width", renderW + "px", "important");
+        canvas.style.setProperty("height", renderH + "px", "important");
+
+        if (footer) {
+          footer.style.display = "flex";
+          // Match footer width to canvas width with minimum readable size
+          var footerW = Math.min(Math.max(renderW, 260), availW);
+          footer.style.width = footerW + "px";
+        }
+      }
+
+      window.resizeCanvas = resizeCanvas;
+
+      // Initial resize calculation
+      resizeCanvas();
 
       // Mobile Device Orientation & Touch Handling
       var orientationUserDismissed = false;
@@ -107,27 +231,19 @@
         orientationUserDismissed = true;
         var overlay = document.getElementById("orientation-overlay");
         if (overlay) overlay.style.display = "none";
+        resizeCanvas();
       }
 
       function checkDeviceOrientation() {
         var overlay = document.getElementById("orientation-overlay");
         if (!overlay) return;
 
-        if (orientationUserDismissed) {
+        if (orientationUserDismissed || !isMobileDevice) {
           overlay.style.display = "none";
           return;
         }
 
-        var isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                       (window.matchMedia && window.matchMedia("(max-width: 900px) and (pointer: coarse)").matches);
-
-        if (!isMobile) {
-          overlay.style.display = "none";
-          return;
-        }
-
-        // Target orientation from game config (default: Portrait)
-        var targetOrientation = "Portrait";
+        var targetOrientation = isPortraitGame ? "Portrait" : "Landscape";
         if (window.GameBridge && window.GameBridge.gameData && window.GameBridge.gameData.playerSettings && window.GameBridge.gameData.playerSettings.defaultWebScreenOrientation) {
           targetOrientation = window.GameBridge.gameData.playerSettings.defaultWebScreenOrientation;
         }
@@ -147,12 +263,12 @@
 
         if (targetOrientation === "Landscape" && isPortrait) {
           if (titleElem) titleElem.innerText = "Please Rotate Your Device";
-          if (descElem) descElem.innerText = "This game is optimized for Landscape mode. Turn your phone sideways for the best gaming experience.";
+          if (descElem) descElem.innerText = "This game is optimized for Landscape mode. Turn your phone sideways for full screen action.";
           if (phoneIcon) phoneIcon.className = "phone-rotate-icon to-landscape";
           overlay.style.display = "flex";
         } else if (targetOrientation === "Portrait" && !isPortrait) {
           if (titleElem) titleElem.innerText = "Please Rotate Your Device";
-          if (descElem) descElem.innerText = "This game is optimized for Portrait mode. Hold your phone vertically for the best gaming experience.";
+          if (descElem) descElem.innerText = "This game is optimized for Portrait mode. Hold your phone vertically for full screen action.";
           if (phoneIcon) phoneIcon.className = "phone-rotate-icon to-portrait";
           overlay.style.display = "flex";
         } else {
@@ -161,9 +277,73 @@
       }
 
       window.checkDeviceOrientation = checkDeviceOrientation;
-      window.addEventListener("resize", checkDeviceOrientation);
-      window.addEventListener("orientationchange", checkDeviceOrientation);
-      document.addEventListener("DOMContentLoaded", checkDeviceOrientation);
+
+      // Fullscreen State and Button Tooltip Helper
+      function updateFullscreenButtonState() {
+        var isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+        var fsBtn = document.querySelector("#unity-fullscreen-button");
+        if (fsBtn) {
+          fsBtn.setAttribute("title", isFs ? "Exit Fullscreen" : "Toggle Fullscreen");
+        }
+      }
+
+      // Fullscreen Toggle Handler
+      function toggleFullscreen() {
+        var container = document.querySelector("#unity-container") || canvas;
+        var isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+        if (!isFs) {
+          if (container.requestFullscreen) {
+            container.requestFullscreen().catch(function() {
+              if (window.unityInstance) window.unityInstance.SetFullscreen(1);
+            });
+          } else if (container.webkitRequestFullscreen) {
+            container.webkitRequestFullscreen();
+          } else if (window.unityInstance) {
+            window.unityInstance.SetFullscreen(1);
+          }
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen().catch(function() {});
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          }
+        }
+        updateFullscreenButtonState();
+        setTimeout(resizeCanvas, 80);
+        setTimeout(resizeCanvas, 250);
+      }
+
+      window.addEventListener("resize", function() {
+        resizeCanvas();
+        checkDeviceOrientation();
+      });
+      window.addEventListener("orientationchange", function() {
+        setTimeout(function() {
+          resizeCanvas();
+          checkDeviceOrientation();
+        }, 150);
+        setTimeout(function() {
+          resizeCanvas();
+          checkDeviceOrientation();
+        }, 350);
+      });
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", resizeCanvas);
+      }
+
+      document.addEventListener("fullscreenchange", function() {
+        updateFullscreenButtonState();
+        setTimeout(resizeCanvas, 100);
+      });
+      document.addEventListener("webkitfullscreenchange", function() {
+        updateFullscreenButtonState();
+        setTimeout(resizeCanvas, 100);
+      });
+      document.addEventListener("DOMContentLoaded", function() {
+        resizeCanvas();
+        checkDeviceOrientation();
+      });
 
       // Prevent default page scroll on mobile touch
       document.addEventListener('touchmove', function(e) {
@@ -202,23 +382,10 @@
         codeUrl: buildUrl + "/WebGamesCatalouge-Builds.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "CIEL Tech",
-        productName: "Bubbel Shooter",
+        productName: "Bubble Shooter",
         productVersion: "1.0.0",
         showBanner: unityShowBanner,
       };
-
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover';
-        document.getElementsByTagName('head')[0].appendChild(meta);
-        document.querySelector("#unity-container").className = "unity-mobile";
-        document.body.className = "unity-mobile";
-        canvas.className = "unity-mobile";
-      } else {
-        canvas.style.width = "600px";
-        canvas.style.height = "960px";
-      }
 
       document.querySelector("#unity-loading-bar").style.display = "flex";
 
@@ -236,10 +403,10 @@
           }
 
           document.querySelector("#unity-loading-bar").style.display = "none";
-          document.querySelector("#unity-fullscreen-button").onclick = function() {
-            unityInstance.SetFullscreen(1);
-          };
+          var fsBtn = document.querySelector("#unity-fullscreen-button");
+          if (fsBtn) fsBtn.onclick = toggleFullscreen;
           
+          resizeCanvas();
           checkDeviceOrientation();
         }).catch(function(message) {
           alert(message);
@@ -250,4 +417,3 @@
     </script>
   </body>
 </html>
-
