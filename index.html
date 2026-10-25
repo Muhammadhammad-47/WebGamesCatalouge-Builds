@@ -2,22 +2,22 @@
 <html lang="en-us">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Story Board | CIEL WebGames</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>ZombieShooter | CIEL WebGames</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
 
-    <!-- ================================================================ -->
-    <!-- GOOGLE H5 GAMES ADS / AD PLACEMENT API SCRIPT                  -->
-    <!-- Replace ca-pub-XXXXXXXXXXXXXXXX with your real AdSense Publisher -->
-    <!-- Keep data-adbreak-test="on" while testing; remove for production  -->
-    <!-- ================================================================ -->
+    <!-- ======================================================== -->
+    <!-- GOOGLE H5 GAMES ADS / AD PLACEMENT API SCRIPT            -->
+    <!-- Replace ca-pub-0000000000000000 with your real AdSense ID-->
+    <!-- ======================================================== -->
     <script async
-      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+      data-ad-client="ca-pub-0000000000000000"
       data-ad-channel="0000000000"
       data-ad-frequency-hint="30s"
       data-adbreak-test="on"
-      crossorigin="anonymous">
+      crossorigin="anonymous"
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js">
     </script>
 
     <!-- Dedicated WebGL Communication & Ad Bridge Script -->
@@ -44,7 +44,7 @@
     <!-- Footer Bar (outside unity-container, flex sibling) -->
     <div id="unity-footer">
       <div id="unity-build-title">
-        <span>🎮</span> Story Board
+        <span>🎮</span> ZombieShooter
       </div>
       <div id="unity-fullscreen-button" title="Toggle Fullscreen"></div>
     </div>
@@ -194,15 +194,15 @@
 
       // Configuration
       var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/WebGamesCatalouge-Builds.md.loader.js";
+      var loaderUrl = buildUrl + "/WebGamesCatalouge-Builds.loader.js";
       var config = {
         arguments: [],
-        dataUrl: buildUrl + "/WebGamesCatalouge-Builds.md.data",
-        frameworkUrl: buildUrl + "/WebGamesCatalouge-Builds.md.framework.js",
-        codeUrl: buildUrl + "/WebGamesCatalouge-Builds.md.wasm",
+        dataUrl: buildUrl + "/WebGamesCatalouge-Builds.data",
+        frameworkUrl: buildUrl + "/WebGamesCatalouge-Builds.framework.js",
+        codeUrl: buildUrl + "/WebGamesCatalouge-Builds.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
-        productName: "Story Board",
+        productName: "ZombieShooter",
         productVersion: "0.1.0",
         showBanner: unityShowBanner,
       };
