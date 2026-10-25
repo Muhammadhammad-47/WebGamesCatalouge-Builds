@@ -29,7 +29,7 @@
       // Set to 'false' when using live approved Google AdSense publisher ID
       // When 'true', opens the built-in testing modal with countdown & reward buttons
       testMode: true,
-      googlePublisherId: "ca-pub-XXXXXXXXXXXXXXXX", // ← Replace with your real ID
+      googlePublisherId: "ca-pub-0000000000000000",
       interstitialDuration: 4, // seconds
       rewardedDuration: 5,     // seconds
       debugLogs: true,
