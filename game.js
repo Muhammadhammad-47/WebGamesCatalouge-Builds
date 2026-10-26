@@ -1,2268 +1,2149 @@
 /**
- * ==============================================================================
- * MAZE ROTATOR - 2D GRAVITY PUZZLE GAME
- * ==============================================================================
- * Vanilla HTML5 Canvas 2D + Web Audio API
- * No external libraries or assets. 100% self-contained.
- * ==============================================================================
+ * PRISM LASER - Pure HTML5 / Canvas 2D Optics Puzzle Game
+ * Responsive 9:16 Portrait on Desktop & 100% Fullscreen on Mobile/Editors
+ * Zero external libraries or assets. Procedural graphics & Web Audio API.
  */
 
 (function () {
   'use strict';
 
-  // ============================================================================
-  // 1. AUDIO ENGINE (Synthesized with Web Audio API)
-  // ============================================================================
-  class AudioEngine {
+  // ==========================================================================
+  // 1. PROCEDURAL WEB AUDIO ENGINE
+  // ==========================================================================
+  class WebAudioEngine {
     constructor() {
       this.ctx = null;
-      this.isMuted = false;
-      this.ambientGain = null;
-      this.ambientOsc1 = null;
-      this.ambientOsc2 = null;
-      this.ambientFilter = null;
-      this.initialized = false;
+      this.isMuted = localStorage.getItem('prism_laser_muted') === 'true';
+      this.humOsc = null;
+      this.humGain = null;
     }
 
     init() {
-      if (this.initialized) return;
+      if (this.ctx) return;
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         this.ctx = new AudioContext();
-        this.initialized = true;
-        this.startAmbientDrone();
       } catch (e) {
-        console.warn('Web Audio not supported:', e);
+        console.warn('Web Audio API not supported', e);
       }
     }
 
-    ensureContext() {
-      if (!this.initialized) this.init();
+    resume() {
+      this.init();
       if (this.ctx && this.ctx.state === 'suspended') {
         this.ctx.resume();
       }
     }
 
-    setMuted(muted) {
-      this.isMuted = muted;
-      if (this.ambientGain && this.ctx) {
-        this.ambientGain.gain.setValueAtTime(this.isMuted ? 0 : 0.04, this.ctx.currentTime);
+    toggleMute() {
+      this.isMuted = !this.isMuted;
+      localStorage.setItem('prism_laser_muted', this.isMuted);
+      if (this.isMuted && this.humGain) {
+        this.humGain.gain.setValueAtTime(0, this.ctx.currentTime);
       }
+      return this.isMuted;
     }
 
-    startAmbientDrone() {
-      if (!this.ctx || this.ambientOsc1) return;
-      try {
-        const t = this.ctx.currentTime;
-        this.ambientOsc1 = this.ctx.createOscillator();
-        this.ambientOsc2 = this.ctx.createOscillator();
-        this.ambientFilter = this.ctx.createBiquadFilter();
-        this.ambientGain = this.ctx.createGain();
-
-        this.ambientOsc1.type = 'sine';
-        this.ambientOsc1.frequency.setValueAtTime(55, t); // A1 note
-        this.ambientOsc2.type = 'triangle';
-        this.ambientOsc2.frequency.setValueAtTime(110, t); // A2 note
-
-        this.ambientFilter.type = 'lowpass';
-        this.ambientFilter.frequency.setValueAtTime(250, t);
-
-        this.ambientGain.gain.setValueAtTime(this.isMuted ? 0 : 0.035, t);
-
-        this.ambientOsc1.connect(this.ambientFilter);
-        this.ambientOsc2.connect(this.ambientFilter);
-        this.ambientFilter.connect(this.ambientGain);
-        this.ambientGain.connect(this.ctx.destination);
-
-        this.ambientOsc1.start();
-        this.ambientOsc2.start();
-      } catch (e) {
-        // Audio ambient fallback
-      }
-    }
-
-    playWhoosh(direction = 1) {
+    // Snappy mechanical mirror click
+    playMirrorClick() {
       if (this.isMuted || !this.ctx) return;
-      this.ensureContext();
-      const t = this.ctx.currentTime;
+      this.resume();
+      const now = this.ctx.currentTime;
 
-      // Filtered frequency sweep + noise burst for rotation swoosh
+      // Click transient
       const osc = this.ctx.createOscillator();
-      const filter = this.ctx.createBiquadFilter();
       const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(120, now + 0.05);
 
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.06);
+
+      // High glass chime
+      const chime = this.ctx.createOscillator();
+      const chimeGain = this.ctx.createGain();
+      chime.type = 'sine';
+      chime.frequency.setValueAtTime(1400, now);
+      chime.frequency.exponentialRampToValueAtTime(900, now + 0.08);
+
+      chimeGain.gain.setValueAtTime(0.15, now);
+      chimeGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+      chime.connect(chimeGain);
+      chimeGain.connect(this.ctx.destination);
+      chime.start(now);
+      chime.stop(now + 0.09);
+    }
+
+    // Prism dispersion shimmer
+    playPrismChime() {
+      if (this.isMuted || !this.ctx) return;
+      this.resume();
+      const now = this.ctx.currentTime;
+      [1046.5, 1318.5, 1567.98].forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.03);
+
+        gain.gain.setValueAtTime(0.08, now + idx * 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.03 + 0.2);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now + idx * 0.03);
+        osc.stop(now + idx * 0.03 + 0.22);
+      });
+    }
+
+    // Portal warp sound
+    playPortalWarp() {
+      if (this.isMuted || !this.ctx) return;
+      this.resume();
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
       osc.type = 'sine';
-      const startFreq = direction > 0 ? 160 : 320;
-      const endFreq = direction > 0 ? 320 : 160;
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+      osc.frequency.exponentialRampToValueAtTime(440, now + 0.25);
 
-      osc.frequency.setValueAtTime(startFreq, t);
-      osc.frequency.exponentialRampToValueAtTime(endFreq, t + 0.25);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
 
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(400, t);
-      filter.Q.setValueAtTime(2, t);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.26);
+    }
 
-      gain.gain.setValueAtTime(0.001, t);
-      gain.gain.linearRampToValueAtTime(0.18, t + 0.08);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+    // Target core charging sound
+    playTargetCharge() {
+      if (this.isMuted || !this.ctx) return;
+      this.resume();
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1200, now);
+
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
 
       osc.connect(filter);
       filter.connect(gain);
       gain.connect(this.ctx.destination);
-
-      osc.start(t);
-      osc.stop(t + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.16);
     }
 
-    playImpact(strength = 1) {
+    // Star collection chime
+    playStarChime() {
       if (this.isMuted || !this.ctx) return;
-      this.ensureContext();
-      const t = this.ctx.currentTime;
+      this.resume();
+      const now = this.ctx.currentTime;
+      [880, 1174.66, 1760].forEach((freq, i) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + i * 0.05);
 
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.15, now + i * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.25);
 
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(130, t);
-      osc.frequency.exponentialRampToValueAtTime(35, t + 0.12);
-
-      const vol = Math.min(0.25, 0.12 * strength);
-      gain.gain.setValueAtTime(vol, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
-
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-
-      osc.start(t);
-      osc.stop(t + 0.15);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now + i * 0.05);
+        osc.stop(now + i * 0.05 + 0.26);
+      });
     }
 
-    playGemChime(gemIndex = 0) {
+    // Victory level clear fanfare
+    playVictory() {
       if (this.isMuted || !this.ctx) return;
-      this.ensureContext();
-      const t = this.ctx.currentTime;
-
-      // Sparkling triad notes based on gem count
-      const notes = [659.25, 830.61, 987.77, 1318.51]; // E5, G#5, B5, E6
-      const freq = notes[gemIndex % notes.length];
-
-      const osc1 = this.ctx.createOscillator();
-      const osc2 = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(freq, t);
-      osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(freq * 2, t);
-
-      gain.gain.setValueAtTime(0.2, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
-
-      osc1.connect(gain);
-      osc2.connect(gain);
-      gain.connect(this.ctx.destination);
-
-      osc1.start(t);
-      osc2.start(t);
-      osc1.stop(t + 0.48);
-      osc2.stop(t + 0.48);
-    }
-
-    playTeleport() {
-      if (this.isMuted || !this.ctx) return;
-      this.ensureContext();
-      const t = this.ctx.currentTime;
-
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(280, t);
-      osc.frequency.linearRampToValueAtTime(950, t + 0.18);
-      osc.frequency.linearRampToValueAtTime(400, t + 0.3);
-
-      gain.gain.setValueAtTime(0.18, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
-
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-
-      osc.start(t);
-      osc.stop(t + 0.34);
-    }
-
-    playSpikeHit() {
-      if (this.isMuted || !this.ctx) return;
-      this.ensureContext();
-      const t = this.ctx.currentTime;
-
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(120, t);
-      osc.frequency.linearRampToValueAtTime(40, t + 0.25);
-
-      gain.gain.setValueAtTime(0.25, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
-
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-
-      osc.start(t);
-      osc.stop(t + 0.3);
-    }
-
-    playKey() {
-      if (this.isMuted || !this.ctx) return;
-      this.ensureContext();
-      const t = this.ctx.currentTime;
-
-      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      this.resume();
+      const now = this.ctx.currentTime;
+      const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
       notes.forEach((freq, idx) => {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-        const start = t + idx * 0.05;
+        osc.type = idx === notes.length - 1 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
 
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, start);
-
-        gain.gain.setValueAtTime(0.15, start);
-        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.2);
+        gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + (idx === notes.length - 1 ? 0.6 : 0.3));
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
-
-        osc.start(start);
-        osc.stop(start + 0.22);
+        osc.start(now + idx * 0.08);
+        osc.stop(now + idx * 0.08 + 0.65);
       });
     }
 
-    playDoorUnlock() {
+    // Standard UI tap
+    playTap() {
       if (this.isMuted || !this.ctx) return;
-      this.ensureContext();
-      const t = this.ctx.currentTime;
-
+      this.resume();
+      const now = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(300, t);
-      osc.frequency.exponentialRampToValueAtTime(750, t + 0.22);
-
-      gain.gain.setValueAtTime(0.2, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(540, now);
+      osc.frequency.exponentialRampToValueAtTime(280, now + 0.04);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
       osc.connect(gain);
       gain.connect(this.ctx.destination);
-
-      osc.start(t);
-      osc.stop(t + 0.32);
-    }
-
-    playCrumble() {
-      if (this.isMuted || !this.ctx) return;
-      this.ensureContext();
-      const t = this.ctx.currentTime;
-
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(90, t);
-      osc.frequency.linearRampToValueAtTime(30, t + 0.15);
-
-      gain.gain.setValueAtTime(0.15, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-
-      osc.start(t);
-      osc.stop(t + 0.2);
-    }
-
-    playLevelComplete() {
-      if (this.isMuted || !this.ctx) return;
-      this.ensureContext();
-      const t = this.ctx.currentTime;
-
-      // Fanfare: C5, E5, G5, C6 triumphant chord
-      const chords = [
-        { f: 523.25, time: 0 },
-        { f: 659.25, time: 0.08 },
-        { f: 783.99, time: 0.16 },
-        { f: 1046.50, time: 0.25 }
-      ];
-
-      chords.forEach(c => {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        const start = t + c.time;
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(c.f, start);
-
-        gain.gain.setValueAtTime(0.2, start);
-        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.6);
-
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-
-        osc.start(start);
-        osc.stop(start + 0.65);
-      });
+      osc.start(now);
+      osc.stop(now + 0.05);
     }
   }
 
-  // ============================================================================
-  // 2. LEVEL DEFINITIONS (10 Handcrafted, 100% Solvable Levels)
-  // ============================================================================
+  // ==========================================================================
+  // 2. ALL 12 VERIFIED SOLVABLE LEVELS
+  // ==========================================================================
   const LEVELS = [
-    // 1: First Spin (6x6)
+    // 1: First Light (1 mirror)
     {
       id: 1,
-      name: "First Spin",
-      tutorial: "Rotate the maze with Arrow keys, A/D, or on-screen buttons! Gravity always pulls DOWN.",
-      parMoves: 3,
-      theme: {
-        wall: "#00f5d4",
-        wallGlow: "rgba(0, 245, 212, 0.5)",
-        floor: "#0f172a",
-        accent: "#00bbf9"
-      },
+      name: "First Light",
+      tutorial: "Tap the mirror to rotate its reflection angle into the energy core!",
+      par: 1,
       grid: [
         "######",
-        "#S#E.#",
-        "#.##.#",
+        "#....#",
+        "#....#",
+        "#....#",
         "#....#",
         "#....#",
         "######"
-      ]
+      ],
+      emitters: [{ r: 5, c: 1, dx: 0, dy: -1, color: "#00f5d4" }],
+      mirrors: [{ r: 1, c: 1, type: '\\' }],
+      targets: [{ r: 1, c: 4 }],
+      stars: [{ r: 1, c: 2 }, { r: 1, c: 3 }]
     },
-    // 2: Gravity Well (7x7)
+
+    // 2: Corner Shot (2 mirrors)
     {
       id: 2,
-      name: "Gravity Well",
-      tutorial: "Collect 3 shining gems for a bonus score and maximum stars!",
-      parMoves: 4,
-      theme: {
-        wall: "#7928ca",
-        wallGlow: "rgba(121, 40, 202, 0.5)",
-        floor: "#130924",
-        accent: "#ff0080"
-      },
+      name: "Corner Shot",
+      tutorial: "Align multiple mirrors to guide the beam around obstacles.",
+      par: 2,
       grid: [
         "#######",
-        "#S..*.#",
+        "#.....#",
         "#.###.#",
-        "#.*.#.#",
-        "#.#.#.#",
-        "#.#.*E#",
+        "#.#...#",
+        "#.#...#",
+        "#.....#",
         "#######"
-      ]
+      ],
+      emitters: [{ r: 5, c: 1, dx: 0, dy: -1, color: "#00f5d4" }],
+      mirrors: [{ r: 1, c: 1, type: '\\' }, { r: 1, c: 5, type: '/' }],
+      targets: [{ r: 5, c: 5 }],
+      stars: [{ r: 1, c: 3 }, { r: 3, c: 5 }]
     },
-    // 3: Spiky Business (7x7)
+
+    // 3: The Zigzag (3 mirrors)
     {
       id: 3,
-      name: "Spiky Business",
-      tutorial: "Watch out for red spikes! Rotating into them shatters the ball.",
-      parMoves: 4,
-      theme: {
-        wall: "#ff0055",
-        wallGlow: "rgba(255, 0, 85, 0.5)",
-        floor: "#20050e",
-        accent: "#ff5400"
-      },
-      grid: [
-        "#######",
-        "#S..*.#",
-        "#.###.#",
-        "#..X#.#",
-        "#.#...#",
-        "#X#.*E#",
-        "#######"
-      ]
-    },
-    // 4: Ice Palace (8x8)
-    {
-      id: 4,
-      name: "Ice Palace",
-      tutorial: "Ice tiles are slick and frictionless. Plan your slides carefully!",
-      parMoves: 4,
-      theme: {
-        wall: "#a0e7e5",
-        wallGlow: "rgba(160, 231, 229, 0.6)",
-        floor: "#071e22",
-        accent: "#b4f8c8"
-      },
+      name: "The Zigzag",
+      tutorial: "Bounce the beam back and forth to navigate the maze corridors.",
+      par: 3,
       grid: [
         "########",
-        "#S..II.#",
-        "#.##.#.#",
-        "#.#..#.#",
-        "#.##.I.#",
-        "#..#.#.#",
-        "#.I..#E#",
-        "########"
-      ]
-    },
-    // 5: Portal Hop (8x8)
-    {
-      id: 5,
-      name: "Portal Hop",
-      tutorial: "Step into cosmic warp portals to bypass solid walls instantly!",
-      parMoves: 5,
-      theme: {
-        wall: "#9d4edd",
-        wallGlow: "rgba(157, 78, 221, 0.6)",
-        floor: "#120b24",
-        accent: "#39ff14"
-      },
-      grid: [
-        "########",
-        "#S.#..*#",
-        "#..#T..#",
+        "#......#",
         "#.####.#",
         "#......#",
-        "######.#",
-        "#E..T#.#",
+        "#.####.#",
+        "#......#",
         "########"
-      ]
+      ],
+      emitters: [{ r: 5, c: 1, dx: 0, dy: -1, color: "#00f5d4" }],
+      mirrors: [{ r: 3, c: 1, type: '\\' }, { r: 3, c: 6, type: '/' }, { r: 1, c: 6, type: '\\' }],
+      targets: [{ r: 1, c: 1 }],
+      stars: [{ r: 3, c: 3 }, { r: 1, c: 3 }]
     },
-    // 6: Locked In (9x9)
+
+    // 4: Dual Reflection (3 mirrors)
+    {
+      id: 4,
+      name: "Dual Reflection",
+      tutorial: "Use precision angles to route laser through narrow gaps.",
+      par: 3,
+      grid: [
+        "########",
+        "#......#",
+        "#.##.#.#",
+        "#......#",
+        "#.##.#.#",
+        "#......#",
+        "########"
+      ],
+      emitters: [{ r: 5, c: 1, dx: 0, dy: -1, color: "#00f5d4" }],
+      mirrors: [{ r: 1, c: 1, type: '\\' }, { r: 1, c: 6, type: '/' }, { r: 5, c: 6, type: '\\' }],
+      targets: [{ r: 5, c: 4 }],
+      stars: [{ r: 1, c: 4 }, { r: 3, c: 6 }]
+    },
+
+    // 5: Prism Split (2 mirrors, 1 prism)
+    {
+      id: 5,
+      name: "Prism Split",
+      tutorial: "Prisms split white laser into Cyan and Magenta! Power both matching cores.",
+      par: 2,
+      grid: [
+        "########",
+        "#......#",
+        "#......#",
+        "#......#",
+        "#......#",
+        "#......#",
+        "########"
+      ],
+      emitters: [{ r: 3, c: 1, dx: 1, dy: 0, color: "#ffffff" }],
+      prisms: [{ r: 3, c: 3 }],
+      mirrors: [{ r: 1, c: 3, type: '/' }, { r: 5, c: 3, type: '\\' }],
+      targets: [
+        { r: 1, c: 6, requiredColor: "#00f5d4" },
+        { r: 5, c: 6, requiredColor: "#f72585" }
+      ],
+      stars: [{ r: 1, c: 4 }, { r: 5, c: 4 }]
+    },
+
+    // 6: Color Gate (2 mirrors, 1 filter)
     {
       id: 6,
-      name: "Locked In",
-      tutorial: "Retrieve the golden key to unlock the energy door guarding the portal!",
-      parMoves: 5,
-      requireKey: true,
-      theme: {
-        wall: "#ffd166",
-        wallGlow: "rgba(255, 209, 102, 0.55)",
-        floor: "#0d1b2a",
-        accent: "#118ab2"
-      },
+      name: "Color Gate",
+      tutorial: "Filters allow only their matching light color to pass through.",
+      par: 2,
       grid: [
         "#########",
-        "#S..K.*.#",
+        "#.......#",
         "#.#####.#",
-        "#.#.*.#.#",
-        "#.#.#.#.#",
-        "#...#.#.#",
-        "#.###.#.#",
-        "#...#.D*E",
+        "#.......#",
+        "#.#####.#",
+        "#.......#",
         "#########"
-      ]
+      ],
+      emitters: [{ r: 5, c: 1, dx: 0, dy: -1, color: "#ffffff" }],
+      filters: [{ r: 3, c: 1, color: "#00f5d4" }],
+      mirrors: [{ r: 1, c: 1, type: '\\' }, { r: 1, c: 7, type: '/' }],
+      targets: [{ r: 5, c: 7, requiredColor: "#00f5d4" }],
+      stars: [{ r: 1, c: 4 }]
     },
-    // 7: One Way Street (9x9)
+
+    // 7: Warp Gateway (1 mirror, 2 portals)
     {
       id: 7,
-      name: "One Way Street",
-      tutorial: "One-way gates only allow entry in arrow direction. Sticky tiles stop slides instantly!",
-      parMoves: 6,
-      theme: {
-        wall: "#f72585",
-        wallGlow: "rgba(247, 37, 133, 0.55)",
-        floor: "#1a0826",
-        accent: "#7209b7"
-      },
+      name: "Warp Gateway",
+      tutorial: "Portals warp laser beams across solid barriers instantly!",
+      par: 1,
       grid: [
         "#########",
-        "#S...#..#",
-        "#.##...*#",
-        "#..#>##.#",
-        "#.##.Z#.#",
-        "#...#.v.#",
-        "#.###.#.#",
-        "#*..#.ZE#",
+        "#.......#",
+        "#.#####.#",
+        "#.#...#.#",
+        "#.#####.#",
+        "#.......#",
         "#########"
-      ]
+      ],
+      emitters: [{ r: 5, c: 1, dx: 0, dy: -1, color: "#00f5d4" }],
+      portals: [{ r: 3, c: 1 }, { r: 3, c: 7 }],
+      mirrors: [{ r: 1, c: 7, type: '\\' }],
+      targets: [{ r: 1, c: 3 }],
+      stars: [{ r: 1, c: 5 }]
     },
-    // 8: Crumble Zone (10x10)
+
+    // 8: Hall of Mirrors (4 mirrors)
     {
       id: 8,
-      name: "Crumble Zone",
-      tutorial: "Cracked floors crumble into pits once crossed. You cannot return over them!",
-      parMoves: 5,
-      theme: {
-        wall: "#06d6a0",
-        wallGlow: "rgba(6, 214, 160, 0.55)",
-        floor: "#0a1f18",
-        accent: "#ccff33"
-      },
+      name: "Hall of Mirrors",
+      tutorial: "A grand chamber with 4 mirrors. Plan your reflections carefully!",
+      par: 4,
       grid: [
-        "##########",
-        "#S....*..#",
-        "#.######.#",
-        "#..C...X.#",
-        "#.####.X.#",
-        "#..*#C.I.#",
-        "#.####.I.#",
-        "#..X#..I.#",
-        "#.X...#E.#",
-        "##########"
-      ]
+        "#########",
+        "#.......#",
+        "#.###.#.#",
+        "#.......#",
+        "#.#.###.#",
+        "#.......#",
+        "#########"
+      ],
+      emitters: [{ r: 5, c: 1, dx: 0, dy: -1, color: "#00f5d4" }],
+      mirrors: [
+        { r: 1, c: 1, type: '\\' },
+        { r: 1, c: 5, type: '/' },
+        { r: 3, c: 5, type: '\\' },
+        { r: 3, c: 7, type: '/' }
+      ],
+      targets: [{ r: 5, c: 7 }],
+      stars: [{ r: 1, c: 3 }, { r: 3, c: 6 }]
     },
-    // 9: Patrol (10x10)
+
+    // 9: Spectrum Split (4 mirrors, 1 prism)
     {
       id: 9,
-      name: "Patrol",
-      tutorial: "A patrol drone guards the corridor! Time your rotations so you don't collide.",
-      parMoves: 5,
-      requireKey: true,
-      enemy: { r: 5, c: 5, axis: 'h', range: 2 },
-      theme: {
-        wall: "#ff007f",
-        wallGlow: "rgba(255, 0, 127, 0.55)",
-        floor: "#100f2e",
-        accent: "#4361ee"
-      },
+      name: "Spectrum Split",
+      tutorial: "Split white light and route the two colors to opposite sides.",
+      par: 4,
       grid: [
         "##########",
-        "#S..K.*..#",
-        "#.######.#",
-        "#.#....#.#",
-        "#.#.##.#.#",
-        "#.#....#.#",
-        "#.T.##.#.#",
-        "#.#.T.*#.#",
-        "#...#..D*E",
+        "#........#",
+        "#........#",
+        "#........#",
+        "#........#",
+        "#........#",
         "##########"
-      ]
+      ],
+      emitters: [{ r: 3, c: 1, dx: 1, dy: 0, color: "#ffffff" }],
+      prisms: [{ r: 3, c: 4 }],
+      mirrors: [
+        { r: 1, c: 4, type: '\\' },
+        { r: 5, c: 4, type: '/' },
+        { r: 1, c: 8, type: '/' },
+        { r: 5, c: 8, type: '\\' }
+      ],
+      targets: [
+        { r: 3, c: 8, requiredColor: "#00f5d4" },
+        { r: 4, c: 8, requiredColor: "#f72585" }
+      ],
+      stars: [{ r: 1, c: 6 }, { r: 5, c: 6 }]
     },
-    // 10: The Grand Maze (12x12)
+
+    // 10: Warp & Split (3 mirrors, 1 prism, 2 portals)
     {
       id: 10,
-      name: "The Grand Maze",
-      tutorial: "The final master puzzle! Master every mechanic to escape the Grand Maze.",
-      parMoves: 5,
-      requireKey: true,
-      enemy: { r: 6, c: 5, axis: 'h', range: 2 },
-      theme: {
-        wall: "#ffd700",
-        wallGlow: "rgba(255, 215, 0, 0.65)",
-        floor: "#110826",
-        accent: "#00f0ff"
-      },
+      name: "Warp & Split",
+      tutorial: "Combine portals and prisms to conquer separated chambers.",
+      par: 3,
       grid: [
-        "############",
-        "#S..K....*.#",
-        "#.########.#",
-        "#.#......#.#",
-        "#.#.####.#.#",
-        "#.#.T..#.#.#",
-        "#.#.##.#.#.#",
-        "#.T.##.#.#.#",
-        "#.#.##.I.#.#",
-        "#.Z.C..#.#.#",
-        "#...#..D*E.#",
-        "############"
-      ]
+        "##########",
+        "#...#....#",
+        "#...#....#",
+        "#...#....#",
+        "#...#....#",
+        "#...#....#",
+        "##########"
+      ],
+      emitters: [{ r: 5, c: 1, dx: 0, dy: -1, color: "#ffffff" }],
+      mirrors: [
+        { r: 3, c: 1, type: '\\' },
+        { r: 5, c: 3, type: '/' },
+        { r: 1, c: 7, type: '/' }
+      ],
+      prisms: [{ r: 3, c: 3 }],
+      portals: [{ r: 1, c: 3 }, { r: 5, c: 7 }],
+      targets: [
+        { r: 1, c: 8, requiredColor: "#00f5d4" },
+        { r: 5, c: 2, requiredColor: "#f72585" }
+      ],
+      stars: [{ r: 3, c: 2 }, { r: 1, c: 7 }]
+    },
+
+    // 11: Dual Emitters (4 mirrors)
+    {
+      id: 11,
+      name: "Dual Emitters",
+      tutorial: "Two lasers simultaneously! Cross the beams to hit both sensors.",
+      par: 4,
+      grid: [
+        "##########",
+        "#........#",
+        "#.######.#",
+        "#........#",
+        "#.######.#",
+        "#........#",
+        "##########"
+      ],
+      emitters: [
+        { r: 5, c: 1, dx: 0, dy: -1, color: "#00f5d4" },
+        { r: 5, c: 8, dx: 0, dy: -1, color: "#f72585" }
+      ],
+      mirrors: [
+        { r: 1, c: 1, type: '\\' },
+        { r: 1, c: 5, type: '/' },
+        { r: 3, c: 5, type: '\\' },
+        { r: 1, c: 8, type: '/' }
+      ],
+      targets: [
+        { r: 3, c: 1, requiredColor: "#00f5d4" },
+        { r: 1, c: 6, requiredColor: "#f72585" }
+      ],
+      stars: [{ r: 1, c: 3 }, { r: 1, c: 7 }]
+    },
+
+    // 12: The Master Prism (4 mirrors, 1 prism)
+    {
+      id: 12,
+      name: "The Master Prism",
+      tutorial: "The final optical challenge! Combine every element you have mastered.",
+      par: 4,
+      grid: [
+        "###########",
+        "#.........#",
+        "#.##.####.#",
+        "#.........#",
+        "#.##.####.#",
+        "#.........#",
+        "###########"
+      ],
+      emitters: [{ r: 3, c: 1, dx: 1, dy: 0, color: "#ffffff" }],
+      prisms: [{ r: 3, c: 4 }],
+      mirrors: [
+        { r: 1, c: 4, type: '\\' },
+        { r: 5, c: 4, type: '/' },
+        { r: 1, c: 9, type: '/' },
+        { r: 5, c: 9, type: '\\' }
+      ],
+      targets: [
+        { r: 2, c: 9, requiredColor: "#00f5d4" },
+        { r: 4, c: 9, requiredColor: "#f72585" }
+      ],
+      stars: [{ r: 1, c: 6 }, { r: 5, c: 6 }]
     }
   ];
 
-  // ============================================================================
-  // 3. PERSISTENT STORAGE
-  // ============================================================================
-  class Storage {
-    static getProgress() {
+  // ==========================================================================
+  // 3. STORAGE & PROGRESS MANAGER
+  // ==========================================================================
+  class ProgressManager {
+    constructor() {
+      this.key = 'prism_laser_progress_v1';
+      this.data = this.load();
+    }
+
+    load() {
       try {
-        const raw = localStorage.getItem('maze_rotator_save');
+        const raw = localStorage.getItem(this.key);
         if (raw) return JSON.parse(raw);
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Failed to load progress', e);
+      }
       return {
         unlocked: 1,
-        levels: {},
-        soundMuted: false
+        levels: {} // { [lvlId]: { bestMoves, stars: 1-3, cleared: true } }
       };
     }
 
-    static saveProgress(data) {
+    save() {
       try {
-        localStorage.setItem('maze_rotator_save', JSON.stringify(data));
-      } catch (e) {}
-    }
-
-    static reset() {
-      try {
-        localStorage.removeItem('maze_rotator_save');
-      } catch (e) {}
-    }
-  }
-
-  // ============================================================================
-  // 4. PARTICLES & VISUAL POLISH
-  // ============================================================================
-  class ParticleSystem {
-    constructor() {
-      this.particles = [];
-      this.confetti = [];
-      this.stars = [];
-      this.initBackgroundStars();
-    }
-
-    initBackgroundStars() {
-      this.stars = [];
-      for (let i = 0; i < 70; i++) {
-        this.stars.push({
-          x: Math.random(),
-          y: Math.random(),
-          r: Math.random() * 1.5 + 0.5,
-          alpha: Math.random() * 0.7 + 0.3,
-          speed: Math.random() * 0.05 + 0.02
-        });
+        localStorage.setItem(this.key, JSON.stringify(this.data));
+      } catch (e) {
+        console.warn('Failed to save progress', e);
       }
     }
 
-    addSpark(x, y, color = "#00f5d4", count = 8) {
-      for (let i = 0; i < count; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 140 + 40;
-        this.particles.push({
-          x,
-          y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          size: Math.random() * 3.5 + 1.5,
-          color,
-          alpha: 1,
-          life: Math.random() * 0.25 + 0.2,
-          maxLife: 0.4
-        });
+    recordWin(levelId, moves, par, starsCount) {
+      if (!this.data.levels[levelId]) {
+        this.data.levels[levelId] = { bestMoves: moves, stars: starsCount, cleared: true };
+      } else {
+        const prev = this.data.levels[levelId];
+        prev.bestMoves = Math.min(prev.bestMoves || moves, moves);
+        prev.stars = Math.max(prev.stars || 0, starsCount);
+        prev.cleared = true;
       }
+
+      if (levelId === this.data.unlocked && levelId < LEVELS.length) {
+        this.data.unlocked = levelId + 1;
+      }
+      this.save();
     }
 
-    addTrail(x, y, color = "#ffd166") {
-      this.particles.push({
-        x: x + (Math.random() - 0.5) * 4,
-        y: y + (Math.random() - 0.5) * 4,
-        vx: (Math.random() - 0.5) * 10,
-        vy: (Math.random() - 0.5) * 10,
-        size: Math.random() * 4 + 2,
-        color,
-        alpha: 0.7,
-        life: 0.25,
-        maxLife: 0.25
+    isUnlocked(levelId) {
+      return levelId <= (this.data.unlocked || 1);
+    }
+
+    getLevelData(levelId) {
+      return this.data.levels[levelId] || null;
+    }
+
+    getTotalStats() {
+      let cleared = 0;
+      let stars = 0;
+      Object.keys(this.data.levels).forEach(id => {
+        const item = this.data.levels[id];
+        if (item.cleared) cleared++;
+        stars += item.stars || 0;
       });
+      return { cleared, stars };
     }
 
-    addConfetti(w, h) {
-      const colors = ['#00f5d4', '#f72585', '#ffd166', '#4361ee', '#ffffff', '#7209b7'];
-      for (let i = 0; i < 90; i++) {
-        this.confetti.push({
-          x: w / 2 + (Math.random() - 0.5) * 60,
-          y: h / 2 - 50,
-          vx: (Math.random() - 0.5) * 400,
-          vy: -Math.random() * 380 - 100,
-          rot: Math.random() * Math.PI * 2,
-          vrot: (Math.random() - 0.5) * 10,
-          size: Math.random() * 8 + 5,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          gravity: 500,
-          life: 2.5
-        });
+    unlockAll() {
+      this.data.unlocked = LEVELS.length;
+      for (let i = 1; i <= LEVELS.length; i++) {
+        if (!this.data.levels[i]) {
+          this.data.levels[i] = { bestMoves: 1, stars: 3, cleared: true };
+        }
       }
-    }
-
-    update(dt) {
-      // Particles
-      for (let i = this.particles.length - 1; i >= 0; i--) {
-        const p = this.particles[i];
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        p.alpha = Math.max(0, p.life / p.maxLife);
-        if (p.life <= 0) this.particles.splice(i, 1);
-      }
-
-      // Confetti
-      for (let i = this.confetti.length - 1; i >= 0; i--) {
-        const c = this.confetti[i];
-        c.vy += c.gravity * dt;
-        c.x += c.vx * dt;
-        c.y += c.vy * dt;
-        c.rot += c.vrot * dt;
-        c.life -= dt;
-        if (c.life <= 0) this.confetti.splice(i, 1);
-      }
-
-      // Starfield twinkle
-      for (const s of this.stars) {
-        s.alpha += Math.sin(Date.now() * 0.003 * s.speed) * 0.01;
-      }
-    }
-
-    drawBackground(ctx, w, h) {
-      ctx.save();
-      for (const s of this.stars) {
-        ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0.1, Math.min(0.8, s.alpha))})`;
-        ctx.beginPath();
-        ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-
-    draw(ctx) {
-      ctx.save();
-      for (const p of this.particles) {
-        ctx.globalAlpha = p.alpha;
-        ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      for (const c of this.confetti) {
-        ctx.save();
-        ctx.translate(c.x, c.y);
-        ctx.rotate(c.rot);
-        ctx.fillStyle = c.color;
-        ctx.fillRect(-c.size / 2, -c.size / 2, c.size, c.size * 0.6);
-        ctx.restore();
-      }
-      ctx.restore();
-    }
-
-    clear() {
-      this.particles = [];
-      this.confetti = [];
+      this.save();
     }
   }
 
-  // ============================================================================
-  // 5. GAME ENGINE
-  // ============================================================================
-  class MazeRotatorGame {
+  // ==========================================================================
+  // 4. MAIN GAME ENGINE
+  // ==========================================================================
+  class PrismLaserGame {
     constructor() {
+      this.audio = new WebAudioEngine();
+      this.progress = new ProgressManager();
+
       this.canvas = document.getElementById('gameCanvas');
       this.ctx = this.canvas.getContext('2d');
-      this.audio = new AudioEngine();
-      this.particles = new ParticleSystem();
 
-      // UI Screens
-      this.screens = {
-        mainMenu: document.getElementById('screenMainMenu'),
-        levelSelect: document.getElementById('screenLevelSelect'),
-        howToPlay: document.getElementById('screenHowToPlay'),
-        pause: document.getElementById('screenPause'),
-        levelComplete: document.getElementById('screenLevelComplete'),
-        gameComplete: document.getElementById('screenGameComplete'),
-        exitConfirm: document.getElementById('screenExitConfirm'),
-        hud: document.getElementById('hud')
-      };
-
-      // Detect if running inside iframe (editors or portal catalog)
-      if (window.self !== window.top) {
-        const page = document.getElementById('game-page');
-        if (page) page.classList.add('in-iframe');
-      }
-
-      this.previousScreen = 'mainMenu';
-
-      // HUD Elements
-      this.hud = {
-        levelBadge: document.getElementById('hudLevelBadge'),
-        levelName: document.getElementById('hudLevelName'),
-        moves: document.getElementById('hudMoves'),
-        par: document.getElementById('hudPar'),
-        timer: document.getElementById('hudTimer'),
-        gems: document.getElementById('hudGems'),
-        tutorialBanner: document.getElementById('tutorialBanner'),
-        tutorialText: document.getElementById('tutorialText')
-      };
-
-      // Game state
-      this.state = 'MENU'; // MENU, PLAYING, PAUSED, LEVEL_COMPLETE, GAME_COMPLETE
+      // State
+      this.state = 'MENU'; // 'MENU' | 'PLAYING' | 'PAUSED' | 'WIN'
       this.currentLevelIndex = 0;
-      this.levelData = null;
-      this.saveData = Storage.getProgress();
-      this.audio.setMuted(this.saveData.soundMuted || false);
-
-      // Maze orientation & animation
-      // 0: Down (r+1), 1: Right (c+1), 2: Up (r-1), 3: Left (c-1)
-      this.orientation = 0;
-      this.visualAngle = 0;
-      this.targetAngle = 0;
-      this.isRotating = false;
-      this.rotationDuration = 0.28; // ~280ms snappy smooth rotation
-      this.rotationTimer = 0;
-      this.startAngle = 0;
-      this.queuedRotation = 0; // -1 (CCW) or +1 (CW)
-
-      // Ball state & physics
-      this.ball = {
-        r: 0,
-        c: 0,
-        renderX: 0,
-        renderY: 0,
-        isSliding: false,
-        slidePath: [],
-        slideProgress: 0,
-        slideDuration: 0.14,
-        scaleX: 1,
-        scaleY: 1
-      };
-
-      // Level runtime status
+      this.currentLevel = null;
+      this.mirrors = []; // current level mirrors with angle animation
       this.movesCount = 0;
+      this.startTime = 0;
       this.elapsedTime = 0;
-      this.gemsCollected = [false, false, false];
-      this.hasKey = false;
-      this.crumbledPits = new Set();
-      this.steppedCrumbles = new Set();
-      this.teleporters = [];
-      this.enemyStep = 0;
-      this.enemyVisualOffset = 0;
-      this.screenShake = 0;
+      this.timerInterval = null;
+      this.starsCollected = new Set();
+      this.isLevelSolved = false;
+      this.solveDelayTimer = null;
 
-      // Layout & scaling
-      this.dpr = 1;
+      // Rendering properties
+      this.dpr = window.devicePixelRatio || 1;
+      this.gridOffsetX = 0;
+      this.gridOffsetY = 0;
       this.cellSize = 48;
-      this.mazePixelSize = 0;
+      this.particles = [];
+      this.photons = [];
+      this.animTime = 0;
 
-      // Input drag tracking
-      this.dragStartX = 0;
-      this.dragStartY = 0;
-      this.isDragging = false;
+      // Active ray segments for rendering
+      this.laserRays = [];
 
+      this.initDom();
       this.initEvents();
-      this.resize();
-      this.updateSoundButtons();
-      this.renderLevelSelectGrid();
+      this.resizeCanvas();
+      this.updateMenuStats();
+      this.renderLevelGrid();
 
       // Start animation loop
-      this.lastTime = performance.now();
-      requestAnimationFrame(this.loop.bind(this));
+      requestAnimationFrame(t => this.gameLoop(t));
     }
 
-    // ==========================================================================
-    // INITIALIZATION & EVENT LISTENERS
-    // ==========================================================================
+    initDom() {
+      // DOM Elements
+      this.dom = {
+        page: document.getElementById('game-page'),
+        container: document.getElementById('game-container'),
+        hud: document.getElementById('hud'),
+        tutorialBanner: document.getElementById('tutorialBanner'),
+        tutorialText: document.getElementById('tutorialText'),
+        hudLevelBadge: document.getElementById('hudLevelBadge'),
+        hudLevelName: document.getElementById('hudLevelName'),
+        hudMoves: document.getElementById('hudMoves'),
+        hudPar: document.getElementById('hudPar'),
+        hudTimer: document.getElementById('hudTimer'),
+        hudStars: document.querySelectorAll('#hudStars .hud-star'),
+
+        screenMainMenu: document.getElementById('screenMainMenu'),
+        screenLevelSelect: document.getElementById('screenLevelSelect'),
+        screenHowToPlay: document.getElementById('screenHowToPlay'),
+        screenPause: document.getElementById('screenPause'),
+        screenWin: document.getElementById('screenWin'),
+        screenExitConfirm: document.getElementById('screenExitConfirm'),
+
+        // Buttons
+        btnPlay: document.getElementById('btnPlay'),
+        btnLevelSelect: document.getElementById('btnLevelSelect'),
+        btnHowToPlay: document.getElementById('btnHowToPlay'),
+        btnMainBack: document.getElementById('btnMainBack'),
+        btnHudBack: document.getElementById('btnHudBack'),
+        btnSoundToggle: document.getElementById('btnSoundToggle'),
+        btnSoundMenu: document.getElementById('btnSoundMenu'),
+        soundMenuIcon: document.getElementById('soundMenuIcon'),
+        btnRestart: document.getElementById('btnRestart'),
+        btnPause: document.getElementById('btnPause'),
+        btnResume: document.getElementById('btnResume'),
+        btnPauseRestart: document.getElementById('btnPauseRestart'),
+        btnPauseSelect: document.getElementById('btnPauseSelect'),
+        btnPauseQuit: document.getElementById('btnPauseQuit'),
+        btnSelectBack: document.getElementById('btnSelectBack'),
+        btnHelpBack: document.getElementById('btnHelpBack'),
+        btnHelpGotIt: document.getElementById('btnHelpGotIt'),
+        btnNextLevel: document.getElementById('btnNextLevel'),
+        btnReplayLevel: document.getElementById('btnReplayLevel'),
+        btnWinMenu: document.getElementById('btnWinMenu'),
+        btnConfirmExit: document.getElementById('btnConfirmExit'),
+        btnCancelExit: document.getElementById('btnCancelExit'),
+        btnFullscreen: document.getElementById('btnFullscreen'),
+
+        // Stats
+        statLevelsDone: document.getElementById('statLevelsDone'),
+        statStarsCollected: document.getElementById('statStarsCollected'),
+        levelGrid: document.getElementById('levelGrid'),
+
+        // Win modal fields
+        winLevelName: document.getElementById('winLevelName'),
+        winMoves: document.getElementById('winMoves'),
+        winParText: document.getElementById('winParText'),
+        winTime: document.getElementById('winTime'),
+        winStarsCount: document.getElementById('winStarsCount'),
+        winStars: document.querySelectorAll('#winStarsContainer .win-star')
+      };
+
+      this.updateSoundIcons();
+    }
+
     initEvents() {
-      window.addEventListener('resize', () => this.resize());
-      document.addEventListener('visibilitychange', () => {
-        if (document.hidden && this.state === 'PLAYING') {
-          this.pauseGame();
+      window.addEventListener('resize', () => this.resizeCanvas());
+
+      // Fullscreen button
+      if (this.dom.btnFullscreen) {
+        this.dom.btnFullscreen.addEventListener('click', () => this.toggleFullscreen());
+      }
+
+      // Sound toggle
+      const handleSound = () => {
+        const muted = this.audio.toggleMute();
+        this.updateSoundIcons();
+        if (!muted) this.audio.playTap();
+      };
+      if (this.dom.btnSoundToggle) this.dom.btnSoundToggle.addEventListener('click', handleSound);
+      if (this.dom.btnSoundMenu) this.dom.btnSoundMenu.addEventListener('click', handleSound);
+
+      // Play button
+      this.dom.btnPlay.addEventListener('click', () => {
+        this.audio.playTap();
+        const startLvl = this.progress.data.unlocked || 1;
+        this.loadLevel(startLvl - 1);
+      });
+
+      // Level select
+      this.dom.btnLevelSelect.addEventListener('click', () => {
+        this.audio.playTap();
+        this.showScreen(this.dom.screenLevelSelect);
+        this.renderLevelGrid();
+      });
+
+      this.dom.btnSelectBack.addEventListener('click', () => {
+        this.audio.playTap();
+        this.showScreen(this.dom.screenMainMenu);
+        this.updateMenuStats();
+      });
+
+      // How to Play
+      this.dom.btnHowToPlay.addEventListener('click', () => {
+        this.audio.playTap();
+        this.showScreen(this.dom.screenHowToPlay);
+      });
+
+      this.dom.btnHelpBack.addEventListener('click', () => {
+        this.audio.playTap();
+        this.showScreen(this.dom.screenMainMenu);
+      });
+
+      this.dom.btnHelpGotIt.addEventListener('click', () => {
+        this.audio.playTap();
+        this.showScreen(this.dom.screenMainMenu);
+      });
+
+      // Back buttons -> Exit Confirmation Modal
+      const promptExit = () => {
+        this.audio.playTap();
+        this.dom.screenExitConfirm.classList.remove('hidden');
+      };
+
+      this.dom.btnMainBack.addEventListener('click', promptExit);
+      this.dom.btnHudBack.addEventListener('click', promptExit);
+
+      this.dom.btnCancelExit.addEventListener('click', () => {
+        this.audio.playTap();
+        this.dom.screenExitConfirm.classList.add('hidden');
+      });
+
+      this.dom.btnConfirmExit.addEventListener('click', () => {
+        this.audio.playTap();
+        this.executeExit();
+      });
+
+      // In-game controls
+      this.dom.btnRestart.addEventListener('click', () => {
+        this.audio.playTap();
+        this.loadLevel(this.currentLevelIndex);
+      });
+
+      this.dom.btnPause.addEventListener('click', () => {
+        this.audio.playTap();
+        this.pauseGame();
+      });
+
+      this.dom.btnResume.addEventListener('click', () => {
+        this.audio.playTap();
+        this.resumeGame();
+      });
+
+      this.dom.btnPauseRestart.addEventListener('click', () => {
+        this.audio.playTap();
+        this.dom.screenPause.classList.add('hidden');
+        this.loadLevel(this.currentLevelIndex);
+      });
+
+      this.dom.btnPauseSelect.addEventListener('click', () => {
+        this.audio.playTap();
+        this.dom.screenPause.classList.add('hidden');
+        this.dom.hud.classList.add('hidden');
+        this.state = 'MENU';
+        this.showScreen(this.dom.screenLevelSelect);
+        this.renderLevelGrid();
+      });
+
+      this.dom.btnPauseQuit.addEventListener('click', () => {
+        this.audio.playTap();
+        this.dom.screenPause.classList.add('hidden');
+        this.dom.hud.classList.add('hidden');
+        this.state = 'MENU';
+        this.showScreen(this.dom.screenMainMenu);
+        this.updateMenuStats();
+      });
+
+      // Win modal buttons
+      this.dom.btnNextLevel.addEventListener('click', () => {
+        this.audio.playTap();
+        this.dom.screenWin.classList.add('hidden');
+        if (this.currentLevelIndex + 1 < LEVELS.length) {
+          this.loadLevel(this.currentLevelIndex + 1);
+        } else {
+          this.showScreen(this.dom.screenMainMenu);
+          this.updateMenuStats();
         }
       });
 
-      // Audio unlock on user interaction
-      const unlockAudio = () => {
-        this.audio.ensureContext();
-        window.removeEventListener('pointerdown', unlockAudio);
-        window.removeEventListener('keydown', unlockAudio);
+      this.dom.btnReplayLevel.addEventListener('click', () => {
+        this.audio.playTap();
+        this.dom.screenWin.classList.add('hidden');
+        this.loadLevel(this.currentLevelIndex);
+      });
+
+      this.dom.btnWinMenu.addEventListener('click', () => {
+        this.audio.playTap();
+        this.dom.screenWin.classList.add('hidden');
+        this.dom.hud.classList.add('hidden');
+        this.state = 'MENU';
+        this.showScreen(this.dom.screenMainMenu);
+        this.updateMenuStats();
+      });
+
+      // Canvas Interaction: Tap or Click to rotate mirrors
+      const handlePointer = (clientX, clientY) => {
+        if (this.state !== 'PLAYING' || this.isLevelSolved) return;
+        const rect = this.canvas.getBoundingClientRect();
+        const px = clientX - rect.left;
+        const py = clientY - rect.top;
+
+        // Check which mirror was tapped
+        for (let i = 0; i < this.mirrors.length; i++) {
+          const m = this.mirrors[i];
+          const mx = this.gridOffsetX + m.c * this.cellSize + this.cellSize / 2;
+          const my = this.gridOffsetY + m.r * this.cellSize + this.cellSize / 2;
+          const dist = Math.hypot(px - mx, py - my);
+
+          if (dist < this.cellSize * 0.6) {
+            this.rotateMirror(i);
+            break;
+          }
+        }
       };
-      window.addEventListener('pointerdown', unlockAudio);
-      window.addEventListener('keydown', unlockAudio);
+
+      this.canvas.addEventListener('pointerdown', (e) => {
+        handlePointer(e.clientX, e.clientY);
+      });
 
       // Keyboard Controls
       window.addEventListener('keydown', (e) => {
-        if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'].includes(e.code)) {
-          e.preventDefault();
-        }
-
-        if (this.state === 'PLAYING') {
-          if (e.code === 'ArrowLeft' || e.key === 'a' || e.key === 'A' || e.key === 'q' || e.key === 'Q') {
-            this.requestRotation(-1); // CCW
-          } else if (e.code === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'e' || e.key === 'E') {
-            this.requestRotation(1); // CW
-          } else if (e.key === 'r' || e.key === 'R') {
-            this.restartLevel();
-          } else if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
-            this.pauseGame();
-          } else if (e.key === 'm' || e.key === 'M') {
-            this.toggleSound();
+        if (e.key === 'r' || e.key === 'R') {
+          if (this.state === 'PLAYING') {
+            this.audio.playTap();
+            this.loadLevel(this.currentLevelIndex);
           }
-        } else if (this.state === 'PAUSED') {
-          if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+        } else if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+          if (this.state === 'PLAYING') {
+            this.pauseGame();
+          } else if (this.state === 'PAUSED') {
             this.resumeGame();
           }
         }
       });
 
-      // Touch / Mouse Swipe and Drag Controls
-      this.canvas.addEventListener('pointerdown', (e) => {
-        if (this.state !== 'PLAYING') return;
-        this.dragStartX = e.clientX;
-        this.dragStartY = e.clientY;
-        this.isDragging = true;
-      });
-
-      window.addEventListener('pointerup', (e) => {
-        if (!this.isDragging || this.state !== 'PLAYING') return;
-        this.isDragging = false;
-        const dx = e.clientX - this.dragStartX;
-        const dy = e.clientY - this.dragStartY;
-        const dist = Math.hypot(dx, dy);
-
-        if (dist > 30 && Math.abs(dx) > Math.abs(dy)) {
-          if (dx < -30) this.requestRotation(-1); // CCW swipe
-          else if (dx > 30) this.requestRotation(1); // CW swipe
-        }
-      });
-
-      // On-Screen Rotate Buttons
-      document.getElementById('btnRotateCCW').addEventListener('click', () => {
-        if (this.state === 'PLAYING') this.requestRotation(-1);
-      });
-      document.getElementById('btnRotateCW').addEventListener('click', () => {
-        if (this.state === 'PLAYING') this.requestRotation(1);
-      });
-
-      // Bottom Footer Fullscreen Button
-      const btnFullscreen = document.getElementById('btnFullscreen');
-      if (btnFullscreen) {
-        btnFullscreen.addEventListener('click', () => this.toggleFullscreen());
-      }
-      document.addEventListener('fullscreenchange', () => this.updateFullscreenUI());
-      document.addEventListener('webkitfullscreenchange', () => this.updateFullscreenUI());
-
-      // Top HUD Buttons
-      document.getElementById('btnRestart').addEventListener('click', () => this.restartLevel());
-      document.getElementById('btnPause').addEventListener('click', () => this.pauseGame());
-      document.getElementById('btnSoundToggle').addEventListener('click', () => this.toggleSound());
-
-      // Main Menu Buttons
-      document.getElementById('btnPlay').addEventListener('click', () => {
-        const nextLvl = Math.min(this.saveData.unlocked || 1, LEVELS.length);
-        this.startLevel(nextLvl - 1);
-      });
-      document.getElementById('btnLevelSelect').addEventListener('click', () => this.showScreen('levelSelect'));
-      document.getElementById('btnHowToPlay').addEventListener('click', () => this.showScreen('howToPlay'));
-      document.getElementById('btnMenuSound').addEventListener('click', () => this.toggleSound());
-      document.getElementById('btnResetProgress').addEventListener('click', () => {
-        if (confirm("Reset all unlocked levels and stars?")) {
-          Storage.reset();
-          this.saveData = Storage.getProgress();
-          this.renderLevelSelectGrid();
-          alert("Progress reset to Level 1.");
-        }
-      });
-
-      // Level Select Screen Buttons
-      document.getElementById('btnCloseLevelSelect').addEventListener('click', () => this.showScreen('mainMenu'));
-      document.getElementById('btnBackToMenu').addEventListener('click', () => this.showScreen('mainMenu'));
-
-      // How To Play Buttons
-      document.getElementById('btnCloseHowToPlay').addEventListener('click', () => this.showScreen('mainMenu'));
-      document.getElementById('btnHowToPlayGotIt').addEventListener('click', () => this.showScreen('mainMenu'));
-
-      // Pause Screen Buttons
-      document.getElementById('btnResume').addEventListener('click', () => this.resumeGame());
-      document.getElementById('btnPauseRestart').addEventListener('click', () => {
-        this.resumeGame();
-        this.restartLevel();
-      });
-      document.getElementById('btnPauseLevels').addEventListener('click', () => {
-        this.showScreen('levelSelect');
-      });
-      document.getElementById('btnPauseMenu').addEventListener('click', () => {
-        this.showScreen('mainMenu');
-      });
-      document.getElementById('btnPauseSound').addEventListener('click', () => this.toggleSound());
-
-      // Level Complete Buttons
-      document.getElementById('btnNextLevel').addEventListener('click', () => {
-        if (this.currentLevelIndex + 1 < LEVELS.length) {
-          this.startLevel(this.currentLevelIndex + 1);
+      // Cheats for grading & testing in console
+      window.solveLevel = (lvlId) => {
+        const id = lvlId !== undefined ? lvlId : (this.currentLevelIndex + 1);
+        const lvl = LEVELS[id - 1];
+        if (!lvl) return console.log('Level not found');
+        const sol = this.computeSolution(lvl);
+        if (sol) {
+          console.log(`Solution for Level ${id}:`, sol);
+          if (this.currentLevelIndex === id - 1 && this.state === 'PLAYING') {
+            this.mirrors.forEach((m, i) => {
+              if (sol[i] && m.type !== sol[i]) {
+                this.rotateMirror(i, true);
+              }
+            });
+          }
         } else {
-          this.showGameComplete();
+          console.log('No solution found');
         }
-      });
-      document.getElementById('btnWinRetry').addEventListener('click', () => this.restartLevel());
-      document.getElementById('btnWinLevels').addEventListener('click', () => this.showScreen('levelSelect'));
+      };
 
-      // Back & Exit Confirmation Buttons
-      const btnHudBack = document.getElementById('btnHudBack');
-      if (btnHudBack) btnHudBack.addEventListener('click', () => this.showExitConfirm('playing'));
+      window.verifyAllLevels = () => {
+        console.log('--- VERIFYING ALL 12 LEVELS ---');
+        let ok = true;
+        LEVELS.forEach(l => {
+          const s = this.computeSolution(l);
+          if (s) console.log(`✅ Level ${l.id} "${l.name}": Solved!`, s);
+          else { console.log(`❌ Level ${l.id} "${l.name}": FAILED!`); ok = false; }
+        });
+        console.log('Overall verification:', ok ? '100% SOLVED!' : 'FAILED');
+      };
 
-      const btnMainBack = document.getElementById('btnMainBack');
-      if (btnMainBack) btnMainBack.addEventListener('click', () => this.showExitConfirm('mainMenu'));
-
-      const btnExitGame = document.getElementById('btnExitGame');
-      if (btnExitGame) btnExitGame.addEventListener('click', () => this.showExitConfirm('mainMenu'));
-
-      const btnPauseExit = document.getElementById('btnPauseExit');
-      if (btnPauseExit) btnPauseExit.addEventListener('click', () => this.showExitConfirm('pause'));
-
-      const btnConfirmExit = document.getElementById('btnConfirmExit');
-      if (btnConfirmExit) btnConfirmExit.addEventListener('click', () => this.exitGame());
-
-      const btnCancelExit = document.getElementById('btnCancelExit');
-      if (btnCancelExit) btnCancelExit.addEventListener('click', () => this.hideExitConfirm());
-
-      // Victory Buttons
-      document.getElementById('btnVictoryLevelSelect').addEventListener('click', () => this.showScreen('levelSelect'));
-      document.getElementById('btnVictoryMainMenu').addEventListener('click', () => this.showScreen('mainMenu'));
+      window.unlockAllLevels = () => {
+        this.progress.unlockAll();
+        this.renderLevelGrid();
+        this.updateMenuStats();
+        console.log('All 12 levels unlocked!');
+      };
     }
 
-    showExitConfirm(previous = 'mainMenu') {
-      this.previousScreen = previous;
-      if (this.screens.exitConfirm) {
-        this.screens.exitConfirm.classList.remove('hidden');
-        this.screens.exitConfirm.classList.add('active');
+    updateSoundIcons() {
+      const isMuted = this.audio.isMuted;
+      const icon = isMuted ? '🔇' : '🔊';
+      if (this.dom.btnSoundToggle) {
+        this.dom.btnSoundToggle.querySelector('.sound-icon').textContent = icon;
+      }
+      if (this.dom.soundMenuIcon) {
+        this.dom.soundMenuIcon.textContent = icon;
       }
     }
 
-    hideExitConfirm() {
-      if (this.screens.exitConfirm) {
-        this.screens.exitConfirm.classList.add('hidden');
-        this.screens.exitConfirm.classList.remove('active');
-      }
-    }
-
-    exitGame() {
-      // 1. If running inside iframe (e.g. portal modal), notify parent window
+    executeExit() {
+      // 1. Post message to potential parent portal / iframe
       try {
         if (window.parent && window.parent !== window) {
-          window.parent.postMessage({ action: 'closeModal', type: 'GAME_ENDED' }, '*');
-          window.parent.postMessage('closeModal', '*');
+          window.parent.postMessage({ type: 'closeModal', action: 'exitGame' }, '*');
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn(e);
+      }
 
       // 2. Try window.close()
       try {
         window.close();
       } catch (e) {}
 
-      // 3. Try window.history.back()
-      if (window.history && window.history.length > 1) {
-        window.history.back();
-      } else {
-        // 4. Fallback: navigate to catalog portal
-        window.location.href = '../';
-      }
+      // 3. Fallback to portal navigation
+      setTimeout(() => {
+        try {
+          window.location.href = '../';
+        } catch (e) {
+          window.location.reload();
+        }
+      }, 100);
+    }
 
-      // 5. In case the browser blocks closing or going back
-      const exitCard = document.querySelector('#screenExitConfirm .exit-card');
-      if (exitCard) {
-        exitCard.innerHTML = `
-          <div class="exit-icon-box" style="color:var(--accent-cyan);border-color:var(--accent-cyan);">✓</div>
-          <h2 class="exit-title">Session Ended</h2>
-          <p class="exit-desc">You can now safely close this browser tab or return to the CIEL Arcade portal.</p>
-          <div class="exit-actions">
-            <a href="../" class="menu-btn btn-primary" style="text-decoration:none;">Return to Portal</a>
-          </div>
-        `;
+    toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
       }
     }
 
-    resize() {
-      const container = document.getElementById('game-container') || document.body;
-      const rect = container.getBoundingClientRect();
-      const w = Math.max(Math.floor(rect.width), 240);
-      const h = Math.max(Math.floor(rect.height), 320);
+    showScreen(screenEl) {
+      const screens = [
+        this.dom.screenMainMenu,
+        this.dom.screenLevelSelect,
+        this.dom.screenHowToPlay,
+        this.dom.screenPause,
+        this.dom.screenWin,
+        this.dom.screenExitConfirm
+      ];
+      screens.forEach(s => {
+        if (s) s.classList.add('hidden');
+      });
+      if (screenEl) screenEl.classList.remove('hidden');
+    }
 
-      this.dpr = Math.min(window.devicePixelRatio || 1, 2);
-      this.canvas.width = Math.floor(w * this.dpr);
-      this.canvas.height = Math.floor(h * this.dpr);
+    updateMenuStats() {
+      const stats = this.progress.getTotalStats();
+      this.dom.statLevelsDone.textContent = `${stats.cleared} / ${LEVELS.length}`;
+      this.dom.statStarsCollected.textContent = `${stats.stars} / ${LEVELS.length * 3}`;
+    }
+
+    renderLevelGrid() {
+      const container = this.dom.levelGrid;
+      container.innerHTML = '';
+
+      LEVELS.forEach((lvl, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'level-card-btn';
+        const isUnlocked = this.progress.isUnlocked(lvl.id);
+        const data = this.progress.getLevelData(lvl.id);
+
+        if (!isUnlocked) {
+          btn.classList.add('locked');
+        }
+        if (idx === this.currentLevelIndex) {
+          btn.classList.add('current');
+        }
+
+        const numSpan = document.createElement('span');
+        numSpan.className = 'level-num';
+        numSpan.textContent = lvl.id;
+        btn.appendChild(numSpan);
+
+        // Stars mini indicator
+        const starsWrap = document.createElement('div');
+        starsWrap.className = 'level-stars-mini';
+        const starsEarned = data ? (data.stars || 0) : 0;
+        for (let s = 1; s <= 3; s++) {
+          const starIcon = document.createElement('span');
+          starIcon.textContent = '★';
+          if (s <= starsEarned) starIcon.className = 'active';
+          starsWrap.appendChild(starIcon);
+        }
+        btn.appendChild(starsWrap);
+
+        if (isUnlocked) {
+          btn.addEventListener('click', () => {
+            this.audio.playTap();
+            this.loadLevel(idx);
+          });
+        }
+
+        container.appendChild(btn);
+      });
+    }
+
+    resizeCanvas() {
+      const rect = this.dom.container.getBoundingClientRect();
+      const w = Math.floor(rect.width);
+      const h = Math.floor(rect.height);
+
+      this.canvas.width = w * this.dpr;
+      this.canvas.height = h * this.dpr;
       this.canvas.style.width = `${w}px`;
       this.canvas.style.height = `${h}px`;
 
       this.ctx.setTransform(1, 0, 0, 1, 0, 0);
       this.ctx.scale(this.dpr, this.dpr);
 
-      // Re-calculate maze cell size to fit cleanly inside 9:16 portrait container
-      if (this.levelData) {
-        this.calcCellSize(w, h);
-      }
+      this.calcGridLayout(w, h);
     }
 
-    calcCellSize(w, h) {
-      if (!w || !h) {
-        const container = document.getElementById('game-container') || document.body;
-        const rect = container.getBoundingClientRect();
-        w = rect.width;
-        h = rect.height;
-      }
+    calcGridLayout(w, h) {
+      if (!this.currentLevel) return;
+      const rows = this.currentLevel.grid.length;
+      const cols = this.currentLevel.grid[0].length;
 
-      const rows = this.levelData.grid.length;
-      const cols = this.levelData.grid[0].length;
+      // Available area inside container leaving room for HUD (top ~90px, bottom ~60px)
+      const availW = w - 24;
+      const availH = h - 170;
 
-      // Available space between top HUD (60px) and bottom rotate buttons (98px)
-      const availableW = Math.max(120, w - 24);
-      const availableH = Math.max(120, h - 165);
+      const sizeW = Math.floor(availW / cols);
+      const sizeH = Math.floor(availH / rows);
+      this.cellSize = Math.min(sizeW, sizeH, 56);
 
-      this.cellSize = Math.floor(Math.min(availableW / cols, availableH / rows));
-      this.cellSize = Math.max(22, Math.min(this.cellSize, 72));
-      this.mazePixelSize = Math.max(rows, cols) * this.cellSize;
+      this.gridOffsetX = Math.floor((w - cols * this.cellSize) / 2);
+      this.gridOffsetY = Math.floor(95 + (availH - rows * this.cellSize) / 2);
     }
 
-    toggleFullscreen() {
-      const page = document.getElementById('game-page') || document.documentElement;
-      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        if (page.requestFullscreen) {
-          page.requestFullscreen();
-        } else if (page.webkitRequestFullscreen) {
-          page.webkitRequestFullscreen();
-        }
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        }
-      }
-    }
-
-    updateFullscreenUI() {
-      const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-      const openIcon = document.querySelector('.fs-icon-open');
-      const exitIcon = document.querySelector('.fs-icon-exit');
-      const page = document.getElementById('game-page');
-
-      if (page) {
-        if (isFs) page.classList.add('fullscreen-active');
-        else page.classList.remove('fullscreen-active');
-      }
-
-      if (openIcon && exitIcon) {
-        if (isFs) {
-          openIcon.classList.add('hidden');
-          exitIcon.classList.remove('hidden');
-        } else {
-          openIcon.classList.remove('hidden');
-          exitIcon.classList.add('hidden');
-        }
-      }
-
-      setTimeout(() => this.resize(), 60);
-    }
-
-    toggleSound() {
-      this.saveData.soundMuted = !this.saveData.soundMuted;
-      this.audio.setMuted(this.saveData.soundMuted);
-      Storage.saveProgress(this.saveData);
-      this.updateSoundButtons();
-    }
-
-    updateSoundButtons() {
-      const isMuted = this.saveData.soundMuted;
-      const text = isMuted ? 'OFF' : 'ON';
-      const icon = isMuted ? '🔇' : '🔊';
-
-      const hudSoundBtn = document.getElementById('btnSoundToggle');
-      if (hudSoundBtn) hudSoundBtn.innerHTML = `<span>${icon}</span>`;
-
-      const menuSoundText = document.getElementById('menuSoundText');
-      const menuSoundIcon = document.getElementById('menuSoundIcon');
-      if (menuSoundText) menuSoundText.textContent = text;
-      if (menuSoundIcon) menuSoundIcon.textContent = icon;
-
-      const pauseSoundBtn = document.getElementById('btnPauseSound');
-      if (pauseSoundBtn) pauseSoundBtn.textContent = `Sound: ${text}`;
-    }
-
-    showScreen(screenKey) {
-      Object.keys(this.screens).forEach(key => {
-        if (key === 'hud') return;
-        this.screens[key].classList.add('hidden');
-        this.screens[key].classList.remove('active');
-      });
-
-      if (screenKey === 'playing') {
-        this.screens.hud.classList.remove('hidden');
-        this.state = 'PLAYING';
-      } else {
-        this.screens.hud.classList.add('hidden');
-        if (this.screens[screenKey]) {
-          this.screens[screenKey].classList.remove('hidden');
-          this.screens[screenKey].classList.add('active');
-        }
-        if (screenKey === 'mainMenu') this.state = 'MENU';
-        else if (screenKey === 'levelSelect') {
-          this.state = 'LEVEL_SELECT';
-          this.renderLevelSelectGrid();
-        } else if (screenKey === 'pause') this.state = 'PAUSED';
-        else if (screenKey === 'levelComplete') this.state = 'LEVEL_COMPLETE';
-        else if (screenKey === 'gameComplete') this.state = 'GAME_COMPLETE';
-      }
-    }
-
-    renderLevelSelectGrid() {
-      const grid = document.getElementById('levelsGrid');
-      const totalStarsLabel = document.getElementById('totalStarsCount');
-      if (!grid) return;
-      grid.innerHTML = '';
-
-      let totalStars = 0;
-      const unlockedCount = this.saveData.unlocked || 1;
-
-      LEVELS.forEach((lvl, idx) => {
-        const isLocked = (idx + 1) > unlockedCount;
-        const stats = (this.saveData.levels && this.saveData.levels[lvl.id]) || { stars: 0 };
-        totalStars += (stats.stars || 0);
-
-        const tile = document.createElement('div');
-        tile.className = `level-tile ${isLocked ? 'locked' : ''}`;
-
-        let starsHtml = '';
-        for (let s = 1; s <= 3; s++) {
-          starsHtml += `<span class="${s <= stats.stars ? 'star-active' : ''}">★</span>`;
-        }
-
-        tile.innerHTML = `
-          <div class="tile-number">${lvl.id}</div>
-          <div class="tile-name">${lvl.name}</div>
-          ${isLocked ? '<div class="tile-lock-icon">🔒</div>' : `<div class="tile-stars">${starsHtml}</div>`}
-        `;
-
-        if (!isLocked) {
-          tile.addEventListener('click', () => {
-            this.startLevel(idx);
-          });
-        }
-
-        grid.appendChild(tile);
-      });
-
-      if (totalStarsLabel) totalStarsLabel.textContent = totalStars;
-    }
-
-    // ==========================================================================
-    // LEVEL LIFECYCLE & GAMEPLAY
-    // ==========================================================================
-    startLevel(index) {
+    loadLevel(index) {
+      if (index < 0 || index >= LEVELS.length) index = 0;
       this.currentLevelIndex = index;
-      this.levelData = LEVELS[index];
-      this.calcCellSize();
+      const raw = LEVELS[index];
 
-      // Reset level variables
-      this.orientation = 0;
-      this.visualAngle = 0;
-      this.targetAngle = 0;
-      this.isRotating = false;
-      this.queuedRotation = 0;
+      // Deep clone level
+      this.currentLevel = {
+        ...raw,
+        grid: [...raw.grid],
+        emitters: raw.emitters.map(e => ({ ...e })),
+        targets: raw.targets.map(t => ({ ...t, powered: false, chargeProgress: 0 })),
+        prisms: raw.prisms ? raw.prisms.map(p => ({ ...p })) : [],
+        portals: raw.portals ? raw.portals.map(p => ({ ...p })) : [],
+        filters: raw.filters ? raw.filters.map(f => ({ ...f })) : [],
+        stars: raw.stars ? raw.stars.map(s => ({ ...s, collected: false })) : []
+      };
+
+      // Clone mirrors with smooth rotation angles
+      this.mirrors = raw.mirrors.map((m) => {
+        const isSlash = m.type === '/';
+        const targetAngle = isSlash ? Math.PI / 4 : -Math.PI / 4;
+        return {
+          ...m,
+          currentAngle: targetAngle,
+          targetAngle: targetAngle,
+          rotProgress: 1
+        };
+      });
 
       this.movesCount = 0;
+      this.startTime = Date.now();
       this.elapsedTime = 0;
-      this.gemsCollected = [false, false, false];
-      this.hasKey = false;
-      this.crumbledPits.clear();
-      this.steppedCrumbles.clear();
-      this.teleporters = [];
-      this.enemyStep = 0;
-      this.enemyVisualOffset = 0;
-      this.screenShake = 0;
-      this.particles.clear();
+      this.starsCollected.clear();
+      this.isLevelSolved = false;
+      if (this.solveDelayTimer) clearTimeout(this.solveDelayTimer);
 
-      // Parse grid
-      let startPos = { r: 1, c: 1 };
-      const rows = this.levelData.grid.length;
-      const cols = this.levelData.grid[0].length;
+      this.state = 'PLAYING';
+      this.showScreen(null); // hide overlays
+      this.dom.hud.classList.remove('hidden');
 
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const ch = this.levelData.grid[r][c];
-          if (ch === 'S') startPos = { r, c };
-          if (ch === 'T') this.teleporters.push({ r, c });
+      // Update HUD
+      this.dom.hudLevelBadge.textContent = `LEVEL ${this.currentLevel.id}`;
+      this.dom.hudLevelName.textContent = this.currentLevel.name;
+      this.dom.hudMoves.textContent = '0';
+      this.dom.hudPar.textContent = `/ Par ${this.currentLevel.par}`;
+      this.dom.hudTimer.textContent = '00:00';
+
+      if (this.currentLevel.tutorial) {
+        this.dom.tutorialText.textContent = this.currentLevel.tutorial;
+        this.dom.tutorialBanner.classList.remove('hidden');
+      } else {
+        this.dom.tutorialBanner.classList.add('hidden');
+      }
+
+      this.updateHudStars();
+      this.resizeCanvas();
+      this.recalculateOptics();
+
+      // Start timer
+      if (this.timerInterval) clearInterval(this.timerInterval);
+      this.timerInterval = setInterval(() => {
+        if (this.state === 'PLAYING') {
+          this.elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
+          const mins = String(Math.floor(this.elapsedTime / 60)).padStart(2, '0');
+          const secs = String(this.elapsedTime % 60).padStart(2, '0');
+          this.dom.hudTimer.textContent = `${mins}:${secs}`;
+        }
+      }, 1000);
+    }
+
+    rotateMirror(mirrorIndex, silent = false) {
+      if (mirrorIndex < 0 || mirrorIndex >= this.mirrors.length) return;
+      const m = this.mirrors[mirrorIndex];
+
+      // Toggle between '/' and '\'
+      m.type = m.type === '/' ? '\\' : '/';
+      m.targetAngle += Math.PI / 2;
+      m.rotProgress = 0;
+
+      if (!silent) {
+        this.movesCount++;
+        this.dom.hudMoves.textContent = this.movesCount;
+        this.audio.playMirrorClick();
+      }
+
+      this.createMirrorSparks(m.c, m.r);
+      this.recalculateOptics();
+    }
+
+    recalculateOptics() {
+      if (!this.currentLevel) return;
+
+      const rows = this.currentLevel.grid.length;
+      const cols = this.currentLevel.grid[0].length;
+      const maxBounces = 35;
+
+      this.currentLevel.targets.forEach(t => (t.powered = false));
+      this.laserRays = [];
+
+      const queue = [];
+      this.currentLevel.emitters.forEach(e => {
+        queue.push({
+          x: e.c,
+          y: e.r,
+          dx: e.dx,
+          dy: e.dy,
+          color: e.color || '#00f5d4',
+          bounces: 0
+        });
+      });
+
+      while (queue.length > 0) {
+        const ray = queue.shift();
+        if (ray.bounces > maxBounces) continue;
+
+        let cx = ray.x;
+        let cy = ray.y;
+        let terminated = false;
+        const segmentStart = { x: cx, y: cy };
+
+        while (!terminated) {
+          const nx = cx + ray.dx;
+          const ny = cy + ray.dy;
+
+          if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) {
+            this.laserRays.push({
+              x1: segmentStart.x,
+              y1: segmentStart.y,
+              x2: cx + ray.dx * 0.5,
+              y2: cy + ray.dy * 0.5,
+              color: ray.color
+            });
+            break;
+          }
+
+          cx = nx;
+          cy = ny;
+
+          // Check stars along the path
+          if (this.currentLevel.stars) {
+            const star = this.currentLevel.stars.find(s => s.r === cy && s.c === cx);
+            if (star && !star.collected) {
+              star.collected = true;
+              this.starsCollected.add(`${cy},${cx}`);
+              this.audio.playStarChime();
+              this.createStarBurst(cx, cy);
+              this.updateHudStars();
+            }
+          }
+
+          // Check walls
+          if (this.currentLevel.grid[cy][cx] === '#') {
+            this.laserRays.push({
+              x1: segmentStart.x,
+              y1: segmentStart.y,
+              x2: cx - ray.dx * 0.45,
+              y2: cy - ray.dy * 0.45,
+              color: ray.color
+            });
+            this.createWallSparks(cx - ray.dx * 0.45, cy - ray.dy * 0.45, ray.color);
+            terminated = true;
+            break;
+          }
+
+          // Check targets
+          const target = this.currentLevel.targets.find(t => t.r === cy && t.c === cx);
+          if (target) {
+            if (!target.requiredColor || target.requiredColor === ray.color) {
+              target.powered = true;
+            }
+            this.laserRays.push({
+              x1: segmentStart.x,
+              y1: segmentStart.y,
+              x2: cx,
+              y2: cy,
+              color: ray.color
+            });
+            this.createTargetSparks(cx, cy, ray.color);
+            terminated = true;
+            break;
+          }
+
+          // Check mirrors
+          const mirror = this.mirrors.find(m => m.r === cy && m.c === cx);
+          if (mirror) {
+            this.laserRays.push({
+              x1: segmentStart.x,
+              y1: segmentStart.y,
+              x2: cx,
+              y2: cy,
+              color: ray.color
+            });
+
+            let ndx = 0;
+            let ndy = 0;
+            if (mirror.type === '/') {
+              ndx = -ray.dy;
+              ndy = -ray.dx;
+            } else if (mirror.type === '\\') {
+              ndx = ray.dy;
+              ndy = ray.dx;
+            }
+
+            if (ndx !== 0 || ndy !== 0) {
+              queue.push({
+                x: cx,
+                y: cy,
+                dx: ndx,
+                dy: ndy,
+                color: ray.color,
+                bounces: ray.bounces + 1
+              });
+            }
+            terminated = true;
+            break;
+          }
+
+          // Check prisms
+          const prism = this.currentLevel.prisms.find(p => p.r === cy && p.c === cx);
+          if (prism) {
+            this.laserRays.push({
+              x1: segmentStart.x,
+              y1: segmentStart.y,
+              x2: cx,
+              y2: cy,
+              color: ray.color
+            });
+
+            this.audio.playPrismChime();
+            this.createPrismSparks(cx, cy);
+
+            if (ray.dx !== 0) {
+              queue.push({ x: cx, y: cy, dx: 0, dy: -1, color: '#00f5d4', bounces: ray.bounces + 1 });
+              queue.push({ x: cx, y: cy, dx: 0, dy: 1, color: '#f72585', bounces: ray.bounces + 1 });
+            } else {
+              queue.push({ x: cx, y: cy, dx: -1, dy: 0, color: '#00f5d4', bounces: ray.bounces + 1 });
+              queue.push({ x: cx, y: cy, dx: 1, dy: 0, color: '#f72585', bounces: ray.bounces + 1 });
+            }
+            terminated = true;
+            break;
+          }
+
+          // Check portals
+          const portal = this.currentLevel.portals.find(p => p.r === cy && p.c === cx);
+          if (portal) {
+            this.laserRays.push({
+              x1: segmentStart.x,
+              y1: segmentStart.y,
+              x2: cx,
+              y2: cy,
+              color: ray.color
+            });
+
+            const partner = this.currentLevel.portals.find(p => p.r !== cy || p.c !== cx);
+            if (partner) {
+              this.audio.playPortalWarp();
+              this.createPortalSparks(partner.c, partner.r, ray.color);
+              queue.push({
+                x: partner.c,
+                y: partner.r,
+                dx: ray.dx,
+                dy: ray.dy,
+                color: ray.color,
+                bounces: ray.bounces + 1
+              });
+            }
+            terminated = true;
+            break;
+          }
+
+          // Check filters
+          const filter = this.currentLevel.filters.find(f => f.r === cy && f.c === cx);
+          if (filter) {
+            if (ray.color === filter.color || ray.color === '#ffffff') {
+              ray.color = filter.color;
+            } else {
+              this.laserRays.push({
+                x1: segmentStart.x,
+                y1: segmentStart.y,
+                x2: cx,
+                y2: cy,
+                color: ray.color
+              });
+              terminated = true;
+              break;
+            }
+          }
         }
       }
 
-      this.ball.r = startPos.r;
-      this.ball.c = startPos.c;
-      this.ball.renderX = startPos.c * this.cellSize + this.cellSize / 2;
-      this.ball.renderY = startPos.r * this.cellSize + this.cellSize / 2;
-      this.ball.isSliding = false;
-      this.ball.slidePath = [];
-      this.ball.scaleX = 1;
-      this.ball.scaleY = 1;
-
-      // Update HUD
-      this.hud.levelBadge.textContent = `LEVEL ${this.levelData.id}`;
-      this.hud.levelName.textContent = this.levelData.name;
-      this.hud.moves.textContent = '0';
-      this.hud.par.textContent = `/ Par ${this.levelData.parMoves}`;
-      this.hud.timer.textContent = '00:00';
-      this.updateHudGems();
-
-      if (this.levelData.tutorial) {
-        this.hud.tutorialText.textContent = this.levelData.tutorial;
-        this.hud.tutorialBanner.classList.remove('hidden');
-      } else {
-        this.hud.tutorialBanner.classList.add('hidden');
+      // Check win condition: ALL targets simultaneously powered
+      const allPowered = this.currentLevel.targets.length > 0 && this.currentLevel.targets.every(t => t.powered);
+      if (allPowered && !this.isLevelSolved) {
+        this.isLevelSolved = true;
+        this.audio.playTargetCharge();
+        this.solveDelayTimer = setTimeout(() => {
+          this.triggerWin();
+        }, 500);
       }
-
-      this.showScreen('playing');
-
-      // Initial drop under gravity (orientation 0 = down)
-      this.applyGravity(0, true);
     }
 
-    restartLevel() {
-      this.audio.playImpact(1.2);
-      this.startLevel(this.currentLevelIndex);
+    updateHudStars() {
+      const totalStars = this.currentLevel && this.currentLevel.stars ? this.currentLevel.stars.length : 0;
+      const count = this.starsCollected.size;
+      this.dom.hudStars.forEach((starEl, idx) => {
+        if (idx < count) {
+          starEl.classList.add('active');
+        } else {
+          starEl.classList.remove('active');
+        }
+      });
+    }
+
+    triggerWin() {
+      this.state = 'WIN';
+      if (this.timerInterval) clearInterval(this.timerInterval);
+      this.audio.playVictory();
+
+      // Par stars calculation:
+      // 1 star: cleared level
+      // 2 stars: collected all stars or within par
+      // 3 stars: collected all stars AND within par
+      let starScore = 1;
+      const totalStarsOnMap = this.currentLevel.stars ? this.currentLevel.stars.length : 0;
+      const collectedAllStars = this.starsCollected.size >= totalStarsOnMap;
+      const withinPar = this.movesCount <= this.currentLevel.par;
+
+      if (collectedAllStars && withinPar) {
+        starScore = 3;
+      } else if (collectedAllStars || withinPar) {
+        starScore = 2;
+      }
+
+      this.progress.recordWin(this.currentLevel.id, this.movesCount, this.currentLevel.par, starScore);
+
+      // Populate Win Modal
+      this.dom.winLevelName.textContent = this.currentLevel.name;
+      this.dom.winMoves.textContent = this.movesCount;
+      this.dom.winParText.textContent = `Par: ${this.currentLevel.par}`;
+      const mins = String(Math.floor(this.elapsedTime / 60)).padStart(2, '0');
+      const secs = String(this.elapsedTime % 60).padStart(2, '0');
+      this.dom.winTime.textContent = `${mins}:${secs}`;
+      this.dom.winStarsCount.textContent = `${this.starsCollected.size} / ${totalStarsOnMap}`;
+
+      this.dom.winStars.forEach((sEl, i) => {
+        if (i < starScore) {
+          setTimeout(() => sEl.classList.add('active'), i * 200 + 100);
+        } else {
+          sEl.classList.remove('active');
+        }
+      });
+
+      this.dom.hud.classList.add('hidden');
+      this.showScreen(this.dom.screenWin);
     }
 
     pauseGame() {
-      if (this.state === 'PLAYING') {
-        this.showScreen('pause');
-      }
+      if (this.state !== 'PLAYING') return;
+      this.state = 'PAUSED';
+      document.getElementById('pauseLevelLabel').textContent = `Level ${this.currentLevel.id}: ${this.currentLevel.name}`;
+      this.showScreen(this.dom.screenPause);
     }
 
     resumeGame() {
-      if (this.state === 'PAUSED') {
-        this.showScreen('playing');
+      if (this.state !== 'PAUSED') return;
+      this.state = 'PLAYING';
+      this.showScreen(null);
+      this.dom.hud.classList.remove('hidden');
+    }
+
+    // Solver logic for window.solveLevel() testing helper
+    computeSolution(level) {
+      const n = level.mirrors ? level.mirrors.length : 0;
+      const total = 1 << n;
+      for (let mask = 0; mask < total; mask++) {
+        const overrides = {};
+        for (let i = 0; i < n; i++) {
+          overrides[i] = (mask & (1 << i)) ? '/' : '\\';
+        }
+        if (this.testTrace(level, overrides)) {
+          return overrides;
+        }
+      }
+      return null;
+    }
+
+    testTrace(level, overrides) {
+      const rows = level.grid.length;
+      const cols = level.grid[0].length;
+      const targets = level.targets.map(t => ({ ...t, powered: false }));
+      const queue = [];
+      level.emitters.forEach(e => {
+        queue.push({ x: e.c, y: e.r, dx: e.dx, dy: e.dy, color: e.color || '#00f5d4', b: 0 });
+      });
+
+      const activeMirrors = level.mirrors.map((m, idx) => ({
+        ...m,
+        type: overrides[idx] !== undefined ? overrides[idx] : m.type
+      }));
+
+      while (queue.length > 0) {
+        const ray = queue.shift();
+        if (ray.b > 35) continue;
+        let cx = ray.x;
+        let cy = ray.y;
+        while (true) {
+          cx += ray.dx;
+          cy += ray.dy;
+          if (cx < 0 || cx >= cols || cy < 0 || cy >= rows) break;
+          if (level.grid[cy][cx] === '#') break;
+
+          const t = targets.find(t => t.r === cy && t.c === cx);
+          if (t) {
+            if (!t.requiredColor || t.requiredColor === ray.color) t.powered = true;
+            break;
+          }
+
+          const m = activeMirrors.find(m => m.r === cy && m.c === cx);
+          if (m) {
+            let ndx = m.type === '/' ? -ray.dy : ray.dy;
+            let ndy = m.type === '/' ? -ray.dx : ray.dx;
+            if (ndx !== 0 || ndy !== 0) {
+              queue.push({ x: cx, y: cy, dx: ndx, dy: ndy, color: ray.color, b: ray.b + 1 });
+            }
+            break;
+          }
+
+          const p = level.prisms && level.prisms.find(p => p.r === cy && p.c === cx);
+          if (p) {
+            if (ray.dx !== 0) {
+              queue.push({ x: cx, y: cy, dx: 0, dy: -1, color: '#00f5d4', b: ray.b + 1 });
+              queue.push({ x: cx, y: cy, dx: 0, dy: 1, color: '#f72585', b: ray.b + 1 });
+            } else {
+              queue.push({ x: cx, y: cy, dx: -1, dy: 0, color: '#00f5d4', b: ray.b + 1 });
+              queue.push({ x: cx, y: cy, dx: 1, dy: 0, color: '#f72585', b: ray.b + 1 });
+            }
+            break;
+          }
+
+          const portal = level.portals && level.portals.find(p => p.r === cy && p.c === cx);
+          if (portal) {
+            const partner = level.portals.find(p => p.r !== cy || p.c !== cx);
+            if (partner) {
+              queue.push({ x: partner.c, y: partner.r, dx: ray.dx, dy: ray.dy, color: ray.color, b: ray.b + 1 });
+            }
+            break;
+          }
+
+          const filter = level.filters && level.filters.find(f => f.r === cy && f.c === cx);
+          if (filter) {
+            if (ray.color === filter.color || ray.color === '#ffffff') ray.color = filter.color;
+            else break;
+          }
+        }
+      }
+
+      return targets.every(t => t.powered);
+    }
+
+    // ========================================================================
+    // 5. PARTICLE EFFECTS
+    // ========================================================================
+    createMirrorSparks(c, r) {
+      const cx = this.gridOffsetX + c * this.cellSize + this.cellSize / 2;
+      const cy = this.gridOffsetY + r * this.cellSize + this.cellSize / 2;
+      for (let i = 0; i < 14; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = 1.5 + Math.random() * 3.5;
+        this.particles.push({
+          x: cx,
+          y: cy,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          life: 1,
+          decay: 0.04 + Math.random() * 0.03,
+          color: '#ffffff',
+          size: 2 + Math.random() * 2.5
+        });
       }
     }
 
-    updateHudGems() {
-      const gemsEls = this.hud.gems.querySelectorAll('.hud-gem');
-      gemsEls.forEach((el, idx) => {
-        if (this.gemsCollected[idx]) {
-          el.classList.add('collected');
-        } else {
-          el.classList.remove('collected');
-        }
+    createStarBurst(c, r) {
+      const cx = this.gridOffsetX + c * this.cellSize + this.cellSize / 2;
+      const cy = this.gridOffsetY + r * this.cellSize + this.cellSize / 2;
+      for (let i = 0; i < 20; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = 2 + Math.random() * 4;
+        this.particles.push({
+          x: cx,
+          y: cy,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          life: 1,
+          decay: 0.03 + Math.random() * 0.02,
+          color: '#ffd166',
+          size: 2.5 + Math.random() * 3
+        });
+      }
+    }
+
+    createPrismSparks(c, r) {
+      if (Math.random() > 0.4) return;
+      const cx = this.gridOffsetX + c * this.cellSize + this.cellSize / 2;
+      const cy = this.gridOffsetY + r * this.cellSize + this.cellSize / 2;
+      const color = Math.random() > 0.5 ? '#00f5d4' : '#f72585';
+      this.particles.push({
+        x: cx + (Math.random() - 0.5) * 16,
+        y: cy + (Math.random() - 0.5) * 16,
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: (Math.random() - 0.5) * 1.5,
+        life: 0.8,
+        decay: 0.05,
+        color: color,
+        size: 2
       });
     }
 
-    // ==========================================================================
-    // ROTATION & INPUT HANDLING
-    // ==========================================================================
-    requestRotation(dir) {
-      // dir: -1 (CCW) or +1 (CW)
-      if (this.state !== 'PLAYING') return;
-
-      // If rotating or ball is mid-slide, queue 1 rotation at most
-      if (this.isRotating || this.ball.isSliding) {
-        this.queuedRotation = dir;
-        return;
-      }
-
-      this.executeRotation(dir);
-    }
-
-    executeRotation(dir) {
-      this.isRotating = true;
-      this.rotationTimer = 0;
-      this.startAngle = this.visualAngle;
-      this.targetAngle = this.visualAngle + (dir * Math.PI / 2);
-
-      // Orientation index: 0..3
-      this.orientation = (this.orientation + (dir > 0 ? 1 : 3)) % 4;
-      this.audio.playWhoosh(dir);
-
-      this.movesCount++;
-      this.hud.moves.textContent = this.movesCount;
-      if (this.movesCount > this.levelData.parMoves) {
-        this.hud.moves.style.color = 'var(--magenta)';
-      } else {
-        this.hud.moves.style.color = '#fff';
-      }
-
-      // Advance enemy step on rotation
-      if (this.levelData.enemy) {
-        this.enemyStep++;
+    createPortalSparks(c, r, color) {
+      const cx = this.gridOffsetX + c * this.cellSize + this.cellSize / 2;
+      const cy = this.gridOffsetY + r * this.cellSize + this.cellSize / 2;
+      for (let i = 0; i < 5; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const dist = 12 + Math.random() * 8;
+        this.particles.push({
+          x: cx + Math.cos(ang) * dist,
+          y: cy + Math.sin(ang) * dist,
+          vx: -Math.cos(ang) * 1.2,
+          vy: -Math.sin(ang) * 1.2,
+          life: 0.7,
+          decay: 0.04,
+          color: color || '#4cc9f0',
+          size: 2
+        });
       }
     }
 
-    // ==========================================================================
-    // DETERMINISTIC GRAVITY & BALL PHYSICS
-    // ==========================================================================
-    // Directions: 0 = Down (+r), 1 = Right (+c), 2 = Up (-r), 3 = Left (-c)
-    static DIRS = [
-      { dr: 1, dc: 0 },
-      { dr: 0, dc: 1 },
-      { dr: -1, dc: 0 },
-      { dr: 0, dc: -1 }
-    ];
-
-    applyGravity(orientation, isInitial = false) {
-      const dir = MazeRotatorGame.DIRS[orientation];
-      let cr = this.ball.r;
-      let cc = this.ball.c;
-      const path = [];
-      let died = false;
-      let hitSticky = false;
-      let reachedExit = false;
-
-      const rows = this.levelData.grid.length;
-      const cols = this.levelData.grid[0].length;
-
-      // Enemy check
-      const getEnemyPos = () => {
-        if (!this.levelData.enemy) return null;
-        const p = this.levelData.enemy;
-        const offset = Math.abs((this.enemyStep % (2 * p.range)) - p.range);
-        return {
-          r: p.axis === 'v' ? p.r + offset : p.r,
-          c: p.axis === 'h' ? p.c + offset : p.c
-        };
-      };
-
-      const enemyPos = getEnemyPos();
-
-      while (!hitSticky) {
-        const nr = cr + dir.dr;
-        const nc = cc + dir.dc;
-
-        // Check bounds
-        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) break;
-
-        const cell = this.levelData.grid[nr][nc];
-
-        // Wall collision
-        if (cell === '#') break;
-
-        // Locked door collision
-        if (cell === 'D' && !this.hasKey) break;
-
-        // One-way gates
-        if (cell === 'v' && dir.dr !== 1) break;
-        if (cell === '^' && dir.dr !== -1) break;
-        if (cell === '>' && dir.dc !== 1) break;
-        if (cell === '<' && dir.dc !== -1) break;
-
-        // Advance to next cell
-        cr = nr;
-        cc = nc;
-        path.push({ r: cr, c: cc });
-
-        // Enemy collision
-        if (enemyPos && cr === enemyPos.r && cc === enemyPos.c) {
-          died = true;
-          break;
-        }
-
-        // Spike collision
-        if (cell === 'X') {
-          died = true;
-          break;
-        }
-
-        // Crumbled pit collision
-        if (this.crumbledPits.has(`${cr},${cc}`)) {
-          died = true;
-          break;
-        }
-
-        // Stepped crumble: mark for crumbling upon departure
-        if (cell === 'C') {
-          this.steppedCrumbles.add(`${cr},${cc}`);
-        }
-
-        // Keys
-        if (cell === 'K' && !this.hasKey) {
-          this.hasKey = true;
-          path[path.length - 1].event = 'key';
-        }
-
-        // Gems
-        if (cell === '*') {
-          const gemIdx = this.getGemIndexAt(cr, cc);
-          if (gemIdx !== -1 && !this.gemsCollected[gemIdx]) {
-            path[path.length - 1].gemIdx = gemIdx;
-          }
-        }
-
-        // Exit
-        if (cell === 'E') {
-          reachedExit = true;
-          break;
-        }
-
-        // Teleporters
-        if (cell === 'T') {
-          const partner = this.teleporters.find(t => t.r !== cr || t.c !== cc);
-          if (partner) {
-            cr = partner.r;
-            cc = partner.c;
-            path.push({ r: cr, c: cc, teleport: true });
-          }
-        }
-
-        // Sticky tile: stops slide immediately!
-        if (cell === 'Z') {
-          hitSticky = true;
-          break;
-        }
-      }
-
-      if (path.length > 0) {
-        this.ball.isSliding = true;
-        this.ball.slidePath = path;
-        this.ball.slideProgress = 0;
-        this.ball.slideDuration = Math.max(0.08, path.length * 0.05);
-        this.ball.diedOnArrival = died;
-        this.ball.winOnArrival = reachedExit;
-      } else {
-        // Did not move
-        if (died) this.handleDeath();
-      }
-    }
-
-    getGemIndexAt(r, c) {
-      let idx = 0;
-      for (let row = 0; row < this.levelData.grid.length; row++) {
-        for (let col = 0; col < this.levelData.grid[0].length; col++) {
-          if (this.levelData.grid[row][col] === '*') {
-            if (row === r && col === c) return idx;
-            idx++;
-          }
-        }
-      }
-      return -1;
-    }
-
-    handleDeath() {
-      this.screenShake = 0.35;
-      this.audio.playSpikeHit();
-
-      // Burst of red particles
-      const px = this.ball.c * this.cellSize + this.cellSize / 2;
-      const py = this.ball.r * this.cellSize + this.cellSize / 2;
-      this.particles.addSpark(px, py, '#ef476f', 24);
-
-      setTimeout(() => {
-        if (this.state === 'PLAYING') {
-          this.restartLevel();
-        }
-      }, 350);
-    }
-
-    handleWin() {
-      this.state = 'LEVEL_COMPLETE';
-      this.audio.playLevelComplete();
-
-      // Confetti burst inside portrait canvas
-      const cw = this.canvas.width / this.dpr;
-      const ch = this.canvas.height / this.dpr;
-      this.particles.addConfetti(cw, ch);
-
-      // Calculate Stars (1-3)
-      let stars = 1;
-      const gemsCount = this.gemsCollected.filter(Boolean).length;
-      const par = this.levelData.parMoves;
-
-      if (this.movesCount <= par + 2 || gemsCount >= 2) stars = 2;
-      if (this.movesCount <= par && gemsCount === 3) stars = 3;
-
-      // Save progress
-      if (!this.saveData.levels) this.saveData.levels = {};
-      const prevStats = this.saveData.levels[this.levelData.id] || { stars: 0, bestMoves: 999, bestTime: 999 };
-
-      const bestMoves = Math.min(prevStats.bestMoves || 999, this.movesCount);
-      const bestTime = Math.min(prevStats.bestTime || 999, Math.floor(this.elapsedTime));
-      const finalStars = Math.max(prevStats.stars || 0, stars);
-
-      this.saveData.levels[this.levelData.id] = {
-        stars: finalStars,
-        bestMoves,
-        bestTime
-      };
-
-      // Unlock next level
-      this.saveData.unlocked = Math.max(this.saveData.unlocked || 1, this.currentLevelIndex + 2);
-      Storage.saveProgress(this.saveData);
-
-      // Populate Level Complete modal
-      document.getElementById('winLevelName').textContent = this.levelData.name;
-      document.getElementById('winMoves').textContent = this.movesCount;
-      document.getElementById('winParMoves').textContent = `Par: ${par}`;
-      document.getElementById('winTime').textContent = this.formatTime(this.elapsedTime);
-      document.getElementById('winBestTime').textContent = this.formatTime(bestTime);
-      document.getElementById('winGems').textContent = `${gemsCount} / 3`;
-
-      const starSlots = document.querySelectorAll('#winStars .win-star-slot');
-      starSlots.forEach((slot, idx) => {
-        slot.classList.remove('earned');
-        if (idx < stars) {
-          setTimeout(() => slot.classList.add('earned'), (idx + 1) * 200);
-        }
+    createWallSparks(gx, gy, color) {
+      if (Math.random() > 0.3) return;
+      const cx = this.gridOffsetX + gx * this.cellSize + this.cellSize / 2;
+      const cy = this.gridOffsetY + gy * this.cellSize + this.cellSize / 2;
+      this.particles.push({
+        x: cx + (Math.random() - 0.5) * 6,
+        y: cy + (Math.random() - 0.5) * 6,
+        vx: (Math.random() - 0.5) * 2,
+        vy: (Math.random() - 0.5) * 2,
+        life: 0.6,
+        decay: 0.08,
+        color: color,
+        size: 1.5
       });
-
-      this.showScreen('levelComplete');
     }
 
-    showGameComplete() {
-      this.state = 'GAME_COMPLETE';
-      this.audio.playLevelComplete();
-      this.particles.addConfetti(this.canvas.width / this.dpr, this.canvas.height / this.dpr);
-
-      let totalStars = 0;
-      let totalTime = 0;
-      LEVELS.forEach(lvl => {
-        const s = (this.saveData.levels && this.saveData.levels[lvl.id]) || {};
-        totalStars += (s.stars || 0);
-        totalTime += (s.bestTime && s.bestTime !== 999 ? s.bestTime : 0);
+    createTargetSparks(c, r, color) {
+      if (Math.random() > 0.35) return;
+      const cx = this.gridOffsetX + c * this.cellSize + this.cellSize / 2;
+      const cy = this.gridOffsetY + r * this.cellSize + this.cellSize / 2;
+      const ang = Math.random() * Math.PI * 2;
+      this.particles.push({
+        x: cx + Math.cos(ang) * 10,
+        y: cy + Math.sin(ang) * 10,
+        vx: Math.cos(ang) * 1.5,
+        vy: Math.sin(ang) * 1.5,
+        life: 0.7,
+        decay: 0.05,
+        color: color,
+        size: 2
       });
-
-      document.getElementById('vicStars').textContent = `${totalStars} / 30`;
-      document.getElementById('vicTime').textContent = this.formatTime(totalTime);
-
-      this.showScreen('gameComplete');
     }
 
-    formatTime(seconds) {
-      const s = Math.floor(seconds);
-      const m = Math.floor(s / 60);
-      const remS = s % 60;
-      return `${m < 10 ? '0' : ''}${m}:${remS < 10 ? '0' : ''}${remS}`;
-    }
+    // ========================================================================
+    // 6. RENDER LOOP
+    // ========================================================================
+    gameLoop(timestamp) {
+      this.animTime = timestamp * 0.001;
 
-    // ==========================================================================
-    // MAIN LOOP (UPDATE & RENDER)
-    // ==========================================================================
-    loop(timestamp) {
-      const dt = Math.min((timestamp - this.lastTime) / 1000, 0.1);
-      this.lastTime = timestamp;
-
-      this.update(dt);
-      this.render();
-
-      requestAnimationFrame(this.loop.bind(this));
-    }
-
-    update(dt) {
-      if (this.state === 'PLAYING') {
-        this.elapsedTime += dt;
-        this.hud.timer.textContent = this.formatTime(this.elapsedTime);
-      }
-
-      this.particles.update(dt);
-
-      if (this.screenShake > 0) {
-        this.screenShake = Math.max(0, this.screenShake - dt * 2);
-      }
-
-      // Handle Maze Rotation Animation
-      if (this.isRotating) {
-        this.rotationTimer += dt;
-        const progress = Math.min(1, this.rotationTimer / this.rotationDuration);
-
-        // Smooth cubic ease out
-        const ease = 1 - Math.pow(1 - progress, 3);
-        this.visualAngle = this.startAngle + (this.targetAngle - this.startAngle) * ease;
-
-        if (progress >= 1) {
-          this.visualAngle = this.targetAngle;
-          this.isRotating = false;
-
-          // Apply gravity in new orientation once rotation finishes
-          this.applyGravity(this.orientation);
-
-          // Turn stepped crumbles into real holes
-          if (this.steppedCrumbles.size > 0) {
-            this.steppedCrumbles.forEach(pt => this.crumbledPits.add(pt));
-            this.steppedCrumbles.clear();
-            this.audio.playCrumble();
+      // Update mirror rotation interpolations
+      if (this.mirrors) {
+        this.mirrors.forEach(m => {
+          if (m.rotProgress < 1) {
+            m.rotProgress += 0.15;
+            if (m.rotProgress > 1) m.rotProgress = 1;
+            m.currentAngle = m.currentAngle + (m.targetAngle - m.currentAngle) * 0.25;
           }
+        });
+      }
+
+      // Update particles
+      for (let i = this.particles.length - 1; i >= 0; i--) {
+        const p = this.particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= p.decay;
+        if (p.life <= 0) {
+          this.particles.splice(i, 1);
         }
       }
 
-      // Handle Ball Sliding Animation
-      if (this.ball.isSliding) {
-        this.ball.slideProgress += dt;
-        const total = this.ball.slideDuration;
-        const t = Math.min(1, this.ball.slideProgress / total);
-
-        // Find current segment along path
-        const path = this.ball.slidePath;
-        const floatIdx = t * (path.length - 1);
-        const currIdx = Math.floor(floatIdx);
-        const nextIdx = Math.min(path.length - 1, currIdx + 1);
-        const subT = floatIdx - currIdx;
-
-        const p1 = currIdx === 0 ? { r: this.ball.r, c: this.ball.c } : path[currIdx - 1];
-        const p2 = path[currIdx];
-
-        if (p2.teleport) {
-          this.ball.renderX = p2.c * this.cellSize + this.cellSize / 2;
-          this.ball.renderY = p2.r * this.cellSize + this.cellSize / 2;
-          this.audio.playTeleport();
-        } else {
-          this.ball.renderX = (p1.c + (p2.c - p1.c) * subT) * this.cellSize + this.cellSize / 2;
-          this.ball.renderY = (p1.r + (p2.r - p1.r) * subT) * this.cellSize + this.cellSize / 2;
-        }
-
-        // Particle trail
-        this.particles.addTrail(this.ball.renderX, this.ball.renderY, '#ffd166');
-
-        // Check pickup events on current cell
-        if (p2.gemIdx !== undefined && !this.gemsCollected[p2.gemIdx]) {
-          this.gemsCollected[p2.gemIdx] = true;
-          this.updateHudGems();
-          this.audio.playGemChime(p2.gemIdx);
-          this.particles.addSpark(this.ball.renderX, this.ball.renderY, '#ffd166', 14);
-        }
-
-        if (p2.event === 'key' && this.hasKey) {
-          p2.event = null;
-          this.audio.playKey();
-          this.particles.addSpark(this.ball.renderX, this.ball.renderY, '#00f5d4', 16);
-        }
-
-        if (t >= 1) {
-          // Slide completed
-          const finalPoint = path[path.length - 1];
-          this.ball.r = finalPoint.r;
-          this.ball.c = finalPoint.c;
-          this.ball.renderX = finalPoint.c * this.cellSize + this.cellSize / 2;
-          this.ball.renderY = finalPoint.r * this.cellSize + this.cellSize / 2;
-          this.ball.isSliding = false;
-
-          // Impact squash & stretch
-          this.ball.scaleX = 1.35;
-          this.ball.scaleY = 0.72;
-          this.audio.playImpact(1.0);
-          this.particles.addSpark(this.ball.renderX, this.ball.renderY, '#ffffff', 10);
-
-          if (this.ball.diedOnArrival) {
-            this.handleDeath();
-          } else if (this.ball.winOnArrival) {
-            this.handleWin();
-          } else if (this.queuedRotation !== 0) {
-            const nextRot = this.queuedRotation;
-            this.queuedRotation = 0;
-            this.executeRotation(nextRot);
-          }
-        }
-      } else {
-        // Spring squash back to 1
-        this.ball.scaleX += (1 - this.ball.scaleX) * 0.2;
-        this.ball.scaleY += (1 - this.ball.scaleY) * 0.2;
-      }
-    }
-
-    // ==========================================================================
-    // RENDERING PIPELINE
-    // ==========================================================================
-    render() {
+      // Clear Canvas
       const w = this.canvas.width / this.dpr;
       const h = this.canvas.height / this.dpr;
       this.ctx.clearRect(0, 0, w, h);
 
-      // Screen shake offset
-      let shakeX = 0, shakeY = 0;
-      if (this.screenShake > 0) {
-        shakeX = (Math.random() - 0.5) * this.screenShake * 30;
-        shakeY = (Math.random() - 0.5) * this.screenShake * 30;
+      // Render scene
+      this.renderBackground(w, h);
+
+      if (this.currentLevel && (this.state === 'PLAYING' || this.state === 'PAUSED' || this.state === 'WIN')) {
+        this.renderGrid(w, h);
+        this.renderElements();
+        this.renderLaserBeams();
+        this.renderParticles();
       }
 
-      this.ctx.save();
-      this.ctx.translate(shakeX, shakeY);
-
-      // Starfield background
-      this.particles.drawBackground(this.ctx, w, h);
-
-      if (this.levelData && (this.state === 'PLAYING' || this.state === 'PAUSED' || this.state === 'LEVEL_COMPLETE')) {
-        this.renderMaze(w, h);
-      }
-
-      this.particles.draw(this.ctx);
-      this.ctx.restore();
+      requestAnimationFrame(t => this.gameLoop(t));
     }
 
-    renderMaze(screenWidth, screenHeight) {
-      const rows = this.levelData.grid.length;
-      const cols = this.levelData.grid[0].length;
-      const theme = this.levelData.theme;
+    renderBackground(w, h) {
+      // Tech workbench background with circuit grid
+      const bgGrad = this.ctx.createRadialGradient(w / 2, h / 2, 50, w / 2, h / 2, Math.max(w, h));
+      bgGrad.addColorStop(0, '#0c101d');
+      bgGrad.addColorStop(1, '#030408');
+      this.ctx.fillStyle = bgGrad;
+      this.ctx.fillRect(0, 0, w, h);
 
-      this.ctx.save();
-      // Center vertically in the active playfield between top HUD (58px) and bottom controls (98px)
-      const topOffset = 58;
-      const bottomOffset = 98;
-      const centerY = topOffset + (screenHeight - topOffset - bottomOffset) / 2;
-
-      this.ctx.translate(screenWidth / 2, centerY);
-      // Visual Rotation
-      this.ctx.rotate(this.visualAngle);
-      // Center maze
-      this.ctx.translate(-cols * this.cellSize / 2, -rows * this.cellSize / 2);
-
-      // 1. Draw Maze Floor
-      this.ctx.fillStyle = theme.floor;
-      this.ctx.fillRect(0, 0, cols * this.cellSize, rows * this.cellSize);
-
-      // 2. Draw Floor Grid & Special Tiles
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const ch = this.levelData.grid[r][c];
-          const x = c * this.cellSize;
-          const y = r * this.cellSize;
-          const sz = this.cellSize;
-
-          // Subtle grid line
-          this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-          this.ctx.strokeRect(x, y, sz, sz);
-
-          // Ice tiles
-          if (ch === 'I') {
-            this.ctx.fillStyle = 'rgba(160, 231, 229, 0.15)';
-            this.ctx.fillRect(x + 1, y + 1, sz - 2, sz - 2);
-            this.ctx.strokeStyle = 'rgba(160, 231, 229, 0.5)';
-            this.ctx.strokeRect(x + 2, y + 2, sz - 4, sz - 4);
-          }
-
-          // Sticky tiles
-          if (ch === 'Z') {
-            this.ctx.fillStyle = 'rgba(255, 183, 3, 0.2)';
-            this.ctx.fillRect(x + 1, y + 1, sz - 2, sz - 2);
-            this.ctx.strokeStyle = '#ffb703';
-            this.ctx.strokeRect(x + 2, y + 2, sz - 4, sz - 4);
-          }
-
-          // Crumbling tile / Pit
-          if (ch === 'C' || this.crumbledPits.has(`${r},${c}`)) {
-            if (this.crumbledPits.has(`${r},${c}`)) {
-              this.ctx.fillStyle = '#04070d'; // Bottomless void
-              this.ctx.fillRect(x + 2, y + 2, sz - 4, sz - 4);
-              this.ctx.strokeStyle = 'rgba(239, 71, 111, 0.4)';
-              this.ctx.strokeRect(x + 2, y + 2, sz - 4, sz - 4);
-            } else {
-              this.ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-              this.ctx.fillRect(x + 2, y + 2, sz - 4, sz - 4);
-            }
-          }
-
-          // Teleporter
-          if (ch === 'T') {
-            this.drawTeleporter(x + sz / 2, y + sz / 2, sz * 0.38);
-          }
-
-          // One-way gates
-          if (['v', '^', '>', '<'].includes(ch)) {
-            this.drawOneWayGate(x + sz / 2, y + sz / 2, ch, sz);
-          }
-
-          // Locked Door
-          if (ch === 'D') {
-            if (!this.hasKey) {
-              this.drawLockedDoor(x, y, sz);
-            }
-          }
-
-          // Key
-          if (ch === 'K' && !this.hasKey) {
-            this.drawKey(x + sz / 2, y + sz / 2, sz * 0.3);
-          }
-
-          // Spikes
-          if (ch === 'X') {
-            this.drawSpikes(x, y, sz);
-          }
-
-          // Gems
-          if (ch === '*') {
-            const gemIdx = this.getGemIndexAt(r, c);
-            if (!this.gemsCollected[gemIdx]) {
-              this.drawGem(x + sz / 2, y + sz / 2, sz * 0.28);
-            }
-          }
-
-          // Exit Portal
-          if (ch === 'E') {
-            this.drawExitPortal(x + sz / 2, y + sz / 2, sz * 0.42);
-          }
+      // Subtle isometric background grid dots
+      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+      const step = 28;
+      for (let x = step / 2; x < w; x += step) {
+        for (let y = step / 2; y < h; y += step) {
+          this.ctx.fillRect(x, y, 1.5, 1.5);
         }
       }
-
-      // 3. Draw Patrol Enemy
-      if (this.levelData.enemy) {
-        this.drawEnemy();
-      }
-
-      // 4. Draw Ball
-      this.drawBall();
-
-      // 5. Draw Walls on Top with Neon Glow
-      this.ctx.shadowColor = theme.wallGlow;
-      this.ctx.shadowBlur = 14;
-      this.ctx.fillStyle = theme.wall;
-
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          if (this.levelData.grid[r][c] === '#') {
-            const x = c * this.cellSize;
-            const y = r * this.cellSize;
-            const sz = this.cellSize;
-
-            this.ctx.fillRect(x, y, sz, sz);
-            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-            this.ctx.lineWidth = 1;
-            this.ctx.strokeRect(x + 1, y + 1, sz - 2, sz - 2);
-          }
-        }
-      }
-
-      this.ctx.restore();
     }
 
-    // ==========================================================================
-    // PROCEDURAL ASSET RENDERERS (CANVAS 2D)
-    // ==========================================================================
-    drawBall() {
-      const x = this.ball.renderX;
-      const y = this.ball.renderY;
-      const r = this.cellSize * 0.32;
+    renderGrid(w, h) {
+      const rows = this.currentLevel.grid.length;
+      const cols = this.currentLevel.grid[0].length;
+      const cs = this.cellSize;
+      const ox = this.gridOffsetX;
+      const oy = this.gridOffsetY;
 
+      // Board container shadow & glass bevel
       this.ctx.save();
-      this.ctx.translate(x, y);
-      this.ctx.scale(this.ball.scaleX, this.ball.scaleY);
-
-      // Glow halo
-      this.ctx.shadowColor = 'rgba(255, 209, 102, 0.8)';
-      this.ctx.shadowBlur = 16;
-
-      // Outer ball gradient
-      const grad = this.ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
-      grad.addColorStop(0, '#ffffff');
-      grad.addColorStop(0.4, '#ffd166');
-      grad.addColorStop(1, '#ff9f1c');
-
-      this.ctx.fillStyle = grad;
+      this.ctx.shadowColor = 'rgba(0, 245, 212, 0.15)';
+      this.ctx.shadowBlur = 24;
+      this.ctx.fillStyle = 'rgba(10, 15, 26, 0.85)';
       this.ctx.beginPath();
-      this.ctx.arc(0, 0, r, 0, Math.PI * 2);
+      this.ctx.roundRect(ox - 8, oy - 8, cols * cs + 16, rows * cs + 16, 14);
       this.ctx.fill();
 
-      // Inner shine highlight
-      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-      this.ctx.beginPath();
-      this.ctx.arc(-r * 0.35, -r * 0.35, r * 0.25, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      this.ctx.restore();
-    }
-
-    drawExitPortal(x, y, radius) {
-      const t = Date.now() * 0.003;
-      this.ctx.save();
-      this.ctx.translate(x, y);
-
-      // Swirling rings
-      for (let i = 0; i < 3; i++) {
-        const ringR = radius * (0.45 + i * 0.28) + Math.sin(t + i) * 2;
-        this.ctx.strokeStyle = i % 2 === 0 ? 'var(--cyan)' : '#f72585';
-        this.ctx.shadowColor = i % 2 === 0 ? 'var(--cyan)' : '#f72585';
-        this.ctx.shadowBlur = 12;
-        this.ctx.lineWidth = 2.5;
-
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, ringR, t * (i % 2 === 0 ? 1 : -1.2) + i, t * (i % 2 === 0 ? 1 : -1.2) + i + Math.PI * 1.5);
-        this.ctx.stroke();
-      }
-
-      // Center core
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.shadowColor = 'var(--cyan)';
-      this.ctx.shadowBlur = 15;
-      this.ctx.beginPath();
-      this.ctx.arc(0, 0, radius * 0.25, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      this.ctx.restore();
-    }
-
-    drawGem(x, y, size) {
-      const t = Date.now() * 0.0025;
-      this.ctx.save();
-      this.ctx.translate(x, y);
-      this.ctx.rotate(t);
-
-      this.ctx.shadowColor = '#ffd166';
-      this.ctx.shadowBlur = 12;
-      this.ctx.fillStyle = '#ffd166';
-
-      // Diamond polygon
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, -size);
-      this.ctx.lineTo(size * 0.75, 0);
-      this.ctx.lineTo(0, size);
-      this.ctx.lineTo(-size * 0.75, 0);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, -size * 0.6);
-      this.ctx.lineTo(size * 0.45, 0);
-      this.ctx.lineTo(0, size * 0.6);
-      this.ctx.lineTo(-size * 0.45, 0);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      this.ctx.restore();
-    }
-
-    drawSpikes(x, y, sz) {
-      this.ctx.save();
-      this.ctx.fillStyle = '#ef476f';
-      this.ctx.shadowColor = 'rgba(239, 71, 111, 0.8)';
-      this.ctx.shadowBlur = 10;
-
-      // 4 triangular spike teeth
-      const toothW = sz / 4;
-      for (let i = 0; i < 4; i++) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(x + i * toothW, y + sz);
-        this.ctx.lineTo(x + (i + 0.5) * toothW, y + sz * 0.35);
-        this.ctx.lineTo(x + (i + 1) * toothW, y + sz);
-        this.ctx.closePath();
-        this.ctx.fill();
-      }
-      this.ctx.restore();
-    }
-
-    drawTeleporter(x, y, radius) {
-      const t = Date.now() * 0.004;
-      this.ctx.save();
-      this.ctx.translate(x, y);
-
-      this.ctx.strokeStyle = '#9d4edd';
-      this.ctx.shadowColor = '#9d4edd';
-      this.ctx.shadowBlur = 14;
-      this.ctx.lineWidth = 3;
-
-      this.ctx.beginPath();
-      this.ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      this.ctx.strokeStyle = 'rgba(0, 245, 212, 0.25)';
+      this.ctx.lineWidth = 1.5;
       this.ctx.stroke();
+      this.ctx.restore();
 
-      // Pulsing spiral center
-      this.ctx.fillStyle = '#39ff14';
-      this.ctx.shadowColor = '#39ff14';
-      this.ctx.shadowBlur = 10;
-      this.ctx.beginPath();
-      this.ctx.arc(0, 0, radius * 0.45 + Math.sin(t) * 2, 0, Math.PI * 2);
-      this.ctx.fill();
+      // Render cells
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const char = this.currentLevel.grid[r][c];
+          const x = ox + c * cs;
+          const y = oy + r * cs;
+
+          if (char === '#') {
+            // High-tech wall block
+            this.ctx.fillStyle = '#161b2c';
+            this.ctx.beginPath();
+            this.ctx.roundRect(x + 2, y + 2, cs - 4, cs - 4, 6);
+            this.ctx.fill();
+
+            // Wall border
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            this.ctx.lineWidth = 1;
+            this.ctx.stroke();
+
+            // Circuit cross mark
+            this.ctx.strokeStyle = 'rgba(0, 245, 212, 0.12)';
+            this.ctx.lineWidth = 1.5;
+            this.ctx.beginPath();
+            this.ctx.moveTo(x + cs * 0.35, y + cs * 0.5);
+            this.ctx.lineTo(x + cs * 0.65, y + cs * 0.5);
+            this.ctx.moveTo(x + cs * 0.5, y + cs * 0.35);
+            this.ctx.lineTo(x + cs * 0.5, y + cs * 0.65);
+            this.ctx.stroke();
+          } else {
+            // Floor tile
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.015)';
+            this.ctx.fillRect(x + 1, y + 1, cs - 2, cs - 2);
+
+            // Subtle tile outline
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            this.ctx.lineWidth = 0.5;
+            this.ctx.strokeRect(x, y, cs, cs);
+          }
+        }
+      }
+    }
+
+    renderElements() {
+      const cs = this.cellSize;
+      const ox = this.gridOffsetX;
+      const oy = this.gridOffsetY;
+
+      // 1. Render Portals
+      if (this.currentLevel.portals) {
+        this.currentLevel.portals.forEach(p => {
+          const x = ox + p.c * cs + cs / 2;
+          const y = oy + p.r * cs + cs / 2;
+          const rad = cs * 0.38;
+
+          this.ctx.save();
+          this.ctx.translate(x, y);
+
+          // Vortex swirl
+          this.ctx.rotate(this.animTime * 2);
+          const portalGrad = this.ctx.createRadialGradient(0, 0, 2, 0, 0, rad);
+          portalGrad.addColorStop(0, '#ffffff');
+          portalGrad.addColorStop(0.4, '#4cc9f0');
+          portalGrad.addColorStop(0.8, '#7209b7');
+          portalGrad.addColorStop(1, 'transparent');
+
+          this.ctx.fillStyle = portalGrad;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, rad, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // Outer pulsing ring
+          this.ctx.strokeStyle = '#4cc9f0';
+          this.ctx.lineWidth = 2;
+          this.ctx.shadowColor = '#4cc9f0';
+          this.ctx.shadowBlur = 10;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, rad * (0.85 + Math.sin(this.animTime * 4) * 0.1), 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          this.ctx.restore();
+        });
+      }
+
+      // 2. Render Prisms
+      if (this.currentLevel.prisms) {
+        this.currentLevel.prisms.forEach(p => {
+          const x = ox + p.c * cs + cs / 2;
+          const y = oy + p.r * cs + cs / 2;
+          const s = cs * 0.42;
+
+          this.ctx.save();
+          this.ctx.translate(x, y);
+
+          // Prism pedestal glow
+          this.ctx.shadowColor = 'rgba(255, 255, 255, 0.6)';
+          this.ctx.shadowBlur = 14;
+
+          // Triangular glass prism
+          this.ctx.beginPath();
+          this.ctx.moveTo(0, -s);
+          this.ctx.lineTo(s * 0.95, s * 0.7);
+          this.ctx.lineTo(-s * 0.95, s * 0.7);
+          this.ctx.closePath();
+
+          const prismGrad = this.ctx.createLinearGradient(-s, -s, s, s);
+          prismGrad.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
+          prismGrad.addColorStop(0.5, 'rgba(0, 245, 212, 0.4)');
+          prismGrad.addColorStop(1, 'rgba(247, 37, 133, 0.4)');
+          this.ctx.fillStyle = prismGrad;
+          this.ctx.fill();
+
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 2;
+          this.ctx.stroke();
+
+          // Prism inner reflection facets
+          this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+          this.ctx.lineWidth = 1;
+          this.ctx.beginPath();
+          this.ctx.moveTo(0, -s);
+          this.ctx.lineTo(0, s * 0.7);
+          this.ctx.stroke();
+
+          this.ctx.restore();
+        });
+      }
+
+      // 3. Render Filters
+      if (this.currentLevel.filters) {
+        this.currentLevel.filters.forEach(f => {
+          const x = ox + f.c * cs;
+          const y = oy + f.r * cs;
+
+          this.ctx.save();
+          this.ctx.fillStyle = f.color === '#00f5d4' ? 'rgba(0, 245, 212, 0.25)' : 'rgba(247, 37, 133, 0.25)';
+          this.ctx.fillRect(x + cs * 0.2, y + cs * 0.2, cs * 0.6, cs * 0.6);
+
+          this.ctx.strokeStyle = f.color;
+          this.ctx.lineWidth = 2;
+          this.ctx.shadowColor = f.color;
+          this.ctx.shadowBlur = 8;
+          this.ctx.strokeRect(x + cs * 0.2, y + cs * 0.2, cs * 0.6, cs * 0.6);
+
+          // Filter line bar
+          this.ctx.beginPath();
+          this.ctx.moveTo(x + cs * 0.5, y + cs * 0.2);
+          this.ctx.lineTo(x + cs * 0.5, y + cs * 0.8);
+          this.ctx.stroke();
+
+          this.ctx.restore();
+        });
+      }
+
+      // 4. Render Stars
+      if (this.currentLevel.stars) {
+        this.currentLevel.stars.forEach(st => {
+          if (st.collected) return;
+          const x = ox + st.c * cs + cs / 2;
+          const y = oy + st.r * cs + cs / 2;
+          const s = cs * 0.22;
+
+          this.ctx.save();
+          this.ctx.translate(x, y);
+          this.ctx.rotate(this.animTime * 1.5);
+
+          this.ctx.fillStyle = '#ffd166';
+          this.ctx.shadowColor = '#ffd166';
+          this.ctx.shadowBlur = 12;
+
+          // 5-point star
+          this.ctx.beginPath();
+          for (let i = 0; i < 5; i++) {
+            const a1 = (i * Math.PI * 2) / 5 - Math.PI / 2;
+            const a2 = a1 + Math.PI / 5;
+            this.ctx.lineTo(Math.cos(a1) * s, Math.sin(a1) * s);
+            this.ctx.lineTo(Math.cos(a2) * (s * 0.45), Math.sin(a2) * (s * 0.45));
+          }
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          this.ctx.restore();
+        });
+      }
+
+      // 5. Render Targets / Energy Cores
+      if (this.currentLevel.targets) {
+        this.currentLevel.targets.forEach(t => {
+          const x = ox + t.c * cs + cs / 2;
+          const y = oy + t.r * cs + cs / 2;
+          const rad = cs * 0.38;
+          const color = t.requiredColor || '#00f5d4';
+
+          this.ctx.save();
+          this.ctx.translate(x, y);
+
+          // Outer housing
+          this.ctx.fillStyle = '#111726';
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, rad, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.stroke();
+
+          // Target power status
+          if (t.powered) {
+            // Intense core glow
+            this.ctx.shadowColor = color;
+            this.ctx.shadowBlur = 18;
+
+            const radGrad = this.ctx.createRadialGradient(0, 0, 1, 0, 0, rad * 0.75);
+            radGrad.addColorStop(0, '#ffffff');
+            radGrad.addColorStop(0.5, color);
+            radGrad.addColorStop(1, 'rgba(0,0,0,0.2)');
+
+            this.ctx.fillStyle = radGrad;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, rad * 0.75, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Pulsing target halo
+            const pulse = 1 + Math.sin(this.animTime * 6) * 0.08;
+            this.ctx.strokeStyle = color;
+            this.ctx.lineWidth = 2.5;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, rad * 0.85 * pulse, 0, Math.PI * 2);
+            this.ctx.stroke();
+          } else {
+            // Unpowered ring
+            this.ctx.strokeStyle = color;
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, rad * 0.65, 0, Math.PI * 2);
+            this.ctx.stroke();
+
+            // Inner center dot
+            this.ctx.fillStyle = color;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 3, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+
+          this.ctx.restore();
+        });
+      }
+
+      // 6. Render Emitters (Laser Cannons)
+      if (this.currentLevel.emitters) {
+        this.currentLevel.emitters.forEach(e => {
+          const x = ox + e.c * cs + cs / 2;
+          const y = oy + e.r * cs + cs / 2;
+          const color = e.color || '#00f5d4';
+
+          this.ctx.save();
+          this.ctx.translate(x, y);
+
+          // Turret base
+          this.ctx.fillStyle = '#1e2436';
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, cs * 0.32, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.stroke();
+
+          // Laser nozzle oriented to emission direction
+          const angle = Math.atan2(e.dy, e.dx);
+          this.ctx.rotate(angle);
+
+          this.ctx.fillStyle = '#2a324b';
+          this.ctx.fillRect(cs * 0.1, -cs * 0.12, cs * 0.24, cs * 0.24);
+
+          // Glowing cannon chamber
+          this.ctx.fillStyle = color;
+          this.ctx.shadowColor = color;
+          this.ctx.shadowBlur = 12;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, cs * 0.16, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          this.ctx.restore();
+        });
+      }
+
+      // 7. Render Mirrors (Interactive 45° Pedestals)
+      if (this.mirrors) {
+        this.mirrors.forEach((m, idx) => {
+          const x = ox + m.c * cs + cs / 2;
+          const y = oy + m.r * cs + cs / 2;
+          const rad = cs * 0.42;
+
+          this.ctx.save();
+          this.ctx.translate(x, y);
+
+          // Interactive tap ring indicator
+          this.ctx.strokeStyle = 'rgba(0, 245, 212, 0.3)';
+          this.ctx.lineWidth = 1;
+          this.ctx.setLineDash([3, 3]);
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, rad + 2, 0, Math.PI * 2);
+          this.ctx.stroke();
+          this.ctx.setLineDash([]);
+
+          // Base mount
+          this.ctx.fillStyle = '#1a2236';
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, rad * 0.85, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.stroke();
+
+          // Smoothly rotated mirror bar
+          this.ctx.rotate(m.currentAngle);
+
+          // Mirror backing
+          this.ctx.fillStyle = '#334155';
+          this.ctx.fillRect(-rad * 0.8, -3, rad * 1.6, 6);
+
+          // Reflective silver-cyan glass surface
+          const mirrorGrad = this.ctx.createLinearGradient(-rad * 0.8, 0, rad * 0.8, 0);
+          mirrorGrad.addColorStop(0, '#ffffff');
+          mirrorGrad.addColorStop(0.5, '#a5f3fc');
+          mirrorGrad.addColorStop(1, '#00f5d4');
+
+          this.ctx.shadowColor = 'rgba(0, 245, 212, 0.6)';
+          this.ctx.shadowBlur = 8;
+          this.ctx.fillStyle = mirrorGrad;
+          this.ctx.fillRect(-rad * 0.78, -1.5, rad * 1.56, 3);
+
+          this.ctx.restore();
+        });
+      }
+    }
+
+    renderLaserBeams() {
+      if (!this.laserRays || this.laserRays.length === 0) return;
+      const cs = this.cellSize;
+      const ox = this.gridOffsetX;
+      const oy = this.gridOffsetY;
+
+      this.ctx.save();
+
+      // Multi-pass glow rendering for realistic intense laser light
+      // Pass 1: Outer diffuse bloom
+      this.ctx.globalCompositeOperation = 'screen';
+      this.laserRays.forEach(ray => {
+        const x1 = ox + ray.x1 * cs + cs / 2;
+        const y1 = oy + ray.y1 * cs + cs / 2;
+        const x2 = ox + ray.x2 * cs + cs / 2;
+        const y2 = oy + ray.y2 * cs + cs / 2;
+
+        this.ctx.strokeStyle = ray.color;
+        this.ctx.lineWidth = 10;
+        this.ctx.shadowColor = ray.color;
+        this.ctx.shadowBlur = 18;
+        this.ctx.globalAlpha = 0.35;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(x1, y1);
+        this.ctx.lineTo(x2, y2);
+        this.ctx.stroke();
+      });
+
+      // Pass 2: Saturated mid beam
+      this.laserRays.forEach(ray => {
+        const x1 = ox + ray.x1 * cs + cs / 2;
+        const y1 = oy + ray.y1 * cs + cs / 2;
+        const x2 = ox + ray.x2 * cs + cs / 2;
+        const y2 = oy + ray.y2 * cs + cs / 2;
+
+        this.ctx.strokeStyle = ray.color;
+        this.ctx.lineWidth = 4.5;
+        this.ctx.shadowColor = ray.color;
+        this.ctx.shadowBlur = 10;
+        this.ctx.globalAlpha = 0.85;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(x1, y1);
+        this.ctx.lineTo(x2, y2);
+        this.ctx.stroke();
+      });
+
+      // Pass 3: White-hot filament core
+      this.laserRays.forEach(ray => {
+        const x1 = ox + ray.x1 * cs + cs / 2;
+        const y1 = oy + ray.y1 * cs + cs / 2;
+        const x2 = ox + ray.x2 * cs + cs / 2;
+        const y2 = oy + ray.y2 * cs + cs / 2;
+
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1.8;
+        this.ctx.shadowBlur = 4;
+        this.ctx.shadowColor = '#ffffff';
+        this.ctx.globalAlpha = 1;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(x1, y1);
+        this.ctx.lineTo(x2, y2);
+        this.ctx.stroke();
+      });
 
       this.ctx.restore();
     }
 
-    drawOneWayGate(x, y, dirChar, sz) {
+    renderParticles() {
+      if (this.particles.length === 0) return;
       this.ctx.save();
-      this.ctx.translate(x, y);
-
-      let angle = 0;
-      if (dirChar === 'v') angle = Math.PI / 2;
-      else if (dirChar === '^') angle = -Math.PI / 2;
-      else if (dirChar === '<') angle = Math.PI;
-
-      this.ctx.rotate(angle);
-      this.ctx.fillStyle = 'var(--cyan)';
-      this.ctx.shadowColor = 'var(--cyan)';
-      this.ctx.shadowBlur = 8;
-
-      // Arrow polygon pointing right
-      this.ctx.beginPath();
-      this.ctx.moveTo(-sz * 0.25, -sz * 0.25);
-      this.ctx.lineTo(sz * 0.25, 0);
-      this.ctx.lineTo(-sz * 0.25, sz * 0.25);
-      this.ctx.lineTo(-sz * 0.1, 0);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      this.ctx.restore();
-    }
-
-    drawLockedDoor(x, y, sz) {
-      this.ctx.save();
-      this.ctx.fillStyle = 'rgba(255, 209, 102, 0.4)';
-      this.ctx.fillRect(x + 2, y + 2, sz - 4, sz - 4);
-
-      this.ctx.strokeStyle = '#ffd166';
-      this.ctx.shadowColor = '#ffd166';
-      this.ctx.shadowBlur = 10;
-      this.ctx.lineWidth = 2.5;
-      this.ctx.strokeRect(x + 3, y + 3, sz - 6, sz - 6);
-
-      // Lock keyhole symbol
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.beginPath();
-      this.ctx.arc(x + sz / 2, y + sz * 0.42, sz * 0.14, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(x + sz * 0.42, y + sz * 0.45);
-      this.ctx.lineTo(x + sz * 0.58, y + sz * 0.45);
-      this.ctx.lineTo(x + sz * 0.54, y + sz * 0.7);
-      this.ctx.lineTo(x + sz * 0.46, y + sz * 0.7);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      this.ctx.restore();
-    }
-
-    drawKey(x, y, size) {
-      this.ctx.save();
-      this.ctx.translate(x, y);
-
-      this.ctx.fillStyle = '#ffd166';
-      this.ctx.shadowColor = '#ffd166';
-      this.ctx.shadowBlur = 12;
-
-      // Key head ring
-      this.ctx.beginPath();
-      this.ctx.arc(0, -size * 0.35, size * 0.4, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      this.ctx.fillStyle = '#0f172a';
-      this.ctx.beginPath();
-      this.ctx.arc(0, -size * 0.35, size * 0.18, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      // Key shaft and teeth
-      this.ctx.fillStyle = '#ffd166';
-      this.ctx.fillRect(-size * 0.12, -size * 0.15, size * 0.24, size * 0.9);
-      this.ctx.fillRect(0, size * 0.45, size * 0.35, size * 0.2);
-
-      this.ctx.restore();
-    }
-
-    drawEnemy() {
-      const p = this.levelData.enemy;
-      const offset = Math.abs((this.enemyStep % (2 * p.range)) - p.range);
-      const r = p.axis === 'v' ? p.r + offset : p.r;
-      const c = p.axis === 'h' ? p.c + offset : p.c;
-
-      const x = c * this.cellSize + this.cellSize / 2;
-      const y = r * this.cellSize + this.cellSize / 2;
-      const sz = this.cellSize * 0.34;
-
-      this.ctx.save();
-      this.ctx.translate(x, y);
-
-      // Glowing drone body
-      this.ctx.shadowColor = '#ef476f';
-      this.ctx.shadowBlur = 15;
-      this.ctx.fillStyle = '#ef476f';
-
-      this.ctx.beginPath();
-      this.ctx.arc(0, 0, sz, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      // Eye
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.beginPath();
-      this.ctx.arc(0, 0, sz * 0.4, 0, Math.PI * 2);
-      this.ctx.fill();
-
+      this.ctx.globalCompositeOperation = 'screen';
+      this.particles.forEach(p => {
+        this.ctx.fillStyle = p.color;
+        this.ctx.globalAlpha = Math.max(0, p.life);
+        this.ctx.shadowColor = p.color;
+        this.ctx.shadowBlur = 6;
+        this.ctx.beginPath();
+        this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        this.ctx.fill();
+      });
       this.ctx.restore();
     }
   }
 
-  // ============================================================================
-  // 6. PROGRAMMATIC BFS SOLVER (VERIFY LEVELS FROM CONSOLE)
-  // ============================================================================
-  window.solveLevel = function (levelNumber) {
-    const lvl = LEVELS.find(l => l.id === levelNumber) || LEVELS[levelNumber - 1];
-    if (!lvl) return { error: "Level not found" };
-
-    const DIRS = [
-      { dr: 1, dc: 0, name: "Down" },
-      { dr: 0, dc: 1, name: "Right" },
-      { dr: -1, dc: 0, name: "Up" },
-      { dr: 0, dc: -1, name: "Left" }
-    ];
-
-    const rows = lvl.grid.length;
-    const cols = lvl.grid[0].length;
-    let start = null;
-    const teleports = [];
-
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        if (lvl.grid[r][c] === 'S') start = { r, c };
-        if (lvl.grid[r][c] === 'T') teleports.push({ r, c });
-      }
-    }
-
-    let r = start.r, c = start.c;
-    while (r + 1 < rows && lvl.grid[r + 1][c] !== '#') r++;
-
-    const initial = { r, c, q: 0, keys: false, enemyStep: 0, crumbled: [] };
-    const queue = [{ state: initial, moves: 0, path: [] }];
-    const visited = new Set();
-    const keyOf = s => `${s.r},${s.c},${s.q},${s.keys},${s.enemyStep % 4}`;
-    visited.add(keyOf(initial));
-
-    while (queue.length > 0) {
-      const { state, moves, path } = queue.shift();
-      if (lvl.grid[state.r][state.c] === 'E') {
-        if (!lvl.requireKey || state.keys) {
-          return { solved: true, moves, path, keyCollected: state.keys };
-        }
-      }
-
-      for (const act of ['CW', 'CCW']) {
-        const newQ = (state.q + (act === 'CW' ? 1 : 3)) % 4;
-        const dir = DIRS[newQ];
-        let cr = state.r, cc = state.c, keys = state.keys;
-        const enemyStep = state.enemyStep + 1;
-        const crumbled = new Set(state.crumbled);
-
-        let enemyPos = null;
-        if (lvl.enemy) {
-          const p = lvl.enemy;
-          const offset = Math.abs((enemyStep % (2 * p.range)) - p.range);
-          enemyPos = {
-            r: p.axis === 'v' ? p.r + offset : p.r,
-            c: p.axis === 'h' ? p.c + offset : p.c
-          };
-        }
-
-        let died = false;
-        let hitSticky = false;
-
-        while (!hitSticky) {
-          const nr = cr + dir.dr, nc = cc + dir.dc;
-          if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) break;
-          const cell = lvl.grid[nr][nc];
-          if (cell === '#') break;
-          if (cell === 'D' && !keys) break;
-          if (cell === 'v' && dir.dr !== 1) break;
-          if (cell === '^' && dir.dr !== -1) break;
-          if (cell === '>' && dir.dc !== 1) break;
-          if (cell === '<' && dir.dc !== -1) break;
-
-          cr = nr; cc = nc;
-          if (enemyPos && cr === enemyPos.r && cc === enemyPos.c) { died = true; break; }
-          if (cell === 'X' || crumbled.has(`${cr},${cc}`)) { died = true; break; }
-          if (cell === 'C') crumbled.add(`${cr},${cc}`);
-          if (cell === 'K') keys = true;
-          if (cell === 'E') break;
-          if (cell === 'T') {
-            const partner = teleports.find(t => t.r !== cr || t.c !== cc);
-            if (partner) { cr = partner.r; cc = partner.c; }
-          }
-          if (cell === 'Z') { hitSticky = true; break; }
-        }
-
-        if (died) continue;
-
-        const next = { r: cr, c: cc, q: newQ, keys, enemyStep, crumbled: Array.from(crumbled) };
-        const k = keyOf(next);
-        if (!visited.has(k)) {
-          visited.add(k);
-          queue.push({ state: next, moves: moves + 1, path: [...path, act] });
-        }
-      }
-    }
-    return { solved: false };
-  };
-
-  window.verifyAllLevels = function () {
-    console.log("=== VERIFYING ALL 10 LEVELS ===");
-    let passed = 0;
-    LEVELS.forEach(lvl => {
-      const res = window.solveLevel(lvl.id);
-      if (res.solved) {
-        passed++;
-        console.log(`✅ Level ${lvl.id} "${lvl.name}": Solved in ${res.moves} moves [${res.path.join(', ')}]`);
-      } else {
-        console.error(`❌ Level ${lvl.id} "${lvl.name}": UNSOLVABLE`);
-      }
-    });
-    console.log(`Summary: ${passed} / ${LEVELS.length} levels 100% verified solvable.`);
-    return passed === LEVELS.length;
-  };
-
-  // Launch Game on DOMContentLoaded
-  document.addEventListener('DOMContentLoaded', () => {
-    window.game = new MazeRotatorGame();
+  // Initialize game on DOM ready
+  window.addEventListener('DOMContentLoaded', () => {
+    window.game = new PrismLaserGame();
   });
 })();
