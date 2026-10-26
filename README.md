@@ -1,47 +1,92 @@
-# CIEL WebGames Catalogue & Builds
+# Maze Rotator
 
-Central repository for hosting Unity WebGL game builds and the CIEL Web Arcade portal.
+A 2D gravity-puzzle browser game built with **HTML5, CSS, and vanilla JavaScript (Canvas 2D)**.
+Zero dependencies, zero build steps, and 100% synthesized audio via the Web Audio API.
 
-- 🌐 **Live Portal:** [https://ma-ciel.github.io/WebGamesCatalouge-Builds/](https://ma-ciel.github.io/WebGamesCatalouge-Builds/)
-- 📖 **New Game Deployment Guide:** See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for step-by-step instructions.
-- 🚀 **Automation Script:** Use `./deploy-game.sh <BranchName>` to deploy any game branch automatically.
+---
+
+## 🎮 How to Play
+
+You do not control the ball directly. **You rotate the maze**, and gravity (always pointing straight down your screen) pulls the ball through corridors.
+
+Your goal is to guide the ball into the glowing **Exit Portal** while collecting optional gems and avoiding deadly hazards.
+
+### Controls
+| Input | Action |
+| :--- | :--- |
+| **Arrow Left / A / Q** | Rotate Maze 90° Counter-Clockwise |
+| **Arrow Right / D / E** | Rotate Maze 90° Clockwise |
+| **Touch / Mouse Drag** | Swipe or Drag Left/Right to rotate |
+| **On-Screen Buttons** | Large Left (`⟲`) & Right (`⟳`) buttons |
+| **R** | Restart Current Level |
+| **P / Escape** | Pause Game |
+| **M** | Toggle Sound On/Off |
+
+---
+
+## 🧩 Game Elements
+
+- **Exit Portal (`E`)**: Swirling cosmic vortex that completes the level.
+- **Stars / Gems (`*`)**: 3 optional collectibles per level for bonus score and stars.
+- **Spikes (`X`)**: Dangerous hazards that shatter the ball and reset you to the start.
+- **Ice Tiles (`I`)**: Slick, low-friction floor.
+- **Teleporters (`T`)**: Cosmic warp pairs that transport the ball across barriers.
+- **Keys (`K`) & Doors (`D`)**: Collect the golden key to unlock matching energy barriers.
+- **Sticky Tiles (`Z`)**: Stops momentum immediately upon landing.
+- **One-Way Gates (`v`, `^`, `>`, `<`)**: Allow passage only in the arrow direction.
+- **Crumbling Floors (`C`)**: Tiles that collapse into bottomless pits after crossing once.
+- **Patrol Hazards**: Drones that patrol corridors back and forth.
+
+---
+
+## 🚀 How to Add New Levels
+
+Levels are defined in `game.js` in the `LEVELS` array:
+
+```javascript
 {
-    "id": "store-simulation",
-    "title": "Store Convenience 3D",
-    "category": "Casual",
-    "branch": "StoreSimulation",
-    "path": "./StoreSimulation/",
-    "thumbnail": "./assets/store-simulation.jpg",
-    "rating": "4.9",
-    "plays": "22.1K",
-    "featured": false,
-    "orientation": "landscape",
-    "description": "Manage your 24/7 convenience store! Stock shelves, scan items, and serve happy customers in 3D!"
+  id: 11,
+  name: "Your Level Name",
+  tutorial: "Helpful tip for the player!",
+  parMoves: 6,
+  requireKey: false,
+  theme: {
+    wall: "#00f5d4",
+    wallGlow: "rgba(0, 245, 212, 0.5)",
+    floor: "#0f172a",
+    accent: "#00bbf9"
   },
-  {
-    "id": "car-racing",
-    "title": "Car Racing 3D",
-    "category": "Action",
-    "branch": "CarRacing",
-    "path": "./CarRacing/",
-    "thumbnail": "./assets/car-racing.jpg",
-    "rating": "4.9",
-    "plays": "31.4K",
-    "featured": false,
-    "orientation": "landscape",
-    "description": "High-speed neon highway racing! Dodge traffic, drift through sharp turns, and push your limits!"
-  },
+  grid: [
+    "########",
+    "#S..*..#",
+    "#.####.#",
+    "#..*#..#",
+    "#...#E.#",
+    "########"
+  ]
+}
+```
 
-    {
-    "id": "SimulationGame",
-    "title": "House Simulation Game",
-    "category": "Simulation",
-    "branch": "Simulation-Game",
-    "path": "./Simulation-Game/",
-    "thumbnail": "./assets/p-game.jpg",
-    "rating": "4.7",
-    "plays": "8.6K",
-    "featured": false,
-    "orientation": "landscape",
-    "description": "Experience the ultimate dream house building adventure! Design, decorate, and bring your perfect home to life."
-  },
+### Legend of Grid Characters
+- `#`: Wall
+- `.`: Open floor
+- `S`: Starting ball position
+- `E`: Exit portal
+- `*`: Optional gem (3 per level)
+- `X`: Spikes hazard
+- `I`: Ice tile
+- `Z`: Sticky tile
+- `T`: Teleporter pair
+- `K`: Key
+- `D`: Locked door
+- `v`, `^`, `>`, `<`: One-way directional gates
+- `C`: Crumbling floor
+
+### Testing Solvability
+Open your browser's developer console (`F12`) and run:
+```javascript
+window.solveLevel(11);
+// or to verify all levels:
+window.verifyAllLevels();
+```
+The built-in BFS solver checks every rotation and guarantees the puzzle is 100% solvable before shipping!
