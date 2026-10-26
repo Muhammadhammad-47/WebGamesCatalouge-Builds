@@ -8,10 +8,10 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Fullpage Wrapper (Centers the 9:16 Portrait Game) -->
+  <!-- Fullpage Wrapper -->
   <div id="game-page">
     
-    <!-- 9:16 Portrait Game Container -->
+    <!-- Game Container (Full Screen on Mobile/Editors, 9:16 Portrait on Desktop) -->
     <div id="game-container">
       
       <!-- Main Game Canvas -->
@@ -21,8 +21,13 @@
       <div id="hud" class="screen-hud hidden">
         <div class="hud-top">
           <div class="hud-left">
-            <div class="hud-badge" id="hudLevelBadge">LEVEL 1</div>
-            <div class="hud-title" id="hudLevelName">First Spin</div>
+            <button id="btnHudBack" class="hud-btn hud-back-btn" title="Back to Portal" aria-label="Exit Game">
+              <span>←</span>
+            </button>
+            <div class="hud-level-info">
+              <div class="hud-badge" id="hudLevelBadge">LEVEL 1</div>
+              <div class="hud-title" id="hudLevelName">First Spin</div>
+            </div>
           </div>
           <div class="hud-center">
             <div class="hud-stat-box">
@@ -89,6 +94,14 @@
       <!-- MAIN MENU OVERLAY -->
       <div id="screenMainMenu" class="screen-overlay active">
         <div class="menu-card glass-panel">
+          <!-- Top Back Button on Main Menu -->
+          <div class="menu-top-bar">
+            <button id="btnMainBack" class="main-back-btn" title="Exit to Games Portal">
+              <span class="back-arrow">←</span> Portal
+            </button>
+            <div class="menu-top-brand">CIEL WebGames</div>
+          </div>
+
           <div class="logo-box">
             <div class="logo-ring">
               <div class="logo-ball"></div>
@@ -107,12 +120,15 @@
             <button id="btnHowToPlay" class="menu-btn btn-secondary">
               <span class="btn-icon">?</span> HOW TO PLAY
             </button>
+            <button id="btnExitGame" class="menu-btn btn-secondary">
+              <span class="btn-icon">🚪</span> BACK TO PORTAL
+            </button>
             <div class="menu-bottom-row">
               <button id="btnMenuSound" class="menu-btn-small">
                 <span id="menuSoundIcon">🔊</span> Sound: <span id="menuSoundText">ON</span>
               </button>
               <button id="btnResetProgress" class="menu-btn-small btn-danger" title="Reset all progress">
-                Reset Progress
+                Reset
               </button>
             </div>
           </div>
@@ -199,7 +215,27 @@
             <button id="btnPauseRestart" class="menu-btn btn-secondary">Restart Level</button>
             <button id="btnPauseLevels" class="menu-btn btn-secondary">Level Select</button>
             <button id="btnPauseMenu" class="menu-btn btn-secondary">Main Menu</button>
+            <button id="btnPauseExit" class="menu-btn btn-secondary">
+              <span class="btn-icon">🚪</span> Back to Portal
+            </button>
             <button id="btnPauseSound" class="menu-btn-small">Sound: ON</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EXIT / BACK CONFIRMATION MODAL -->
+      <div id="screenExitConfirm" class="screen-overlay hidden">
+        <div class="exit-card glass-panel">
+          <div class="exit-icon-box">🚪</div>
+          <h2 class="exit-title">Leave Game?</h2>
+          <p class="exit-desc">Are you sure you want to exit to the games portal? Your stars, high scores, and unlocked levels are safely saved.</p>
+          <div class="exit-actions">
+            <button id="btnConfirmExit" class="menu-btn btn-danger">
+              <span class="btn-icon">←</span> Leave Game
+            </button>
+            <button id="btnCancelExit" class="menu-btn btn-secondary">
+              Keep Playing
+            </button>
           </div>
         </div>
       </div>
@@ -271,7 +307,7 @@
 
     </div><!-- End #game-container -->
 
-    <!-- FLOATING BOTTOM FOOTER BAR (Matches CIEL Portal standard) -->
+    <!-- FLOATING BOTTOM FOOTER BAR (Desktop/Large Screens) -->
     <footer id="game-footer">
       <div id="footer-title">
         <span class="footer-icon">🎮</span>

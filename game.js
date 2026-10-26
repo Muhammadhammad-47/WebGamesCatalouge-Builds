@@ -751,8 +751,17 @@
         pause: document.getElementById('screenPause'),
         levelComplete: document.getElementById('screenLevelComplete'),
         gameComplete: document.getElementById('screenGameComplete'),
+        exitConfirm: document.getElementById('screenExitConfirm'),
         hud: document.getElementById('hud')
       };
+
+      // Detect if running inside iframe (editors or portal catalog)
+      if (window.self !== window.top) {
+        const page = document.getElementById('game-page');
+        if (page) page.classList.add('in-iframe');
+      }
+
+      this.previousScreen = 'mainMenu';
 
       // HUD Elements
       this.hud = {
@@ -967,9 +976,79 @@
       document.getElementById('btnWinRetry').addEventListener('click', () => this.restartLevel());
       document.getElementById('btnWinLevels').addEventListener('click', () => this.showScreen('levelSelect'));
 
+      // Back & Exit Confirmation Buttons
+      const btnHudBack = document.getElementById('btnHudBack');
+      if (btnHudBack) btnHudBack.addEventListener('click', () => this.showExitConfirm('playing'));
+
+      const btnMainBack = document.getElementById('btnMainBack');
+      if (btnMainBack) btnMainBack.addEventListener('click', () => this.showExitConfirm('mainMenu'));
+
+      const btnExitGame = document.getElementById('btnExitGame');
+      if (btnExitGame) btnExitGame.addEventListener('click', () => this.showExitConfirm('mainMenu'));
+
+      const btnPauseExit = document.getElementById('btnPauseExit');
+      if (btnPauseExit) btnPauseExit.addEventListener('click', () => this.showExitConfirm('pause'));
+
+      const btnConfirmExit = document.getElementById('btnConfirmExit');
+      if (btnConfirmExit) btnConfirmExit.addEventListener('click', () => this.exitGame());
+
+      const btnCancelExit = document.getElementById('btnCancelExit');
+      if (btnCancelExit) btnCancelExit.addEventListener('click', () => this.hideExitConfirm());
+
       // Victory Buttons
       document.getElementById('btnVictoryLevelSelect').addEventListener('click', () => this.showScreen('levelSelect'));
       document.getElementById('btnVictoryMainMenu').addEventListener('click', () => this.showScreen('mainMenu'));
+    }
+
+    showExitConfirm(previous = 'mainMenu') {
+      this.previousScreen = previous;
+      if (this.screens.exitConfirm) {
+        this.screens.exitConfirm.classList.remove('hidden');
+        this.screens.exitConfirm.classList.add('active');
+      }
+    }
+
+    hideExitConfirm() {
+      if (this.screens.exitConfirm) {
+        this.screens.exitConfirm.classList.add('hidden');
+        this.screens.exitConfirm.classList.remove('active');
+      }
+    }
+
+    exitGame() {
+      // 1. If running inside iframe (e.g. portal modal), notify parent window
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ action: 'closeModal', type: 'GAME_ENDED' }, '*');
+          window.parent.postMessage('closeModal', '*');
+        }
+      } catch (e) {}
+
+      // 2. Try window.close()
+      try {
+        window.close();
+      } catch (e) {}
+
+      // 3. Try window.history.back()
+      if (window.history && window.history.length > 1) {
+        window.history.back();
+      } else {
+        // 4. Fallback: navigate to catalog portal
+        window.location.href = '../';
+      }
+
+      // 5. In case the browser blocks closing or going back
+      const exitCard = document.querySelector('#screenExitConfirm .exit-card');
+      if (exitCard) {
+        exitCard.innerHTML = `
+          <div class="exit-icon-box" style="color:var(--accent-cyan);border-color:var(--accent-cyan);">✓</div>
+          <h2 class="exit-title">Session Ended</h2>
+          <p class="exit-desc">You can now safely close this browser tab or return to the CIEL Arcade portal.</p>
+          <div class="exit-actions">
+            <a href="../" class="menu-btn btn-primary" style="text-decoration:none;">Return to Portal</a>
+          </div>
+        `;
+      }
     }
 
     resize() {
@@ -1003,15 +1082,14 @@
 
       const rows = this.levelData.grid.length;
       const cols = this.levelData.grid[0].length;
-      const maxDim = Math.max(rows, cols);
 
-      // In 9:16 portrait: reserve safe space for top HUD and bottom rotate buttons
-      const availableW = w * 0.90;
-      const availableH = h * 0.54;
+      // Available space between top HUD (60px) and bottom rotate buttons (98px)
+      const availableW = Math.max(120, w - 24);
+      const availableH = Math.max(120, h - 165);
 
-      this.cellSize = Math.floor(Math.min(availableW / maxDim, availableH / maxDim));
-      this.cellSize = Math.max(20, Math.min(this.cellSize, 54));
-      this.mazePixelSize = maxDim * this.cellSize;
+      this.cellSize = Math.floor(Math.min(availableW / cols, availableH / rows));
+      this.cellSize = Math.max(22, Math.min(this.cellSize, 72));
+      this.mazePixelSize = Math.max(rows, cols) * this.cellSize;
     }
 
     toggleFullscreen() {
@@ -1686,8 +1764,12 @@
       const theme = this.levelData.theme;
 
       this.ctx.save();
-      // Center of screen
-      this.ctx.translate(screenWidth / 2, screenHeight / 2 - 15);
+      // Center vertically in the active playfield between top HUD (58px) and bottom controls (98px)
+      const topOffset = 58;
+      const bottomOffset = 98;
+      const centerY = topOffset + (screenHeight - topOffset - bottomOffset) / 2;
+
+      this.ctx.translate(screenWidth / 2, centerY);
       // Visual Rotation
       this.ctx.rotate(this.visualAngle);
       // Center maze
