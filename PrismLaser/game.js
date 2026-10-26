@@ -684,6 +684,7 @@
         btnConfirmExit: document.getElementById('btnConfirmExit'),
         btnCancelExit: document.getElementById('btnCancelExit'),
         btnFullscreen: document.getElementById('btnFullscreen'),
+        btnDismissTutorial: document.getElementById('btnDismissTutorial'),
 
         // Stats
         statLevelsDone: document.getElementById('statLevelsDone'),
@@ -718,6 +719,19 @@
       };
       if (this.dom.btnSoundToggle) this.dom.btnSoundToggle.addEventListener('click', handleSound);
       if (this.dom.btnSoundMenu) this.dom.btnSoundMenu.addEventListener('click', handleSound);
+
+      // Dismiss tutorial banner
+      if (this.dom.btnDismissTutorial) {
+        this.dom.btnDismissTutorial.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.dom.tutorialBanner.classList.add('hidden');
+        });
+      }
+      if (this.dom.tutorialBanner) {
+        this.dom.tutorialBanner.addEventListener('click', () => {
+          this.dom.tutorialBanner.classList.add('hidden');
+        });
+      }
 
       // Play button
       this.dom.btnPlay.addEventListener('click', () => {
@@ -1147,6 +1161,11 @@
         this.movesCount++;
         this.dom.hudMoves.textContent = this.movesCount;
         this.audio.playMirrorClick();
+      }
+
+      // Auto-hide tutorial banner once player makes a move
+      if (this.dom.tutorialBanner && !this.dom.tutorialBanner.classList.contains('hidden')) {
+        this.dom.tutorialBanner.classList.add('hidden');
       }
 
       this.createMirrorSparks(m.c, m.r);
