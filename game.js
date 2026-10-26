@@ -639,6 +639,17 @@
     }
 
     initDom() {
+      // Detect if running inside iframe (editors or portal catalogs)
+      try {
+        if (window.self !== window.top) {
+          const page = document.getElementById('game-page');
+          if (page) page.classList.add('in-iframe');
+        }
+      } catch (e) {
+        const page = document.getElementById('game-page');
+        if (page) page.classList.add('in-iframe');
+      }
+
       // DOM Elements
       this.dom = {
         page: document.getElementById('game-page'),
