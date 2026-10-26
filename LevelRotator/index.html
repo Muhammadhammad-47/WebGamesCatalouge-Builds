@@ -2,100 +2,293 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CIEL Web Arcade - Play Free WebGL Games Online</title>
-  <meta name="description" content="Play the best high-quality mobile and WebGL arcade games directly in your browser. Fast, free, and ad-supported!">
-  
-  <!-- Favicon & Stylesheet -->
-  <link rel="stylesheet" href="portal.css">
-  
-  <!-- Open Graph -->
-  <meta property="og:title" content="CIEL Web Arcade - Free Online WebGL Games">
-  <meta property="og:description" content="Play instantly on mobile or desktop without downloads.">
-  <meta property="og:type" content="website">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Maze Rotator | CIEL WebGames</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%2300f5d4'/><circle cx='50' cy='50' r='20' fill='%230f172a'/></svg>">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <!-- Header / Navbar -->
-  <header>
-    <div class="container nav-wrapper">
-      <a href="./" class="logo-brand">
-        <div class="logo-icon">C</div>
-        <div class="logo-text">CIEL ARCADE</div>
-        <span class="logo-badge">WEBGL</span>
-      </a>
-
-      <!-- Search Box -->
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" placeholder="Search games, categories..." id="gameSearch">
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Portal Content -->
-  <main class="container">
+  <!-- Fullpage Wrapper (Centers the 9:16 Portrait Game) -->
+  <div id="game-page">
     
-    <!-- Hero Featured Game Section -->
-    <section class="hero-section">
-      <div class="hero-card" id="heroCard">
-        <!-- Dynamically populated via portal.js -->
-      </div>
-    </section>
+    <!-- 9:16 Portrait Game Container -->
+    <div id="game-container">
+      
+      <!-- Main Game Canvas -->
+      <canvas id="gameCanvas"></canvas>
 
-    <!-- Categories & Filter Section -->
-    <section class="category-section">
-      <div class="section-heading">
-        <span>🎮</span> All Catalogue Games
-      </div>
-      <div class="filter-pills">
-        <button class="pill-btn active" data-category="all">All Games</button>
-        <button class="pill-btn" data-category="puzzle">Puzzle</button>
-        <button class="pill-btn" data-category="arcade">Arcade</button>
-        <button class="pill-btn" data-category="action">Action</button>
-        <button class="pill-btn" data-category="casual">Casual</button>
-        <button class="pill-btn" data-category="simulation">Simulation</button>
-      </div>
-    </section>
+      <!-- IN-GAME HUD -->
+      <div id="hud" class="screen-hud hidden">
+        <div class="hud-top">
+          <div class="hud-left">
+            <div class="hud-badge" id="hudLevelBadge">LEVEL 1</div>
+            <div class="hud-title" id="hudLevelName">First Spin</div>
+          </div>
+          <div class="hud-center">
+            <div class="hud-stat-box">
+              <span class="stat-label">MOVES</span>
+              <span class="stat-value" id="hudMoves">0</span>
+              <span class="stat-sub" id="hudPar">/ Par 3</span>
+            </div>
+            <div class="hud-stat-box">
+              <span class="stat-label">TIME</span>
+              <span class="stat-value" id="hudTimer">00:00</span>
+            </div>
+            <div class="hud-stat-box gems-box">
+              <span class="stat-label">GEMS</span>
+              <div class="gems-display" id="hudGems">
+                <span class="hud-gem">★</span>
+                <span class="hud-gem">★</span>
+                <span class="hud-gem">★</span>
+              </div>
+            </div>
+          </div>
+          <div class="hud-right">
+            <button id="btnSoundToggle" class="hud-btn" title="Toggle Sound" aria-label="Toggle Sound">
+              <span class="sound-icon">🔊</span>
+            </button>
+            <button id="btnRestart" class="hud-btn" title="Restart Level (R)" aria-label="Restart Level">
+              <span>↺</span>
+            </button>
+            <button id="btnPause" class="hud-btn" title="Pause (P/Esc)" aria-label="Pause">
+              <span>⏸</span>
+            </button>
+          </div>
+        </div>
 
-    <!-- Games Card Grid -->
-    <section class="games-grid" id="gamesGrid">
-      <!-- Dynamically populated via portal.js -->
-    </section>
+        <!-- Tutorial Hint Banner -->
+        <div id="tutorialBanner" class="tutorial-banner hidden">
+          <span class="tutorial-icon">💡</span>
+          <span class="tutorial-text" id="tutorialText">Rotate the maze with Arrow keys or on-screen buttons!</span>
+        </div>
 
-  </main>
-
-  <!-- In-Page Embedded Game Player Modal -->
-  <div class="modal-overlay" id="gameModal">
-    <div class="modal-container">
-      <div class="modal-header">
-        <div class="modal-title" id="modalTitle">Game Title</div>
-        <div class="modal-controls">
-          <a id="modalExternalBtn" href="#" target="_blank" class="btn-modal-icon" title="Open in new tab">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          </a>
-          <button id="modalFullscreenBtn" class="btn-modal-icon" title="Fullscreen">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        <!-- Bottom Touch / On-Screen Rotation Controls -->
+        <div class="touch-controls">
+          <button id="btnRotateCCW" class="rotate-btn ccw-btn" aria-label="Rotate Counter-Clockwise">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+            <span class="btn-subtext">Rotate Left</span>
           </button>
-          <button id="modalCloseBtn" class="btn-modal-icon btn-modal-close" title="Close">✕</button>
+
+          <div class="touch-center-hint">
+            <span class="hint-gravity">GRAVITY ↓</span>
+          </div>
+
+          <button id="btnRotateCW" class="rotate-btn cw-btn" aria-label="Rotate Clockwise">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            <span class="btn-subtext">Rotate Right</span>
+          </button>
         </div>
       </div>
-      <div class="modal-body">
-        <iframe id="modalIframe" src="" allow="autoplay; fullscreen; camera; focus-without-user-activation *"></iframe>
+
+      <!-- MAIN MENU OVERLAY -->
+      <div id="screenMainMenu" class="screen-overlay active">
+        <div class="menu-card glass-panel">
+          <div class="logo-box">
+            <div class="logo-ring">
+              <div class="logo-ball"></div>
+            </div>
+            <h1 class="game-title">MAZE<br><span class="accent-title">ROTATOR</span></h1>
+            <p class="game-tagline">Rotate the maze. Let gravity guide the ball.</p>
+          </div>
+
+          <div class="menu-buttons">
+            <button id="btnPlay" class="menu-btn btn-primary pulse-anim">
+              <span class="btn-icon">▶</span> PLAY GAME
+            </button>
+            <button id="btnLevelSelect" class="menu-btn btn-secondary">
+              <span class="btn-icon">⊞</span> LEVEL SELECT
+            </button>
+            <button id="btnHowToPlay" class="menu-btn btn-secondary">
+              <span class="btn-icon">?</span> HOW TO PLAY
+            </button>
+            <div class="menu-bottom-row">
+              <button id="btnMenuSound" class="menu-btn-small">
+                <span id="menuSoundIcon">🔊</span> Sound: <span id="menuSoundText">ON</span>
+              </button>
+              <button id="btnResetProgress" class="menu-btn-small btn-danger" title="Reset all progress">
+                Reset Progress
+              </button>
+            </div>
+          </div>
+
+          <div class="menu-footer">
+            <span class="control-tip">Arrow Keys / A &amp; D / Touch Swipes</span>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Footer -->
-  <footer>
-    <div class="container">
-      <p class="footer-text">
-        © 2026 <strong>CIEL Tech</strong>. Built with Unity WebGL & Web Monetization Bridge.
-      </p>
-    </div>
-  </footer>
+      <!-- LEVEL SELECT OVERLAY -->
+      <div id="screenLevelSelect" class="screen-overlay hidden">
+        <div class="select-card glass-panel">
+          <div class="card-header">
+            <h2>SELECT LEVEL</h2>
+            <button id="btnCloseLevelSelect" class="close-btn" aria-label="Close">✕</button>
+          </div>
+          <div class="level-stats-summary">
+            <span>Total Stars: <strong id="totalStarsCount">0</strong> / 30 ★</span>
+          </div>
+          <div class="levels-grid" id="levelsGrid"></div>
+          <div class="card-footer">
+            <button id="btnBackToMenu" class="menu-btn btn-secondary">Back to Menu</button>
+          </div>
+        </div>
+      </div>
 
-  <!-- Script -->
-  <script src="portal.js"></script>
+      <!-- HOW TO PLAY OVERLAY -->
+      <div id="screenHowToPlay" class="screen-overlay hidden">
+        <div class="help-card glass-panel">
+          <div class="card-header">
+            <h2>HOW TO PLAY</h2>
+            <button id="btnCloseHowToPlay" class="close-btn" aria-label="Close">✕</button>
+          </div>
+          <div class="help-content">
+            <div class="help-item">
+              <div class="help-icon-box">⟳</div>
+              <div class="help-text">
+                <h3>Rotate the Maze</h3>
+                <p>Rotate the maze 90° clockwise or counter-clockwise using Left/Right arrows, A/D, or on-screen buttons.</p>
+              </div>
+            </div>
+            <div class="help-item">
+              <div class="help-icon-box">↓</div>
+              <div class="help-text">
+                <h3>Gravity Pulls Down</h3>
+                <p>Gravity always pulls downward! After rotating, the ball slides along corridors until hitting a wall.</p>
+              </div>
+            </div>
+            <div class="help-item">
+              <div class="help-icon-box portal-icon">◎</div>
+              <div class="help-text">
+                <h3>Exit Portal</h3>
+                <p>Guide the ball into the swirling exit portal to finish the level.</p>
+              </div>
+            </div>
+            <div class="help-item">
+              <div class="help-icon-box star-icon">★</div>
+              <div class="help-text">
+                <h3>Stars &amp; Gems</h3>
+                <p>Collect all 3 optional gems and finish within par moves to earn 3 full stars!</p>
+              </div>
+            </div>
+            <div class="help-item">
+              <div class="help-icon-box danger-icon">▲</div>
+              <div class="help-text">
+                <h3>Hazards &amp; Mechanics</h3>
+                <p>Avoid spikes and patrol drones. Use ice to slide, sticky tiles to halt, teleporters to warp, and keys to open doors!</p>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button id="btnHowToPlayGotIt" class="menu-btn btn-primary">Got It!</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAUSE OVERLAY -->
+      <div id="screenPause" class="screen-overlay hidden">
+        <div class="pause-card glass-panel">
+          <h2>PAUSED</h2>
+          <div class="pause-buttons">
+            <button id="btnResume" class="menu-btn btn-primary">Resume</button>
+            <button id="btnPauseRestart" class="menu-btn btn-secondary">Restart Level</button>
+            <button id="btnPauseLevels" class="menu-btn btn-secondary">Level Select</button>
+            <button id="btnPauseMenu" class="menu-btn btn-secondary">Main Menu</button>
+            <button id="btnPauseSound" class="menu-btn-small">Sound: ON</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEVEL COMPLETE MODAL -->
+      <div id="screenLevelComplete" class="screen-overlay hidden">
+        <div class="win-card glass-panel">
+          <div class="win-badge">LEVEL CLEARED!</div>
+          <h2 id="winLevelName" class="win-title">First Spin</h2>
+
+          <div class="win-stars" id="winStars">
+            <span class="win-star-slot"><span class="star-burst">★</span></span>
+            <span class="win-star-slot"><span class="star-burst">★</span></span>
+            <span class="win-star-slot"><span class="star-burst">★</span></span>
+          </div>
+
+          <div class="win-stats-grid">
+            <div class="win-stat">
+              <span class="win-stat-lbl">MOVES</span>
+              <span class="win-stat-val" id="winMoves">0</span>
+              <span class="win-stat-sub" id="winParMoves">Par: 3</span>
+            </div>
+            <div class="win-stat">
+              <span class="win-stat-lbl">TIME</span>
+              <span class="win-stat-val" id="winTime">00:00</span>
+              <span class="win-stat-sub">Best: <span id="winBestTime">00:00</span></span>
+            </div>
+            <div class="win-stat">
+              <span class="win-stat-lbl">GEMS</span>
+              <span class="win-stat-val" id="winGems">0 / 3</span>
+              <span class="win-stat-sub">Score Bonus</span>
+            </div>
+          </div>
+
+          <div class="win-actions">
+            <button id="btnNextLevel" class="menu-btn btn-primary pulse-anim">NEXT LEVEL ▶</button>
+            <div class="win-actions-row">
+              <button id="btnWinRetry" class="menu-btn btn-secondary">Retry</button>
+              <button id="btnWinLevels" class="menu-btn btn-secondary">Levels</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRAND MASTER COMPLETE MODAL -->
+      <div id="screenGameComplete" class="screen-overlay hidden">
+        <div class="victory-card glass-panel">
+          <div class="trophy-icon">🏆</div>
+          <h1 class="victory-title">GRAND MASTER!</h1>
+          <p class="victory-subtitle">You have conquered all 10 mazes and mastered gravity!</p>
+
+          <div class="victory-summary">
+            <div class="vic-stat">
+              <span class="vic-lbl">TOTAL STARS</span>
+              <span class="vic-val" id="vicStars">30 / 30</span>
+            </div>
+            <div class="vic-stat">
+              <span class="vic-lbl">TOTAL TIME</span>
+              <span class="vic-val" id="vicTime">00:00</span>
+            </div>
+          </div>
+
+          <div class="victory-actions">
+            <button id="btnVictoryLevelSelect" class="menu-btn btn-primary">Play Any Level</button>
+            <button id="btnVictoryMainMenu" class="menu-btn btn-secondary">Main Menu</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- End #game-container -->
+
+    <!-- FLOATING BOTTOM FOOTER BAR (Matches CIEL Portal standard) -->
+    <footer id="game-footer">
+      <div id="footer-title">
+        <span class="footer-icon">🎮</span>
+        <span class="footer-name">Maze Rotator</span>
+      </div>
+      <button id="btnFullscreen" class="footer-btn" title="Toggle Fullscreen" aria-label="Toggle Fullscreen">
+        <svg class="fs-icon-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+        </svg>
+        <svg class="fs-icon-exit hidden" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 14h6m0 0v6m0-6L3 21m17-11h-6m0 0V4m0 6l7-7M14 10V4m0 6h6M3 3l7 7M10 14H4m6 0v6m0-6l-7 7m17-7h-6m0 0v6m0-6l7 7"/>
+        </svg>
+      </button>
+    </footer>
+
+  </div><!-- End #game-page -->
+
+  <script src="game.js"></script>
 </body>
 </html>
