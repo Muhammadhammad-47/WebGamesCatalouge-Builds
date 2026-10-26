@@ -1,92 +1,53 @@
-# Maze Rotator
+# Prism Laser
 
-A 2D gravity-puzzle browser game built with **HTML5, CSS, and vanilla JavaScript (Canvas 2D)**.
-Zero dependencies, zero build steps, and 100% synthesized audio via the Web Audio API.
+A 2D sci-fi optics puzzle game built with **HTML5, CSS, and vanilla JavaScript (Canvas 2D)**.
+Zero external libraries, zero build steps, and 100% synthesized procedural audio via the Web Audio API.
 
 ---
 
 ## 🎮 How to Play
 
-You do not control the ball directly. **You rotate the maze**, and gravity (always pointing straight down your screen) pulls the ball through corridors.
-
-Your goal is to guide the ball into the glowing **Exit Portal** while collecting optional gems and avoiding deadly hazards.
+Reflect, split, and warp laser beams using precision optics. Your mission is to energize all **Energy Target Cores** simultaneously to power the reactor.
 
 ### Controls
 | Input | Action |
 | :--- | :--- |
-| **Arrow Left / A / Q** | Rotate Maze 90° Counter-Clockwise |
-| **Arrow Right / D / E** | Rotate Maze 90° Clockwise |
-| **Touch / Mouse Drag** | Swipe or Drag Left/Right to rotate |
-| **On-Screen Buttons** | Large Left (`⟲`) & Right (`⟳`) buttons |
+| **Tap / Click Mirror** | Rotate 45° Mirror by 90° |
 | **R** | Restart Current Level |
 | **P / Escape** | Pause Game |
-| **M** | Toggle Sound On/Off |
+| **Sound Button** | Toggle Audio (Mute / Unmute) |
+| **Fullscreen Button** | Toggle Fullscreen Mode |
 
 ---
 
-## 🧩 Game Elements
+## 🧩 Optical Elements
 
-- **Exit Portal (`E`)**: Swirling cosmic vortex that completes the level.
-- **Stars / Gems (`*`)**: 3 optional collectibles per level for bonus score and stars.
-- **Spikes (`X`)**: Dangerous hazards that shatter the ball and reset you to the start.
-- **Ice Tiles (`I`)**: Slick, low-friction floor.
-- **Teleporters (`T`)**: Cosmic warp pairs that transport the ball across barriers.
-- **Keys (`K`) & Doors (`D`)**: Collect the golden key to unlock matching energy barriers.
-- **Sticky Tiles (`Z`)**: Stops momentum immediately upon landing.
-- **One-Way Gates (`v`, `^`, `>`, `<`)**: Allow passage only in the arrow direction.
-- **Crumbling Floors (`C`)**: Tiles that collapse into bottomless pits after crossing once.
-- **Patrol Hazards**: Drones that patrol corridors back and forth.
+- **Lasers & Emitters**: High-powered beam projectors emitting pure white or spectral colored lasers.
+- **Rotating Mirrors (`/` and `\`)**: 45° angle reflective pedestals that redirect laser beams perpendicular to their incoming axis. Tap or click to rotate.
+- **Prisms (`💎`)**: Refracts and splits pure white light into Neon Cyan (`#00f5d4`) and Magenta (`#f72585`) beams.
+- **Warp Portals (`🌀`)**: Teleports laser beams across impenetrable barriers instantly while conserving momentum and trajectory.
+- **Color Filters**: Selective wavelength gates that only allow matching light frequencies to pass through.
+- **Energy Cores (`🎯`)**: High-yield receptor targets that lock on and activate when illuminated with their required beam color.
+- **Optic Stars (`⭐`)**: Collectibles along reflection paths for scoring a 3-star par rating.
 
 ---
 
-## 🚀 How to Add New Levels
+## 📱 Responsive Layout
+- **Desktop**: Clean 9:16 portrait cabinet frame with floating footer bar and fullscreen toggle.
+- **Mobile & Touch Devices**: 100% full screen edge-to-edge gameplay with safe-area notch padding.
+- **Portals & Iframes**: Includes Back button navigation and Exit Confirmation modal with parent iframe `postMessage` support.
 
-Levels are defined in `game.js` in the `LEVELS` array:
+---
 
+## 🧪 Console Cheats & Verification
+Open DevTools (`F12`) in your browser to inspect or test levels:
 ```javascript
-{
-  id: 11,
-  name: "Your Level Name",
-  tutorial: "Helpful tip for the player!",
-  parMoves: 6,
-  requireKey: false,
-  theme: {
-    wall: "#00f5d4",
-    wallGlow: "rgba(0, 245, 212, 0.5)",
-    floor: "#0f172a",
-    accent: "#00bbf9"
-  },
-  grid: [
-    "########",
-    "#S..*..#",
-    "#.####.#",
-    "#..*#..#",
-    "#...#E.#",
-    "########"
-  ]
-}
-```
+// Solve current level or specific level number:
+window.solveLevel(5);
 
-### Legend of Grid Characters
-- `#`: Wall
-- `.`: Open floor
-- `S`: Starting ball position
-- `E`: Exit portal
-- `*`: Optional gem (3 per level)
-- `X`: Spikes hazard
-- `I`: Ice tile
-- `Z`: Sticky tile
-- `T`: Teleporter pair
-- `K`: Key
-- `D`: Locked door
-- `v`, `^`, `>`, `<`: One-way directional gates
-- `C`: Crumbling floor
-
-### Testing Solvability
-Open your browser's developer console (`F12`) and run:
-```javascript
-window.solveLevel(11);
-// or to verify all levels:
+// Verify all 12 levels are 100% mathematically solvable:
 window.verifyAllLevels();
+
+// Unlock all levels for instant access:
+window.unlockAllLevels();
 ```
-The built-in BFS solver checks every rotation and guarantees the puzzle is 100% solvable before shipping!
