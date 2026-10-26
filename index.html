@@ -61,17 +61,12 @@
           </div>
         </div>
 
-        <!-- Tutorial Hint Banner -->
-        <div id="tutorialBanner" class="tutorial-banner hidden">
-          <span class="tutorial-icon">💡</span>
-          <span class="tutorial-text" id="tutorialText">Tap any mirror to rotate it and guide the laser!</span>
-        </div>
-
-        <!-- Bottom Touch Hint Bar -->
-        <div class="touch-controls">
-          <div class="optics-quick-tip">
-            <span class="tip-dot"></span>
-            <span class="tip-msg">Tap mirrors to rotate 90° • Power all energy cores</span>
+        <!-- Bottom Controls / Hint Bar (At bottom, never blocking grid) -->
+        <div class="hud-bottom-bar">
+          <div id="tutorialBanner" class="tutorial-banner hidden">
+            <span class="tutorial-icon">💡</span>
+            <span class="tutorial-text" id="tutorialText">Tap any mirror to rotate it and guide the laser!</span>
+            <button id="btnDismissTutorial" class="tutorial-close-btn" title="Dismiss" aria-label="Dismiss">✕</button>
           </div>
         </div>
       </div>
