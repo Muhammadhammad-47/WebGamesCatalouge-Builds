@@ -225,7 +225,47 @@ var EngineLoader = {
     wasmjs_pthread_size: 250000,
     wasm_instantiate_progress: 0,
 
-    stream_wasm: "false" === "true",
+    stream_wasm: true,
+    wasmStreamPromise: null,
+
+    createWasmFetchPromise: function(src) {
+        if (typeof TransformStream === "function" && ReadableStream.prototype.pipeThrough) {
+            return fetch(src).then(function(response) {
+                if (response.ok) {
+                    var ts = new TransformStream({
+                        transform: function(chunk, controller) {
+                            ProgressUpdater.updateCurrent(chunk.byteLength);
+                            controller.enqueue(chunk);
+                        }
+                    });
+                    return new Response(response.body.pipeThrough(ts), response);
+                }
+                return response;
+            });
+        }
+        return fetch(src);
+    },
+
+    streamWasmFromPromise: function(promise, src, imports, successCallback) {
+        WebAssembly.instantiateStreaming(promise, imports).then(function(output) {
+            ProgressUpdater.updateCurrent(EngineLoader.wasm_instantiate_progress);
+            Module.instance = output.instance;
+            successCallback(output.instance, output.module);
+        }).catch(function(e) {
+            console.log('wasm streaming instantiation failed! ' + e);
+            console.log('Fallback to wasm loading');
+            try {
+                EngineLoader.loadAndInstantiateWasmAsync(src, imports, successCallback);
+            } catch (error) {
+                console.error(error);
+                if (typeof CUSTOM_PARAMETERS["start_error"] === "function") {
+                    CUSTOM_PARAMETERS["start_error"](error);
+                } else {
+                    throw error;
+                }
+            }
+        });
+    },
 
     updateWasmInstantiateProgress: function(totalDownloadedSize) {
         EngineLoader.wasm_instantiate_progress = totalDownloadedSize * 0.1;
@@ -352,16 +392,24 @@ var EngineLoader = {
     // instantiate the .wasm file either by streaming it or first loading and then instantiate it
     // https://github.com/emscripten-core/emscripten/blob/main/test/manual_wasm_instantiate.html
     loadWasmAsync: function(exeName) {
+        var src = EngineLoader.getWasmName(exeName);
+        if (EngineLoader.stream_wasm && (typeof WebAssembly.instantiateStreaming === "function") && typeof fetch === "function") {
+            EngineLoader.wasmStreamPromise = EngineLoader.createWasmFetchPromise(src);
+        }
+
         Module.instantiateWasm = function(imports, successCallback) {
             if (typeof CUSTOM_PARAMETERS["update_imports"] === "function") {
                 var callback = CUSTOM_PARAMETERS["update_imports"];
                 callback(imports);
             }
-            if (EngineLoader.stream_wasm && (typeof WebAssembly.instantiateStreaming === "function")) {
-                EngineLoader.streamAndInstantiateWasmAsync(EngineLoader.getWasmName(exeName), imports, successCallback);
+            if (EngineLoader.wasmStreamPromise) {
+                EngineLoader.streamWasmFromPromise(EngineLoader.wasmStreamPromise, src, imports, successCallback);
+            }
+            else if (EngineLoader.stream_wasm && (typeof WebAssembly.instantiateStreaming === "function")) {
+                EngineLoader.streamAndInstantiateWasmAsync(src, imports, successCallback);
             }
             else {
-                EngineLoader.loadAndInstantiateWasmAsync(EngineLoader.getWasmName(exeName), imports, successCallback);
+                EngineLoader.loadAndInstantiateWasmAsync(src, imports, successCallback);
             }
             return {}; // Compiling asynchronously, no exports.
         };
@@ -474,6 +522,7 @@ var GameArchiveLoader = {
     cleanUp: function() {
         this._files =  [];
         this._fileIndex = 0;
+        this._filesLoadedCount = 0;
         this.isCompleted = false;
         this._onGameArchiveLoaderCompletedListeners = [];
         this._onAllTargetsBuiltListeners = [];
@@ -520,13 +569,8 @@ var GameArchiveLoader = {
     // pieces
     // descriptionUrl: location of text file describing files to be preloaded
     loadArchiveDescription: function(descriptionUrl) {
-        FileLoader.load(
-            this._archiveLocationFilter(descriptionUrl),
-            "text",
-            function (delta) { },
-            function (error) { GameArchiveLoader.notifyFileDownloadError(descriptionUrl); },
-            function (text) { GameArchiveLoader.onReceiveDescription(text); },
-            function (loadedDelta, currentAttempt) { });
+        var inlineDesc = '{"content":[{"name":"game.projectc","size":6218,"pieces":[{"name":"game0.projectc","offset":0}]},{"name":"game.arci","size":64288,"pieces":[{"name":"game0.arci","offset":0}]},{"name":"game.arcd","size":5881088,"pieces":[{"name":"game0.arcd","offset":0},{"name":"game1.arcd","offset":2097152},{"name":"game2.arcd","offset":4194304}]},{"name":"game.dmanifest","size":38130,"pieces":[{"name":"game0.dmanifest","offset":0}]}],"total_size":5989724}';
+        GameArchiveLoader.onReceiveDescription(inlineDesc);
     },
 
     onReceiveDescription: async function(text) {
@@ -572,46 +616,50 @@ var GameArchiveLoader = {
     },
 
     downloadContent: async function() {
-        var file = this._files[this._fileIndex];
+        this._filesLoadedCount = 0;
+        for (var f = 0; f < this._files.length; ++f) {
+            var file = this._files[f];
+            file.totalLoadedPieces = 0;
 
-        if (Module['isDMFSSupported']) {
-            const path = `${DMSYS.GetUserPersistentDataRoot()}/${file.name}`;
-            try { // see if already and stored
-                const stat = FS.stat(path);
-                if (stat) {
-                    let matches = (file.size == stat.size);
-                    if (matches && file.sha1) {
-                        const stream = FS.open(path, "r");
-                        if (stream) {
-                            try {
-                                const mmap = FS.mmap(stream, stat.size, 0, 0x01, 0x01); //PROT_READ, MAP_SHARED
-                                if (mmap) {
-                                    const digest = await window.crypto.subtle.digest("SHA-1", mmap);
-                                    matches = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('') == file.sha1;
-                                }
-                            } catch(e) { }
-                            FS.close(stream);
-                        } else {
-                            matches = false;
+            if (Module['isDMFSSupported']) {
+                const path = `${DMSYS.GetUserPersistentDataRoot()}/${file.name}`;
+                try { // see if already and stored
+                    const stat = FS.stat(path);
+                    if (stat) {
+                        let matches = (file.size == stat.size);
+                        if (matches && file.sha1) {
+                            const stream = FS.open(path, "r");
+                            if (stream) {
+                                try {
+                                    const mmap = FS.mmap(stream, stat.size, 0, 0x01, 0x01); //PROT_READ, MAP_SHARED
+                                    if (mmap) {
+                                        const digest = await window.crypto.subtle.digest("SHA-1", mmap);
+                                        matches = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('') == file.sha1;
+                                    }
+                                } catch(e) { }
+                                FS.close(stream);
+                            } else {
+                                matches = false;
+                            }
+                        }
+                        if (matches) {
+                            this.onFileLoaded(file);
+                            continue;
                         }
                     }
-                    if (matches) {
-                        this.onFileLoaded(file);
-                        return;
-                    }
-                }
-            } catch(_e) { }
-            file.stream = FS.open(path, "w+");
-        }
+                } catch(_e) { }
+                file.stream = FS.open(path, "w+");
+            }
 
-        // how many pieces to download at a time
-        var limit = file.pieces.length;
-        if (typeof this.MAX_CONCURRENT_XHR !== 'undefined') {
-            limit = Math.min(limit, this.MAX_CONCURRENT_XHR);
-        }
+            // how many pieces to download at a time
+            var limit = file.pieces.length;
+            if (typeof this.MAX_CONCURRENT_XHR !== 'undefined') {
+                limit = Math.min(limit, this.MAX_CONCURRENT_XHR);
+            }
 
-        for (var i=0; i<limit; ++i) {
-            this.downloadPiece(file, i);
+            for (var i = 0; i < limit; ++i) {
+                this.downloadPiece(file, i);
+            }
         }
     },
 
@@ -626,7 +674,9 @@ var GameArchiveLoader = {
 
         var piece = file.pieces[index];
         file.lastRequestedPiece = index;
-        file.totalLoadedPieces = 0;
+        if (typeof file.totalLoadedPieces === 'undefined') {
+            file.totalLoadedPieces = 0;
+        }
 
         var url = this._archiveLocationFilter('/' + piece.name);
 
@@ -755,11 +805,9 @@ var GameArchiveLoader = {
 
     onFileLoaded: function(file) {
         this.notifyFileLoaded(file);
-        ++this._fileIndex;
-        if (this._fileIndex == this._files.length) {
+        this._filesLoadedCount = (this._filesLoadedCount || 0) + 1;
+        if (this._filesLoadedCount >= this._files.length) {
             this.onArchiveLoaded();
-        } else {
-            this.downloadContent();
         }
     },
 
