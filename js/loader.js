@@ -119,9 +119,13 @@ function handleProgress() {
  */
 function handleComplete() {
 	toggleLoader(false);
-	PokiSDK.gameLoadingFinished();
-	PokiSDK.init();
-	initMain();
+	if (typeof CielAds !== 'undefined' && typeof CielAds.showPreroll === 'function') {
+		CielAds.showPreroll(function() {
+			initMain();
+		});
+	} else {
+		initMain();
+	}
 };
 
 /*!

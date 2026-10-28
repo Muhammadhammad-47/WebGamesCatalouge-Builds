@@ -6,15 +6,16 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>One Line Draw</title>
+        <title>One Line Draw | CIEL WebGames</title>
         
-        <meta name="Title" content="One Line Draw" />
-        <meta name="description" content="One Line Draw is a HTML5 game where you have to complete geometric figures by drawing strokes from one dot to another, try to connect all the dots with only one touch.">
-		<meta name="keywords" content="one, strokes, geometric, figures, lines, draw, drag, puzzle, dots, colors, brain, fun, same">
-        
+        <meta name="Title" content="One Line Draw | CIEL WebGames" />
+        <meta name="description" content="One Line Draw is a HTML5 puzzle game by CIEL WebGames. Connect dots using a single, continuous line without overlapping paths.">
+        <meta name="keywords" content="ciel, webgames, one line draw, puzzle, brain, drawing, dots, html5">
+        <meta name="author" content="CIEL Tech">
+        <meta name="publisher" content="CIEL WebGames">
         
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-		<script>
+        <script>
         if (navigator.userAgent.match(/IEMobile\/10\.0/)) {
             var msViewportStyle = document.createElement("style");
             msViewportStyle.appendChild(
@@ -31,124 +32,46 @@
             if (['ArrowDown', 'ArrowUp', ' '].includes(ev.key)) {
                 ev.preventDefault();
             }
-            });
-         window.addEventListener('wheel', ev => ev.preventDefault(), { passive: false });
+        });
+        window.addEventListener('wheel', ev => ev.preventDefault(), { passive: false });
         </script>
 
         <link rel="shortcut icon" href="icon.ico" type="image/x-icon">
+        <link rel="icon" href="favicon.ico" type="image/x-icon">
         <link rel="stylesheet" href="css/normalize.css">
         <link rel="stylesheet" href="css/main.css">
         <script src="js/vendor/modernizr-2.6.2.min.js"></script>
-        <script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>
-        <script>
-        // Resilient PokiSDK fallback bridge
-        (function() {
-            if (typeof window.PokiSDK === 'undefined') {
-                window.PokiSDK = {
-                    init: function() { return Promise.resolve(); },
-                    gameLoadingFinished: function() {},
-                    gameLoadingStart: function() {},
-                    gameplayStart: function() {},
-                    gameplayStop: function() {},
-                    commercialBreak: function(fn) { if (fn) fn(); return Promise.resolve(); },
-                    rewardedBreak: function(fn) { if (fn) fn(); return Promise.resolve(true); },
-                    displayAd: function(e, t, o, i) { if (i) i(true); if (o) o(); },
-                    destroyAd: function() {},
-                    getLeaderboard: function() { return Promise.resolve(); },
-                    shareableURL: function() { return Promise.reject(); },
-                    getURLParam: function() { return ''; },
-                    getLanguage: function() { return (navigator.language || 'en').split('-')[0]; },
-                    getDeviceInfo: function() { return { category: 'desktop' }; },
-                    isAdBlocked: function() { return false; },
-                    measure: function() {}
-                };
-            } else {
-                var origCommercial = window.PokiSDK.commercialBreak;
-                if (typeof origCommercial === 'function') {
-                    window.PokiSDK.commercialBreak = function(fn) {
-                        return new Promise(function(resolve) {
-                            var done = false;
-                            var timer = setTimeout(function() {
-                                if (!done) {
-                                    done = true;
-                                    if (fn) fn();
-                                    resolve();
-                                }
-                            }, 1000);
-                            try {
-                                origCommercial.call(window.PokiSDK, fn).then(function() {
-                                    if (!done) {
-                                        done = true;
-                                        clearTimeout(timer);
-                                        resolve();
-                                    }
-                                }).catch(function() {
-                                    if (!done) {
-                                        done = true;
-                                        clearTimeout(timer);
-                                        resolve();
-                                    }
-                                });
-                            } catch(e) {
-                                if (!done) {
-                                    done = true;
-                                    clearTimeout(timer);
-                                    resolve();
-                                }
-                            }
-                        });
-                    };
-                }
-                var origRewarded = window.PokiSDK.rewardedBreak;
-                if (typeof origRewarded === 'function') {
-                    window.PokiSDK.rewardedBreak = function(fn) {
-                        return new Promise(function(resolve) {
-                            var done = false;
-                            var timer = setTimeout(function() {
-                                if (!done) {
-                                    done = true;
-                                    if (fn) fn();
-                                    resolve(true);
-                                }
-                            }, 1000);
-                            try {
-                                origRewarded.call(window.PokiSDK, fn).then(function(success) {
-                                    if (!done) {
-                                        done = true;
-                                        clearTimeout(timer);
-                                        resolve(success !== false);
-                                    }
-                                }).catch(function() {
-                                    if (!done) {
-                                        done = true;
-                                        clearTimeout(timer);
-                                        resolve(true);
-                                    }
-                                });
-                            } catch(e) {
-                                if (!done) {
-                                    done = true;
-                                    clearTimeout(timer);
-                                    resolve(true);
-                                }
-                            }
-                        });
-                    };
-                }
-            }
-        })();
+
+        <!-- ======================================================== -->
+        <!-- GOOGLE H5 GAMES ADS / AD PLACEMENT API SCRIPT            -->
+        <!-- Replace ca-pub-0000000000000000 with your real AdSense ID-->
+        <!-- data-adbreak-test="on" enables interactive test ad breaks-->
+        <!-- ======================================================== -->
+        <script async
+          data-ad-client="ca-pub-0000000000000000"
+          data-ad-channel="0000000000"
+          data-ad-frequency-hint="30s"
+          data-adbreak-test="on"
+          crossorigin="anonymous"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js">
         </script>
+
+        <!-- Dedicated CIEL WebGames Ads Bridge -->
+        <script src="js/ciel-ads.js"></script>
     </head>
     <body>
         <!-- PERCENT LOADER START-->
-    	<div id="mainLoader"><img src="assets/logo.png" /><br/><span>0</span></div>
+        <div id="mainLoader">
+            <img src="assets/logo.png" /><br/>
+            <span>0</span>
+            <div style="font-size:14px;color:#FF6E00;font-weight:bold;margin-top:10px;letter-spacing:1.5px;text-transform:uppercase;font-family:'lilitaone',sans-serif;">CIEL WebGames</div>
+        </div>
         <!-- PERCENT LOADER END-->
         
         <!-- CONTENT START-->
         <div id="mainHolder">
-        
-        	<!-- BROWSER NOT SUPPORT START-->
-        	<div id="notSupportHolder">
+            <!-- BROWSER NOT SUPPORT START-->
+            <div id="notSupportHolder">
                 <div class="notSupport">YOUR BROWSER ISN'T SUPPORTED.<br/>PLEASE UPDATE YOUR BROWSER IN ORDER TO RUN THE GAME</div>
             </div>
             <!-- BROWSER NOT SUPPORT END-->
@@ -158,15 +81,13 @@
                 <canvas id="gameCanvas" width="1280" height="768"></canvas>
             </div>
             <!-- CANVAS END-->
-            
         </div>
         <!-- CONTENT END-->
         
         <script src="js/vendor/jquery.min.js"></script>
-        
         <script src="js/vendor/detectmobilebrowser.js"></script>
         <script src="js/vendor/createjs.min.js"></script>
-		<script src="js/vendor/TweenMax.min.js"></script>
+        <script src="js/vendor/TweenMax.min.js"></script>
         
         <script src="js/plugins.js"></script>
         <script src="js/sound.js"></script>
@@ -178,6 +99,4 @@
         <script src="js/loader.js"></script>
         <script src="js/init.js"></script>
     </body>
-    
-
 </html>

@@ -199,35 +199,49 @@ function buildGameButton() {
 	buttonReviveContainer.addEventListener("click", function (evt) {
 		playSound('soundButton');
 		stopMusicLoop('musicGame');
-		PokiSDK.commercialBreak(() => {
-		}).then(() => {
+		if (typeof CielAds !== 'undefined') {
+			CielAds.showRewarded('revive', function(success) {
+				if (success) {
+					revive();
+				} else {
+					playMusicLoop('musicGame');
+				}
+			});
+		} else {
 			revive();
-		});
+		}
 	});
 
 	buttonSkip2Container.cursor = "pointer";
 	buttonSkip2Container.addEventListener("click", function (evt) {
 		playSound('soundButton');
 		stopMusicLoop('musicGame');
-		PokiSDK.rewardedBreak(() => {
-		}).then((success) => {
-			if (success) {
-				skip2();
-			} else {
-			}
-		});
+		if (typeof CielAds !== 'undefined') {
+			CielAds.showRewarded('skip_level', function(success) {
+				if (success) {
+					skip2();
+				} else {
+					playMusicLoop('musicGame');
+				}
+			});
+		} else {
+			skip2();
+		}
 	});
 
 	resultButtonContainer.cursor = "pointer";
 	resultButtonContainer.addEventListener("click", function (evt) {
 		playSound('soundButton');
 		stopMusicLoop('musicGame');
-		PokiSDK.commercialBreak(() => {
-		}).then(() => {
+		if (typeof CielAds !== 'undefined') {
+			CielAds.showInterstitial('next_level', function() {
+				goPage('game');
+				playMusicLoop('musicGame');
+			});
+		} else {
 			goPage('game');
 			playMusicLoop('musicGame');
-		});
-
+		}
 	});
 
 	homeBg.cursor = "pointer";
@@ -308,95 +322,75 @@ function buildGameButton() {
 		}
 		await checkFirstInteraction();
 		playSound('soundButton');
-		PokiSDK.gameplayStop();
-		gameStarted = false;
 		stopMusicLoop('musicGame');
-		PokiSDK.rewardedBreak(() => {
-		}).then((success) => {
-			if (success) {
-				undoStrokes();
+		if (typeof CielAds !== 'undefined') {
+			CielAds.showRewarded('undo', function(success) {
+				if (success) {
+					undoStrokes();
+				}
 				playMusicLoop('musicGame');
-				PokiSDK.gameplayStart();
-				gameStarted = true;
-			} else {
-				playMusicLoop('musicGame');
-				PokiSDK.gameplayStart();
-				gameStarted = true;
-			}
-		});
-
+			});
+		} else {
+			undoStrokes();
+			playMusicLoop('musicGame');
+		}
 	});
 
 	buttonUndoContainerPortrait.cursor = "pointer";
 	buttonUndoContainerPortrait.addEventListener("click", async function (evt) {
-		// Check if there are any strokes to undo
-	if (gameData.strokesHistory.length === 0) {
-		return; // Exit early if there are no strokes
-	}
+		if (gameData.strokesHistory.length === 0) {
+			return; // Exit early if there are no strokes
+		}
 		await checkFirstInteraction();
 		playSound('soundButton');
-		PokiSDK.gameplayStop();
-		gameStarted = false;
 		stopMusicLoop('musicGame');
-		PokiSDK.rewardedBreak(() => {
-		}).then((success) => {
-			if (success) {
-				undoStrokes();
+		if (typeof CielAds !== 'undefined') {
+			CielAds.showRewarded('undo', function(success) {
+				if (success) {
+					undoStrokes();
+				}
 				playMusicLoop('musicGame');
-				PokiSDK.gameplayStart();
-				gameStarted = true;
-			} else {
-				playMusicLoop('musicGame');
-				PokiSDK.gameplayStart();
-				gameStarted = true;
-			}
-		});
-
+			});
+		} else {
+			undoStrokes();
+			playMusicLoop('musicGame');
+		}
 	});
 
 	buttonSkipContainer.cursor = "pointer";
 	buttonSkipContainer.addEventListener("click", async function (evt) {
 		await checkFirstInteraction();
 		playSound('soundButton');
-		PokiSDK.gameplayStop();
-		gameStarted = false;
 		stopMusicLoop('musicGame');
-		PokiSDK.rewardedBreak(() => {
-		}).then((success) => {
-			if (success) {
-				skipLevel();
+		if (typeof CielAds !== 'undefined') {
+			CielAds.showRewarded('skip_level', function(success) {
+				if (success) {
+					skipLevel();
+				}
 				playMusicLoop('musicGame');
-				PokiSDK.gameplayStart();
-				gameStarted = true;
-			} else {
-				playMusicLoop('musicGame');
-				PokiSDK.gameplayStart();
-				gameStarted = true;
-			}
-		});
-
+			});
+		} else {
+			skipLevel();
+			playMusicLoop('musicGame');
+		}
 	});
 
 	buttonSkipContainerPortrait.cursor = "pointer";
 	buttonSkipContainerPortrait.addEventListener("click", async function (evt) {
 		await checkFirstInteraction();
 		playSound('soundButton');
-		PokiSDK.gameplayStop();
-		gameStarted = false;
 		stopMusicLoop('musicGame');
-		PokiSDK.rewardedBreak(() => {
-		}).then((success) => {
-			if (success) {
-				skipLevel();
+		if (typeof CielAds !== 'undefined') {
+			CielAds.showRewarded('skip_level', function(success) {
+				if (success) {
+					skipLevel();
+				}
 				playMusicLoop('musicGame');
-				PokiSDK.gameplayStart();
-				gameStarted = true
-			} else {
-				playMusicLoop('musicGame');
-				PokiSDK.gameplayStart();
-				gameStarted = true;
-			}
-		});
+			});
+		} else {
+			skipLevel();
+			playMusicLoop('musicGame');
+		}
 	});
 
 	for (var n = 0; n < gameSettings.colors.length; n++) {
@@ -412,7 +406,6 @@ function checkFirstInteraction() {
     return new Promise((resolve) => {
         if (firstInteraction) {
             firstInteraction = false;
-            PokiSDK.gameplayStart();
             gameStarted = true;
             // Add a small delay to ensure proper sequencing
             setTimeout(() => {
@@ -494,30 +487,21 @@ function buildSelectLevel() {
 				gameData.levelNum = Number(evt.target.text.text) - 1;
 				playSound('soundButton');
 				stopMusicLoop('musicMain');
-				PokiSDK.commercialBreak(() => {
-				}).then(() => {
-					goPage('game');
-				});
+				goPage('game');
 			});
 			$.level[r + '_skip_' + c].cursor = "pointer";
 			$.level[r + '_skip_' + c].addEventListener("click", function (evt) {
 				gameData.levelNum = Number(evt.target.text.text) - 1;
 				playSound('soundButton');
 				stopMusicLoop('musicMain');
-				PokiSDK.commercialBreak(() => {
-				}).then(() => {
-					goPage('game');
-				});
+				goPage('game');
 			});
 			$.level[r + '_current_' + c].cursor = "pointer";
 			$.level[r + '_current_' + c].addEventListener("click", function (evt) {
 				gameData.levelNum = Number(evt.target.text.text) - 1;
 				playSound('soundButton');
 				stopMusicLoop('musicMain');
-				PokiSDK.commercialBreak(() => {
-				}).then(() => {
-					goPage('game');
-				});
+				goPage('game');
 			});
 		}
 	}
@@ -674,7 +658,6 @@ function goPage(page) {
 			stopMusicLoop('musicGame');
 			playMusicLoop('musicMain');
 			if (gameStarted) {
-				PokiSDK.gameplayStop();
 				gameStarted = false;
 			}
 			homeButton.visible = false;
@@ -734,7 +717,6 @@ function goPage(page) {
 function startGame() {
 	gameData.paused = false;
 	if (!firstInteraction && !gameStarted) {
-		PokiSDK.gameplayStart();
 		gameStarted = true;
 	}
 
@@ -895,7 +877,6 @@ function stopGame() {
 	gameData.paused = true;
 	if (!firstInteraction) {
 		if (gameStarted) {
-			PokiSDK.gameplayStop();
 			gameStarted = false;
 		}
 	}

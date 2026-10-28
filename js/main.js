@@ -37,7 +37,6 @@ function initMain(){
 	
 	function handleFirstInteraction() {
 		if (firstInteraction) {
-			PokiSDK.gameplayStart();
 			gameStarted = true;
 			firstInteraction = false;	
 
