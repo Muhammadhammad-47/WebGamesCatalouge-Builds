@@ -75,22 +75,39 @@
         }
       };
 
-      if (typeof window.adBreak === 'function') {
+      // Only attempt preroll if real Google AdSense placement API is loaded and active
+      const isGoogleAdReady = typeof window.adBreak === 'function' &&
+                              window.adBreak !== window.adConfig &&
+                              !this._isAdBlocked();
+
+      if (isGoogleAdReady) {
         try {
+          let adStarted = false;
           window.adBreak({
             type: 'start',
             name: 'game_start',
-            beforeAd: function() { self.muteAudio(); },
-            afterAd: function() { self.unmuteAudio(); },
-            adBreakDone: function() { done(); }
+            beforeAd: function() {
+              adStarted = true;
+              self.muteAudio();
+            },
+            afterAd: function() {
+              self.unmuteAudio();
+            },
+            adBreakDone: function() {
+              done();
+            }
           });
-          // Timeout fallback in case adBreak does not trigger callbacks
-          setTimeout(done, 1500);
+          // Safety timeout: if Google has no preroll to show, proceed immediately
+          setTimeout(function() {
+            if (!adStarted) done();
+          }, 250);
           return;
         } catch (e) {
           console.warn('[CIEL Ads] adBreak start error:', e);
         }
       }
+
+      // If Google Ads is not ready, in queue shim, or blocked, launch game immediately
       done();
     },
 

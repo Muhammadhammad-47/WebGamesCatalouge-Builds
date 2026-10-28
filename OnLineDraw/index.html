@@ -41,9 +41,15 @@
 
         <link rel="shortcut icon" href="icon.ico" type="image/x-icon">
         <link rel="icon" href="favicon.ico" type="image/x-icon">
+
+        <!-- Performance Preconnect & Preload -->
+        <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin>
+        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
+        <link rel="preload" href="css/fonts/LilitaOne-Regular.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="preload" href="assets/logo.png" as="image">
+
         <link rel="stylesheet" href="css/normalize.css">
         <link rel="stylesheet" href="css/main.css">
-        <script src="js/vendor/modernizr-2.6.2.min.js"></script>
 
         <!-- ======================================================== -->
         <!-- GOOGLE H5 GAMES ADS / AD PLACEMENT API SCRIPT            -->
@@ -60,13 +66,13 @@
         </script>
 
         <!-- Dedicated CIEL WebGames Ads Bridge -->
-        <script src="js/ciel-ads.js"></script>
+        <script defer src="js/ciel-ads.js"></script>
     </head>
     <body>
         <!-- PERCENT LOADER START-->
         <div id="mainLoader">
-            <img src="assets/logo.png" /><br/>
-            <span>0</span>
+            <img src="assets/logo.png" alt="CIEL WebGames" /><br/>
+            <span>0%</span>
             <div style="font-size:14px;color:#FF6E00;font-weight:bold;margin-top:10px;letter-spacing:1.5px;text-transform:uppercase;font-family:'lilitaone',sans-serif;">CIEL WebGames</div>
         </div>
         <!-- PERCENT LOADER END-->

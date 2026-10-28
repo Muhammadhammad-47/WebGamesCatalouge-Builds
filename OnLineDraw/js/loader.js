@@ -18,7 +18,9 @@ function initPreload(){
 	});
 	resizeGameFunc();
 	
-	loader = new createjs.LoadQueue(false);
+	var preferXHR = window.location.protocol.indexOf('http') === 0;
+	loader = new createjs.LoadQueue(preferXHR);
+	loader.setMaxConnections(16);
 	manifest=[
 			{src:'assets/logo.png', id:'logo'},
 			{src:'assets/button_arrow.png', id:'buttonArrow'},
@@ -59,21 +61,21 @@ function initPreload(){
 	}
 	
 	if(soundOn){
-		manifest.push({src:'assets/sounds/sound_click.ogg', id:'soundButton'});
-		manifest.push({src:'assets/sounds/sound_start.ogg', id:'soundStart'});
-		manifest.push({src:'assets/sounds/sound_result.ogg', id:'soundResult'});
-		manifest.push({src:'assets/sounds/sound_complete.ogg', id:'soundComplete'});
-		manifest.push({src:'assets/sounds/sound_connect.ogg', id:'soundConnect'});
-		manifest.push({src:'assets/sounds/sound_error.ogg', id:'soundError'});
-		manifest.push({src:'assets/sounds/sound_select.ogg', id:'soundSelect'});
-		manifest.push({src:'assets/sounds/sound_reset.ogg', id:'soundReset'});
-		manifest.push({src:'assets/sounds/sound_undo.ogg', id:'soundUndo'});
-		manifest.push({src:'assets/sounds/sound_stroke.ogg', id:'soundStroke'});
-		manifest.push({src:'assets/sounds/sound_unlock.ogg', id:'soundUnlock'});
-		manifest.push({src:'assets/sounds/music_main.ogg', id:'musicMain'});
-		manifest.push({src:'assets/sounds/music_game.ogg', id:'musicGame'});
+		manifest.push({src:'assets/sounds/sound_click.mp3', id:'soundButton'});
+		manifest.push({src:'assets/sounds/sound_start.mp3', id:'soundStart'});
+		manifest.push({src:'assets/sounds/sound_result.mp3', id:'soundResult'});
+		manifest.push({src:'assets/sounds/sound_complete.mp3', id:'soundComplete'});
+		manifest.push({src:'assets/sounds/sound_connect.mp3', id:'soundConnect'});
+		manifest.push({src:'assets/sounds/sound_error.mp3', id:'soundError'});
+		manifest.push({src:'assets/sounds/sound_select.mp3', id:'soundSelect'});
+		manifest.push({src:'assets/sounds/sound_reset.mp3', id:'soundReset'});
+		manifest.push({src:'assets/sounds/sound_undo.mp3', id:'soundUndo'});
+		manifest.push({src:'assets/sounds/sound_stroke.mp3', id:'soundStroke'});
+		manifest.push({src:'assets/sounds/sound_unlock.mp3', id:'soundUnlock'});
+		manifest.push({src:'assets/sounds/music_main.mp3', id:'musicMain'});
+		manifest.push({src:'assets/sounds/music_game.mp3', id:'musicGame'});
 		
-		createjs.Sound.alternateExtensions = ["mp3"];
+		createjs.Sound.alternateExtensions = ["ogg"];
 		loader.installPlugin(createjs.Sound);
 	}
 	
@@ -118,12 +120,13 @@ function handleProgress() {
  * 
  */
 function handleComplete() {
-	toggleLoader(false);
 	if (typeof CielAds !== 'undefined' && typeof CielAds.showPreroll === 'function') {
 		CielAds.showPreroll(function() {
+			toggleLoader(false);
 			initMain();
 		});
 	} else {
+		toggleLoader(false);
 		initMain();
 	}
 };
@@ -135,7 +138,7 @@ function handleComplete() {
  */
 function toggleLoader(con){
 	if(con){
-		$('#mainLoader').show();
+		$('#mainLoader').css('display', 'flex').show();
 	}else{
 		$('#mainLoader').hide();
 	}

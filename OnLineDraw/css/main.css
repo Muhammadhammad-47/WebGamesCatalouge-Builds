@@ -72,7 +72,23 @@ resize:vertical;
 html{-webkit-tap-highlight-color: rgba(0,0,0,0);-webkit-user-select: none;-webkit-touch-callout:none; background:#ccc;}
 
 /*-- Percent Loader -- */
-#mainLoader{position:absolute;z-index:5; display:none; font-size:25px; line-height:25px; color:#1d1c1a; text-align:center; width:100%; font-family:'lilitaone';bottom:20%;}
+#mainLoader {
+    position: fixed;
+    z-index: 100;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 25px;
+    line-height: 25px;
+    color: #1d1c1a;
+    text-align: center;
+    font-family: 'lilitaone', sans-serif;
+    pointer-events: none;
+}
 
 /*-- Content Wrapper -- */
 #mainHolder{position:absolute; width:100%;height:100%;}
