@@ -595,10 +595,78 @@
   // ==========================================================================
   // 4. MAIN GAME ENGINE
   // ==========================================================================
+  // ==========================================================================
+  // THEMES DEFINITIONS
+  // ==========================================================================
+  const THEMES = [
+    {
+      id: 'emerald',
+      name: 'Emerald Lab',
+      icon: '🧪',
+      beam1: '#00f59b', // Neon Emerald
+      beam2: '#ffb703', // Laser Amber
+      canvasBg1: '#04140a',
+      canvasBg2: '#010603',
+      wallBg: '#0b1e13',
+      wallBorder: 'rgba(0, 245, 155, 0.3)',
+      trace: 'rgba(0, 245, 155, 0.18)',
+      dots: 'rgba(0, 245, 155, 0.09)',
+      boardShadow: 'rgba(0, 245, 155, 0.22)'
+    },
+    {
+      id: 'synthwave',
+      name: 'Synthwave',
+      icon: '🌆',
+      beam1: '#00f5d4', // Neon Cyan
+      beam2: '#f72585', // Hot Magenta
+      canvasBg1: '#0c1020',
+      canvasBg2: '#030408',
+      wallBg: '#161b2c',
+      wallBorder: 'rgba(0, 245, 212, 0.25)',
+      trace: 'rgba(0, 245, 212, 0.15)',
+      dots: 'rgba(0, 245, 212, 0.08)',
+      boardShadow: 'rgba(0, 245, 212, 0.18)'
+    },
+    {
+      id: 'cosmic',
+      name: 'Cosmic Space',
+      icon: '🌌',
+      beam1: '#4cc9f0', // Electric Sky
+      beam2: '#b5179e', // Astral Violet
+      canvasBg1: '#080c22',
+      canvasBg2: '#010208',
+      wallBg: '#0f162d',
+      wallBorder: 'rgba(76, 201, 240, 0.3)',
+      trace: 'rgba(76, 201, 240, 0.18)',
+      dots: 'rgba(76, 201, 240, 0.09)',
+      boardShadow: 'rgba(76, 201, 240, 0.22)'
+    },
+    {
+      id: 'solar',
+      name: 'Solar Flare',
+      icon: '🔥',
+      beam1: '#ff9e00', // Solar Amber
+      beam2: '#ff0054', // Ruby Flame
+      canvasBg1: '#14060a',
+      canvasBg2: '#040102',
+      wallBg: '#220b12',
+      wallBorder: 'rgba(255, 158, 0, 0.3)',
+      trace: 'rgba(255, 158, 0, 0.18)',
+      dots: 'rgba(255, 158, 0, 0.09)',
+      boardShadow: 'rgba(255, 158, 0, 0.22)'
+    }
+  ];
+
   class PrismLaserGame {
     constructor() {
       this.audio = new WebAudioEngine();
       this.progress = new ProgressManager();
+
+      // Theme Manager: loads saved theme from localStorage (defaults to Synthwave or chosen theme)
+      const savedThemeIdx = parseInt(localStorage.getItem('prism_laser_theme_idx') || '0', 10);
+      this.themeIndex = (isNaN(savedThemeIdx) || savedThemeIdx < 0 || savedThemeIdx >= THEMES.length) ? 0 : savedThemeIdx;
+      this.currentTheme = THEMES[this.themeIndex];
+      document.documentElement.setAttribute('data-theme', this.currentTheme.id);
 
       this.canvas = document.getElementById('gameCanvas');
       this.ctx = this.canvas.getContext('2d');
@@ -697,6 +765,16 @@
         btnFullscreen: document.getElementById('btnFullscreen'),
         btnDismissTutorial: document.getElementById('btnDismissTutorial'),
 
+        // Theme buttons
+        btnThemeToggleHud: document.getElementById('btnThemeToggleHud'),
+        hudThemeIcon: document.getElementById('hudThemeIcon'),
+        btnThemeMenu: document.getElementById('btnThemeMenu'),
+        themeMenuIcon: document.getElementById('themeMenuIcon'),
+        themeMenuName: document.getElementById('themeMenuName'),
+        btnPauseTheme: document.getElementById('btnPauseTheme'),
+        pauseThemeIcon: document.getElementById('pauseThemeIcon'),
+        pauseThemeLabel: document.getElementById('pauseThemeLabel'),
+
         // Stats
         statLevelsDone: document.getElementById('statLevelsDone'),
         statStarsCollected: document.getElementById('statStarsCollected'),
@@ -712,6 +790,7 @@
       };
 
       this.updateSoundIcons();
+      this.updateThemeUI();
     }
 
     initEvents() {
@@ -721,6 +800,14 @@
       if (this.dom.btnFullscreen) {
         this.dom.btnFullscreen.addEventListener('click', () => this.toggleFullscreen());
       }
+
+      // Theme toggle buttons
+      const handleTheme = () => {
+        this.cycleTheme();
+      };
+      if (this.dom.btnThemeToggleHud) this.dom.btnThemeToggleHud.addEventListener('click', handleTheme);
+      if (this.dom.btnThemeMenu) this.dom.btnThemeMenu.addEventListener('click', handleTheme);
+      if (this.dom.btnPauseTheme) this.dom.btnPauseTheme.addEventListener('click', handleTheme);
 
       // Sound toggle
       const handleSound = () => {
@@ -955,6 +1042,47 @@
       if (this.dom.soundMenuIcon) {
         this.dom.soundMenuIcon.textContent = icon;
       }
+    }
+
+    setTheme(index) {
+      this.themeIndex = (index + THEMES.length) % THEMES.length;
+      this.currentTheme = THEMES[this.themeIndex];
+      localStorage.setItem('prism_laser_theme_idx', this.themeIndex);
+      document.documentElement.setAttribute('data-theme', this.currentTheme.id);
+      this.updateThemeUI();
+      if (this.state === 'PLAYING') {
+        this.recalculateOptics();
+      }
+    }
+
+    cycleTheme() {
+      this.audio.playTap();
+      this.setTheme(this.themeIndex + 1);
+    }
+
+    updateThemeUI() {
+      if (this.dom.themeMenuName) {
+        this.dom.themeMenuName.textContent = `Theme: ${this.currentTheme.name}`;
+      }
+      if (this.dom.themeMenuIcon) {
+        this.dom.themeMenuIcon.textContent = this.currentTheme.icon;
+      }
+      if (this.dom.hudThemeIcon) {
+        this.dom.hudThemeIcon.textContent = this.currentTheme.icon;
+      }
+      if (this.dom.pauseThemeLabel) {
+        this.dom.pauseThemeLabel.textContent = `THEME: ${this.currentTheme.name.toUpperCase()}`;
+      }
+      if (this.dom.pauseThemeIcon) {
+        this.dom.pauseThemeIcon.textContent = this.currentTheme.icon;
+      }
+    }
+
+    getThemeBeamColor(color) {
+      if (!color || color === '#ffffff') return '#ffffff';
+      if (color === '#00f5d4') return this.currentTheme.beam1;
+      if (color === '#f72585') return this.currentTheme.beam2;
+      return color;
     }
 
     executeExit() {
@@ -1200,7 +1328,7 @@
           y: e.r,
           dx: e.dx,
           dy: e.dy,
-          color: e.color || '#00f5d4',
+          color: this.getThemeBeamColor(e.color || '#00f5d4'),
           bounces: 0
         });
       });
@@ -1261,7 +1389,8 @@
           // Check targets
           const target = this.currentLevel.targets.find(t => t.r === cy && t.c === cx);
           if (target) {
-            if (!target.requiredColor || target.requiredColor === ray.color) {
+            const reqColor = this.getThemeBeamColor(target.requiredColor);
+            if (!reqColor || reqColor === ray.color) {
               target.powered = true;
             }
             this.laserRays.push({
@@ -1326,11 +1455,11 @@
             this.createPrismSparks(cx, cy);
 
             if (ray.dx !== 0) {
-              queue.push({ x: cx, y: cy, dx: 0, dy: -1, color: '#00f5d4', bounces: ray.bounces + 1 });
-              queue.push({ x: cx, y: cy, dx: 0, dy: 1, color: '#f72585', bounces: ray.bounces + 1 });
+              queue.push({ x: cx, y: cy, dx: 0, dy: -1, color: this.currentTheme.beam1, bounces: ray.bounces + 1 });
+              queue.push({ x: cx, y: cy, dx: 0, dy: 1, color: this.currentTheme.beam2, bounces: ray.bounces + 1 });
             } else {
-              queue.push({ x: cx, y: cy, dx: -1, dy: 0, color: '#00f5d4', bounces: ray.bounces + 1 });
-              queue.push({ x: cx, y: cy, dx: 1, dy: 0, color: '#f72585', bounces: ray.bounces + 1 });
+              queue.push({ x: cx, y: cy, dx: -1, dy: 0, color: this.currentTheme.beam1, bounces: ray.bounces + 1 });
+              queue.push({ x: cx, y: cy, dx: 1, dy: 0, color: this.currentTheme.beam2, bounces: ray.bounces + 1 });
             }
             terminated = true;
             break;
@@ -1367,8 +1496,9 @@
           // Check filters
           const filter = this.currentLevel.filters.find(f => f.r === cy && f.c === cx);
           if (filter) {
-            if (ray.color === filter.color || ray.color === '#ffffff') {
-              ray.color = filter.color;
+            const filterColor = this.getThemeBeamColor(filter.color);
+            if (ray.color === filterColor || ray.color === '#ffffff') {
+              ray.color = filterColor;
             } else {
               this.laserRays.push({
                 x1: segmentStart.x,
@@ -1486,7 +1616,7 @@
       const targets = level.targets.map(t => ({ ...t, powered: false }));
       const queue = [];
       level.emitters.forEach(e => {
-        queue.push({ x: e.c, y: e.r, dx: e.dx, dy: e.dy, color: e.color || '#00f5d4', b: 0 });
+        queue.push({ x: e.c, y: e.r, dx: e.dx, dy: e.dy, color: this.getThemeBeamColor(e.color || '#00f5d4'), b: 0 });
       });
 
       const activeMirrors = level.mirrors.map((m, idx) => ({
@@ -1507,7 +1637,8 @@
 
           const t = targets.find(t => t.r === cy && t.c === cx);
           if (t) {
-            if (!t.requiredColor || t.requiredColor === ray.color) t.powered = true;
+            const reqColor = this.getThemeBeamColor(t.requiredColor);
+            if (!reqColor || reqColor === ray.color) t.powered = true;
             break;
           }
 
@@ -1524,11 +1655,11 @@
           const p = level.prisms && level.prisms.find(p => p.r === cy && p.c === cx);
           if (p) {
             if (ray.dx !== 0) {
-              queue.push({ x: cx, y: cy, dx: 0, dy: -1, color: '#00f5d4', b: ray.b + 1 });
-              queue.push({ x: cx, y: cy, dx: 0, dy: 1, color: '#f72585', b: ray.b + 1 });
+              queue.push({ x: cx, y: cy, dx: 0, dy: -1, color: this.currentTheme.beam1, b: ray.b + 1 });
+              queue.push({ x: cx, y: cy, dx: 0, dy: 1, color: this.currentTheme.beam2, b: ray.b + 1 });
             } else {
-              queue.push({ x: cx, y: cy, dx: -1, dy: 0, color: '#00f5d4', b: ray.b + 1 });
-              queue.push({ x: cx, y: cy, dx: 1, dy: 0, color: '#f72585', b: ray.b + 1 });
+              queue.push({ x: cx, y: cy, dx: -1, dy: 0, color: this.currentTheme.beam1, b: ray.b + 1 });
+              queue.push({ x: cx, y: cy, dx: 1, dy: 0, color: this.currentTheme.beam2, b: ray.b + 1 });
             }
             break;
           }
@@ -1544,7 +1675,8 @@
 
           const filter = level.filters && level.filters.find(f => f.r === cy && f.c === cx);
           if (filter) {
-            if (ray.color === filter.color || ray.color === '#ffffff') ray.color = filter.color;
+            const filterColor = this.getThemeBeamColor(filter.color);
+            if (ray.color === filterColor || ray.color === '#ffffff') ray.color = filterColor;
             else break;
           }
         }
@@ -1712,13 +1844,13 @@
     renderBackground(w, h) {
       // Tech workbench background with circuit grid
       const bgGrad = this.ctx.createRadialGradient(w / 2, h / 2, 50, w / 2, h / 2, Math.max(w, h));
-      bgGrad.addColorStop(0, '#0c101d');
-      bgGrad.addColorStop(1, '#030408');
+      bgGrad.addColorStop(0, this.currentTheme.canvasBg1 || '#0c1020');
+      bgGrad.addColorStop(1, this.currentTheme.canvasBg2 || '#030408');
       this.ctx.fillStyle = bgGrad;
       this.ctx.fillRect(0, 0, w, h);
 
       // Subtle isometric background grid dots
-      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+      this.ctx.fillStyle = this.currentTheme.dots || 'rgba(255, 255, 255, 0.04)';
       const step = 28;
       for (let x = step / 2; x < w; x += step) {
         for (let y = step / 2; y < h; y += step) {
@@ -1736,14 +1868,14 @@
 
       // Board container shadow & glass bevel
       this.ctx.save();
-      this.ctx.shadowColor = 'rgba(0, 245, 212, 0.15)';
+      this.ctx.shadowColor = this.currentTheme.boardShadow || 'rgba(0, 245, 212, 0.18)';
       this.ctx.shadowBlur = 24;
-      this.ctx.fillStyle = 'rgba(10, 15, 26, 0.85)';
+      this.ctx.fillStyle = 'rgba(10, 15, 26, 0.88)';
       this.ctx.beginPath();
       this.ctx.roundRect(ox - 8, oy - 8, cols * cs + 16, rows * cs + 16, 14);
       this.ctx.fill();
 
-      this.ctx.strokeStyle = 'rgba(0, 245, 212, 0.25)';
+      this.ctx.strokeStyle = this.currentTheme.wallBorder || 'rgba(0, 245, 212, 0.25)';
       this.ctx.lineWidth = 1.5;
       this.ctx.stroke();
       this.ctx.restore();
@@ -1757,7 +1889,7 @@
 
           if (char === '#') {
             // High-tech wall block
-            this.ctx.fillStyle = '#161b2c';
+            this.ctx.fillStyle = this.currentTheme.wallBg || '#161b2c';
             this.ctx.beginPath();
             this.ctx.roundRect(x + 2, y + 2, cs - 4, cs - 4, 6);
             this.ctx.fill();
@@ -1768,7 +1900,7 @@
             this.ctx.stroke();
 
             // Circuit cross mark
-            this.ctx.strokeStyle = 'rgba(0, 245, 212, 0.12)';
+            this.ctx.strokeStyle = this.currentTheme.trace || 'rgba(0, 245, 212, 0.15)';
             this.ctx.lineWidth = 1.5;
             this.ctx.beginPath();
             this.ctx.moveTo(x + cs * 0.35, y + cs * 0.5);
@@ -1809,8 +1941,8 @@
           this.ctx.rotate(this.animTime * 2);
           const portalGrad = this.ctx.createRadialGradient(0, 0, 2, 0, 0, rad);
           portalGrad.addColorStop(0, '#ffffff');
-          portalGrad.addColorStop(0.4, '#4cc9f0');
-          portalGrad.addColorStop(0.8, '#7209b7');
+          portalGrad.addColorStop(0.4, this.currentTheme.beam1);
+          portalGrad.addColorStop(0.8, this.currentTheme.beam2);
           portalGrad.addColorStop(1, 'transparent');
 
           this.ctx.fillStyle = portalGrad;
@@ -1819,9 +1951,9 @@
           this.ctx.fill();
 
           // Outer pulsing ring
-          this.ctx.strokeStyle = '#4cc9f0';
+          this.ctx.strokeStyle = this.currentTheme.beam1;
           this.ctx.lineWidth = 2;
-          this.ctx.shadowColor = '#4cc9f0';
+          this.ctx.shadowColor = this.currentTheme.beam1;
           this.ctx.shadowBlur = 10;
           this.ctx.beginPath();
           this.ctx.arc(0, 0, rad * (0.85 + Math.sin(this.animTime * 4) * 0.1), 0, Math.PI * 2);
@@ -1854,8 +1986,8 @@
 
           const prismGrad = this.ctx.createLinearGradient(-s, -s, s, s);
           prismGrad.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
-          prismGrad.addColorStop(0.5, 'rgba(0, 245, 212, 0.4)');
-          prismGrad.addColorStop(1, 'rgba(247, 37, 133, 0.4)');
+          prismGrad.addColorStop(0.5, this.currentTheme.beam1);
+          prismGrad.addColorStop(1, this.currentTheme.beam2);
           this.ctx.fillStyle = prismGrad;
           this.ctx.fill();
 
@@ -1880,14 +2012,17 @@
         this.currentLevel.filters.forEach(f => {
           const x = ox + f.c * cs;
           const y = oy + f.r * cs;
+          const filterColor = this.getThemeBeamColor(f.color);
 
           this.ctx.save();
-          this.ctx.fillStyle = f.color === '#00f5d4' ? 'rgba(0, 245, 212, 0.25)' : 'rgba(247, 37, 133, 0.25)';
+          this.ctx.fillStyle = filterColor;
+          this.ctx.globalAlpha = 0.25;
           this.ctx.fillRect(x + cs * 0.2, y + cs * 0.2, cs * 0.6, cs * 0.6);
+          this.ctx.globalAlpha = 1;
 
-          this.ctx.strokeStyle = f.color;
+          this.ctx.strokeStyle = filterColor;
           this.ctx.lineWidth = 2;
-          this.ctx.shadowColor = f.color;
+          this.ctx.shadowColor = filterColor;
           this.ctx.shadowBlur = 8;
           this.ctx.strokeRect(x + cs * 0.2, y + cs * 0.2, cs * 0.6, cs * 0.6);
 
@@ -1938,7 +2073,7 @@
           const x = ox + t.c * cs + cs / 2;
           const y = oy + t.r * cs + cs / 2;
           const rad = cs * 0.38;
-          const color = t.requiredColor || '#00f5d4';
+          const color = this.getThemeBeamColor(t.requiredColor || '#00f5d4');
 
           this.ctx.save();
           this.ctx.translate(x, y);
@@ -1999,7 +2134,7 @@
         this.currentLevel.emitters.forEach(e => {
           const x = ox + e.c * cs + cs / 2;
           const y = oy + e.r * cs + cs / 2;
-          const color = e.color || '#00f5d4';
+          const color = this.getThemeBeamColor(e.color || '#00f5d4');
 
           this.ctx.save();
           this.ctx.translate(x, y);
@@ -2044,13 +2179,15 @@
           this.ctx.translate(x, y);
 
           // Interactive tap ring indicator
-          this.ctx.strokeStyle = 'rgba(0, 245, 212, 0.3)';
+          this.ctx.strokeStyle = this.currentTheme.beam1;
+          this.ctx.globalAlpha = 0.35;
           this.ctx.lineWidth = 1;
           this.ctx.setLineDash([3, 3]);
           this.ctx.beginPath();
           this.ctx.arc(0, 0, rad + 2, 0, Math.PI * 2);
           this.ctx.stroke();
           this.ctx.setLineDash([]);
+          this.ctx.globalAlpha = 1;
 
           // Base mount
           this.ctx.fillStyle = '#1a2236';
@@ -2069,13 +2206,13 @@
           this.ctx.fillStyle = '#334155';
           this.ctx.fillRect(-rad * 0.8, -3, rad * 1.6, 6);
 
-          // Reflective silver-cyan glass surface
+          // Reflective glass surface
           const mirrorGrad = this.ctx.createLinearGradient(-rad * 0.8, 0, rad * 0.8, 0);
           mirrorGrad.addColorStop(0, '#ffffff');
-          mirrorGrad.addColorStop(0.5, '#a5f3fc');
-          mirrorGrad.addColorStop(1, '#00f5d4');
+          mirrorGrad.addColorStop(0.5, '#e2e8f0');
+          mirrorGrad.addColorStop(1, this.currentTheme.beam1);
 
-          this.ctx.shadowColor = 'rgba(0, 245, 212, 0.6)';
+          this.ctx.shadowColor = this.currentTheme.beam1;
           this.ctx.shadowBlur = 8;
           this.ctx.fillStyle = mirrorGrad;
           this.ctx.fillRect(-rad * 0.78, -1.5, rad * 1.56, 3);

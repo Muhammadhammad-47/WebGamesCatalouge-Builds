@@ -5,23 +5,38 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
 
-:root {
-  --bg-primary: #07090e;
-  --bg-secondary: #0f141f;
-  --accent-cyan: #00f5d4;
-  --accent-cyan-glow: rgba(0, 245, 212, 0.45);
-  --accent-magenta: #f72585;
-  --accent-magenta-glow: rgba(247, 37, 133, 0.45);
-  --accent-purple: #7209b7;
-  --accent-gold: #ffd166;
-  --accent-blue: #4cc9f0;
+/* ==============================================================================
+   THEMES: Emerald Lab (Default), Synthwave, Cosmic Space, Solar Flare
+   ============================================================================== */
+
+/* 1. EMERALD LAB (Matrix Bio-Cyberpunk - Default Theme) */
+:root, [data-theme="emerald"] {
+  --theme-name: 'Emerald Lab';
+  --bg-primary: #020804;
+  --bg-secondary: #010402;
+  --bg-radial-1: rgba(0, 245, 155, 0.24);
+  --bg-radial-2: rgba(255, 183, 3, 0.18);
+  --bg-radial-3: rgba(16, 185, 129, 0.22);
+
+  --accent-cyan: #00f59b;
+  --accent-cyan-glow: rgba(0, 245, 155, 0.55);
+  --accent-magenta: #ffb703;
+  --accent-magenta-glow: rgba(255, 183, 3, 0.55);
+  --accent-purple: #059669;
+  --accent-gold: #fbbf24;
+  --accent-blue: #38bdf8;
   --danger: #ef476f;
 
-  --text-primary: #f0f4f8;
-  --text-muted: #94a3b8;
-  --glass-bg: rgba(14, 19, 32, 0.92);
-  --glass-border: rgba(255, 255, 255, 0.14);
-  --glass-glow: 0 12px 40px rgba(0, 0, 0, 0.75);
+  --text-primary: #f0fdf4;
+  --text-muted: #86efac;
+  --glass-bg: rgba(6, 20, 12, 0.94);
+  --glass-border: rgba(0, 245, 155, 0.3);
+  --glass-glow: 0 12px 40px rgba(0, 0, 0, 0.85);
+  --glass-top-line: linear-gradient(90deg, transparent, #00f59b, #ffb703, transparent);
+
+  --btn-primary-bg: linear-gradient(135deg, #00f59b 0%, #059669 100%);
+  --btn-primary-color: #020804;
+  --btn-primary-shadow: 0 6px 20px rgba(0, 245, 155, 0.45);
 
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -33,6 +48,96 @@
 
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 2. SYNTHWAVE (Neon Cyan & Hot Magenta) */
+[data-theme="synthwave"] {
+  --theme-name: 'Synthwave';
+  --bg-primary: #07090e;
+  --bg-secondary: #030407;
+  --bg-radial-1: rgba(114, 9, 183, 0.25);
+  --bg-radial-2: rgba(0, 245, 212, 0.16);
+  --bg-radial-3: rgba(247, 37, 133, 0.18);
+  
+  --accent-cyan: #00f5d4;
+  --accent-cyan-glow: rgba(0, 245, 212, 0.5);
+  --accent-magenta: #f72585;
+  --accent-magenta-glow: rgba(247, 37, 133, 0.5);
+  --accent-purple: #7209b7;
+  --accent-gold: #ffd166;
+  --accent-blue: #4cc9f0;
+  --danger: #ef476f;
+
+  --text-primary: #f0f4f8;
+  --text-muted: #94a3b8;
+  --glass-bg: rgba(14, 19, 32, 0.94);
+  --glass-border: rgba(0, 245, 212, 0.25);
+  --glass-glow: 0 12px 40px rgba(0, 0, 0, 0.75);
+  --glass-top-line: linear-gradient(90deg, transparent, #00f5d4, #f72585, transparent);
+
+  --btn-primary-bg: linear-gradient(135deg, #00f5d4 0%, #00b4d8 100%);
+  --btn-primary-color: #050811;
+  --btn-primary-shadow: 0 6px 20px rgba(0, 245, 212, 0.35);
+}
+
+/* 3. COSMIC DEEP SPACE (Astral Violet & Electric Blue) */
+[data-theme="cosmic"] {
+  --theme-name: 'Cosmic Space';
+  --bg-primary: #03040e;
+  --bg-secondary: #010206;
+  --bg-radial-1: rgba(67, 97, 238, 0.28);
+  --bg-radial-2: rgba(181, 23, 158, 0.24);
+  --bg-radial-3: rgba(76, 201, 240, 0.18);
+
+  --accent-cyan: #4cc9f0;
+  --accent-cyan-glow: rgba(76, 201, 240, 0.55);
+  --accent-magenta: #b5179e;
+  --accent-magenta-glow: rgba(181, 23, 158, 0.55);
+  --accent-purple: #3a0ca3;
+  --accent-gold: #ffbe0b;
+  --accent-blue: #4361ee;
+  --danger: #ef476f;
+
+  --text-primary: #f8fafc;
+  --text-muted: #94a3b8;
+  --glass-bg: rgba(10, 14, 32, 0.94);
+  --glass-border: rgba(76, 201, 240, 0.3);
+  --glass-glow: 0 12px 40px rgba(0, 0, 0, 0.85);
+  --glass-top-line: linear-gradient(90deg, transparent, #4cc9f0, #b5179e, transparent);
+
+  --btn-primary-bg: linear-gradient(135deg, #4cc9f0 0%, #7209b7 100%);
+  --btn-primary-color: #ffffff;
+  --btn-primary-shadow: 0 6px 20px rgba(76, 201, 240, 0.45);
+}
+
+/* 4. SOLAR FLARE (Molten Ruby & Amber Flame) */
+[data-theme="solar"] {
+  --theme-name: 'Solar Flare';
+  --bg-primary: #0b0406;
+  --bg-secondary: #050102;
+  --bg-radial-1: rgba(255, 0, 84, 0.24);
+  --bg-radial-2: rgba(255, 158, 0, 0.22);
+  --bg-radial-3: rgba(208, 0, 0, 0.2);
+
+  --accent-cyan: #ff9e00;
+  --accent-cyan-glow: rgba(255, 158, 0, 0.55);
+  --accent-magenta: #ff0054;
+  --accent-magenta-glow: rgba(255, 0, 84, 0.55);
+  --accent-purple: #9d0208;
+  --accent-gold: #ffe49e;
+  --accent-blue: #faa307;
+  --danger: #ef476f;
+
+  --text-primary: #fff1f2;
+  --text-muted: #fca5a5;
+  --glass-bg: rgba(20, 8, 12, 0.94);
+  --glass-border: rgba(255, 158, 0, 0.32);
+  --glass-glow: 0 12px 40px rgba(0, 0, 0, 0.85);
+  --glass-top-line: linear-gradient(90deg, transparent, #ff9e00, #ff0054, transparent);
+
+  --btn-primary-bg: linear-gradient(135deg, #ff9e00 0%, #ff0054 100%);
+  --btn-primary-color: #0c0406;
+  --btn-primary-shadow: 0 6px 20px rgba(255, 158, 0, 0.45);
 }
 
 * {
@@ -60,14 +165,15 @@ html, body {
   overflow: hidden;
   background-color: var(--bg-primary);
   background-image: 
-    radial-gradient(circle at 20% 20%, rgba(0, 245, 212, 0.12) 0%, transparent 45%),
-    radial-gradient(circle at 80% 80%, rgba(247, 37, 133, 0.15) 0%, transparent 50%),
-    linear-gradient(180deg, #07090e 0%, #030407 100%);
+    radial-gradient(circle at 20% 20%, var(--bg-radial-1) 0%, transparent 45%),
+    radial-gradient(circle at 80% 80%, var(--bg-radial-2) 0%, transparent 50%),
+    linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   color: var(--text-primary);
   font-family: var(--font-body);
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
+  transition: background-color 0.4s ease, color 0.3s ease;
 }
 
 /* ==============================================================================
@@ -445,7 +551,7 @@ html, body {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, var(--accent-cyan), var(--accent-magenta), transparent);
+  background: var(--glass-top-line);
 }
 
 /* Overlay Header */

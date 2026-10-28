@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="emerald">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Prism Laser | CIEL WebGames</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,15 90,85 10,85' fill='none' stroke='%2300f5d4' stroke-width='8'/><line x1='10' y1='50' x2='50' y2='50' stroke='%23ffffff' stroke-width='6'/><line x1='50' y1='50' x2='90' y2='30' stroke='%2300f5d4' stroke-width='6'/><line x1='50' y1='50' x2='90' y2='70' stroke='%23f72585' stroke-width='6'/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,15 90,85 10,85' fill='none' stroke='%2300f59b' stroke-width='8'/><line x1='10' y1='50' x2='50' y2='50' stroke='%23ffffff' stroke-width='6'/><line x1='50' y1='50' x2='90' y2='30' stroke='%2300f59b' stroke-width='6'/><line x1='50' y1='50' x2='90' y2='70' stroke='%23ffb703' stroke-width='6'/></svg>">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -49,6 +49,9 @@
             </div>
           </div>
           <div class="hud-right">
+            <button id="btnThemeToggleHud" class="hud-btn" title="Change Theme" aria-label="Change Theme">
+              <span id="hudThemeIcon">🎨</span>
+            </button>
             <button id="btnSoundToggle" class="hud-btn" title="Toggle Sound" aria-label="Toggle Sound">
               <span class="sound-icon">🔊</span>
             </button>
@@ -123,6 +126,9 @@
           </div>
 
           <div class="menu-footer-links">
+            <button id="btnThemeMenu" class="icon-toggle-btn theme-toggle-btn" title="Change Visual Theme">
+              <span id="themeMenuIcon">🧪</span> <span id="themeMenuName">Theme: Emerald Lab</span>
+            </button>
             <button id="btnSoundMenu" class="icon-toggle-btn" title="Sound Toggle">
               <span id="soundMenuIcon">🔊</span> Sound
             </button>
@@ -216,6 +222,9 @@
             </button>
             <button id="btnPauseRestart" class="btn-secondary">
               <span>↺</span> RESTART LEVEL
+            </button>
+            <button id="btnPauseTheme" class="btn-secondary">
+              <span id="pauseThemeIcon">🧪</span> <span id="pauseThemeLabel">THEME: EMERALD LAB</span>
             </button>
             <button id="btnPauseSelect" class="btn-secondary">
               <span>⚏</span> LEVEL SELECT
