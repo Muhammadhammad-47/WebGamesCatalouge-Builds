@@ -47,9 +47,6 @@
  function resizeLoaderFunc(){
 	stageWidth=$(window).width();
 	stageHeight=$(window).height();
-	
-	$('#mainLoader').css('left', checkContentWidth($('#mainLoader')));
-	$('#mainLoader').css('top', checkContentHeight($('#mainLoader')));
  }
 
 /*!
