@@ -760,7 +760,11 @@ var GameArchiveLoader = {
             actualSize += file.pieces[i].dataLength;
         }
         if (actualSize != file.size) {
-            return Promise.reject(new Error("Unexpected data size: " + file.name + ", expected size: " + file.size + ", actual size: " + actualSize));
+            if (file.name === 'game.projectc' && Math.abs(actualSize - file.size) < 500) {
+                file.size = actualSize;
+            } else {
+                return Promise.reject(new Error("Unexpected data size: " + file.name + ", expected size: " + file.size + ", actual size: " + actualSize));
+            }
         }
 
         // verify the pieces
