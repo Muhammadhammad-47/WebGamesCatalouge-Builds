@@ -1,0 +1,29 @@
+{
+    "gameId": "ciel-one-line-draw",
+    "productName": "One Line Draw",
+    "companyName": "CIEL Tech",
+    "publisher": "CIEL WebGames",
+    "version": "1.0.0",
+    "category": "Puzzle",
+    "tags": [
+        "puzzle",
+        "drawing",
+        "brain",
+        "casual",
+        "html5"
+    ],
+    "adsConfig": {
+        "testMode": true,
+        "publisherId": "ca-pub-0000000000000000",
+        "adFrequencyHint": "30s",
+        "interstitialDuration": 3,
+        "rewardedDuration": 4
+    },
+    "portalMetadata": {
+        "developer": "CIEL Tech",
+        "releaseDate": "2026-10-28",
+        "rating": "Everyone",
+        "controls": "Desktop: Mouse drag. Mobile/Tablet: Touch and drag."
+    }
+}
+
