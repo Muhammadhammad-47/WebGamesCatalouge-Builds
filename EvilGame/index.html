@@ -18,19 +18,11 @@
   <link rel="shortcut icon" href="icon.ico" type="image/x-icon">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
 
-  <!-- ======================================================== -->
-  <!-- GOOGLE H5 GAMES ADS / AD PLACEMENT API SCRIPT            -->
-  <!-- Replace ca-pub-0000000000000000 with your real AdSense ID-->
-  <!-- data-adbreak-test="on" enables interactive test ad breaks-->
-  <!-- ======================================================== -->
-  <script async
-    data-ad-client="ca-pub-0000000000000000"
-    data-ad-channel="0000000000"
-    data-ad-frequency-hint="30s"
-    data-adbreak-test="on"
-    crossorigin="anonymous"
-    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js">
-  </script>
+  <!-- ============================================================= -->
+  <!-- ADSENSE ADS PLACEHOLDER                                       -->
+  <!-- When ready, add your Google AdSense script tag here:          -->
+  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXX" crossorigin="anonymous"></script> -->
+  <!-- ============================================================= -->
 
   <style type="text/css">
 	/* Disable user selection to avoid strange bug in Chrome on Windows */
@@ -146,67 +138,26 @@
   </style>
 
   <script>
-    // Google AdSense for H5 Games queue
-    window.adsbygoogle = window.adsbygoogle || [];
-    window.adBreak = window.adConfig = function(o) { window.adsbygoogle.push(o); };
-
-    // Defold PokiSDK Bridge mapped to Google AdSense H5 Games Ads
+    // Lightweight runtime shim (Zero ads - uninterrupted gameplay)
+    // When ready to connect AdSense, insert your adBreak calls inside commercialBreak & rewardedBreak.
     window.PokiSDK = {
       init: function() {
         return Promise.resolve();
       },
       gameLoadingStart: function() {},
       gameLoadingProgress: function(data) {},
-      gameLoadingFinished: function() {
-        // Trigger start ad if available
-        if (typeof window.adBreak === 'function') {
-          try {
-            window.adBreak({ type: 'start', name: 'level_devil_start' });
-          } catch (e) {}
-        }
-      },
+      gameLoadingFinished: function() {},
       gameplayStart: function() {},
       gameplayStop: function() {},
       commercialBreak: function(fn) {
-        return new Promise(function(resolve) {
-          if (typeof window.adBreak === 'function') {
-            try {
-              window.adBreak({
-                type: 'next',
-                name: 'level_devil_interstitial',
-                beforeAd: function() { if (fn) fn(); },
-                afterAd: function() {},
-                adBreakDone: function() { resolve(); }
-              });
-              setTimeout(resolve, 1200);
-              return;
-            } catch (e) {}
-          }
-          if (fn) fn();
-          resolve();
-        });
+        // [ADSENSE INTERSTITIAL PLACEHOLDER]
+        if (typeof fn === 'function') fn();
+        return Promise.resolve();
       },
       rewardedBreak: function(fn) {
-        return new Promise(function(resolve) {
-          if (typeof window.adBreak === 'function') {
-            try {
-              var rewarded = false;
-              window.adBreak({
-                type: 'reward',
-                name: 'level_devil_reward',
-                beforeAd: function() { if (fn) fn(); },
-                beforeReward: function(showAdFn) { showAdFn(); },
-                adViewed: function() { rewarded = true; },
-                adDismissed: function() { rewarded = false; },
-                adBreakDone: function() { resolve(rewarded); }
-              });
-              setTimeout(function() { resolve(true); }, 1200);
-              return;
-            } catch (e) {}
-          }
-          if (fn) fn();
-          resolve(true);
-        });
+        // [ADSENSE REWARDED AD PLACEHOLDER]
+        if (typeof fn === 'function') fn();
+        return Promise.resolve(true); // Automatically grants reward
       },
       displayAd: function(e, t, o, i) { if (i) i(true); if (o) o(); },
       destroyAd: function() {},
@@ -298,7 +249,7 @@
       runFunc();
     }
 
-    // Launch immediately via local bridge
+    // Launch immediately
     startEngine();
   </script>
  </body>
