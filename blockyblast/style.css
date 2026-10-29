@@ -243,6 +243,7 @@ html, body {
     z-index: 999999;
     transform-origin: 0 0;
     will-change: transform;
+    transition: none !important;
     filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.6));
 }
 

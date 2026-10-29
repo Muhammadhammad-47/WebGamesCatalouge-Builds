@@ -281,23 +281,49 @@ class BlockyGame {
 
         window.audioManager.play('pickup', 0.8);
 
-        // Get cell size on board to scale piece 1:1 with board
-        const boardRect = this.boardEl.getBoundingClientRect();
-        const boardCellSize = (boardRect.width - 20) / 8; // account for gaps/padding
+        // Measure the first cell of the actual board grid
+        const firstCell = this.cellElements[0][0];
+        const cellRect = firstCell.getBoundingClientRect();
+        const cellSize = cellRect.width;
 
-        // Create dragging element
-        this.dragElement = this.createPieceElement(piece, boardCellSize);
+        // Gap is measured between adjacent cells
+        const secondCell = this.cellElements[0][1];
+        const secondRect = secondCell.getBoundingClientRect();
+        const cellGap = secondRect.left - cellRect.right;
+
+        this.boardCellSize = cellSize;
+        this.boardCellGap = cellGap > 0 ? cellGap : 4;
+
+        // Create dragging element sized exactly to the board grid
+        this.dragElement = this.createPieceElement(piece, this.boardCellSize);
         this.dragElement.classList.add('dragging');
+
+        // Apply grid gap matching the board
+        this.dragElement.style.gap = `${this.boardCellGap}px`;
+
+        // Calculate piece bounds
+        const shape = piece.shape;
+        const rows = shape.length;
+        const cols = shape[0].length;
+        const pieceTotalWidth = cols * this.boardCellSize + (cols - 1) * this.boardCellGap;
+        const pieceTotalHeight = rows * this.boardCellSize + (rows - 1) * this.boardCellGap;
+
+        this.dragOffsetX = pieceTotalWidth / 2;
+        // On touch: raise piece above the finger so player can see board cells clearly
+        const isTouch = e.pointerType === 'touch' || (e.touches && e.touches.length > 0);
+        this.dragOffsetY = pieceTotalHeight / 2 + (isTouch ? 80 : 0);
+
+        // Position immediately BEFORE appending to DOM to prevent top-left corner flash!
+        const initialX = e.clientX - this.dragOffsetX;
+        const initialY = e.clientY - this.dragOffsetY;
+        this.dragElement.style.transform = `translate3d(${initialX}px, ${initialY}px, 0)`;
+
         document.body.appendChild(this.dragElement);
 
         originalEl.style.opacity = '0.2';
         this.originalPieceEl = originalEl;
 
-        const pieceRect = this.dragElement.getBoundingClientRect();
-        this.dragOffsetX = pieceRect.width / 2;
-        this.dragOffsetY = pieceRect.height / 2 + (e.pointerType === 'touch' ? this.touchFingerOffset : 0);
-
-        this.updateDragPosition(e.clientX, e.clientY);
+        this.updateBoardPreview(e.clientX, e.clientY);
 
         const onMove = (moveEvent) => {
             moveEvent.preventDefault();
@@ -325,19 +351,22 @@ class BlockyGame {
     }
 
     getHoveredGridCoords(clientX, clientY) {
-        const boardRect = this.boardEl.getBoundingClientRect();
-        const dropX = clientX - this.dragOffsetX;
-        const dropY = clientY - this.dragOffsetY;
+        // Piece top-left coordinate in screen space
+        const pieceTopLeftX = clientX - this.dragOffsetX;
+        const pieceTopLeftY = clientY - this.dragOffsetY;
 
-        // Board inner content offset
-        const relX = dropX - boardRect.left;
-        const relY = dropY - boardRect.top;
+        // Board top-left cell coordinate
+        const firstCell = this.cellElements[0][0];
+        const cellRect = firstCell.getBoundingClientRect();
 
-        const cellWidth = boardRect.width / 8;
-        const cellHeight = boardRect.height / 8;
+        const step = this.boardCellSize + this.boardCellGap;
 
-        const col = Math.round(relX / cellWidth);
-        const row = Math.round(relY / cellHeight);
+        // Calculate offset in board steps relative to cell (0, 0)
+        const relX = pieceTopLeftX - cellRect.left;
+        const relY = pieceTopLeftY - cellRect.top;
+
+        const col = Math.round(relX / step);
+        const row = Math.round(relY / step);
 
         return { row, col };
     }
