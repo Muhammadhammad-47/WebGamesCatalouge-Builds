@@ -1,0 +1,386 @@
+/* =============================================================================
+   Level Devil - Landscape CSS
+   Pure CSS, responsive letterboxed canvas, touch controls & modals
+   ============================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap');
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #1a0301;
+    font-family: 'Fredoka', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #ffffff;
+}
+
+/* Master Landscape Viewport Container */
+#gameWrapper {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: radial-gradient(circle at center, #2e0703 0%, #120201 100%);
+}
+
+/* Canvas Container with fixed 16:9 ratio */
+#canvasContainer {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    max-width: 100vw;
+    max-height: 100vh;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85);
+    background: #230301;
+    overflow: hidden;
+}
+
+#gameCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    outline: none;
+}
+
+/* =============================================================================
+   HUD / TOP HEADER BAR
+   ============================================================================= */
+#hudOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 52px;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.hud-left, .hud-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: auto;
+}
+
+.hud-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+#uiLevelNumber {
+    font-size: 14px;
+    color: #ff9f43;
+    letter-spacing: 2px;
+    font-weight: 700;
+}
+
+#uiLevelTitle {
+    font-size: 20px;
+    color: #ffffff;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+#uiDeaths {
+    background: rgba(0, 0, 0, 0.45);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ff6b6b;
+    border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.hud-btn {
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: #ffffff;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.2s;
+}
+
+.hud-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.08);
+}
+
+.hud-btn:active {
+    transform: scale(0.92);
+}
+
+/* =============================================================================
+   TOUCH CONTROLS (Mobile Landscape)
+   ============================================================================= */
+#touchControls {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    padding: 0 30px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.touch-cluster-left, .touch-cluster-right {
+    display: flex;
+    gap: 16px;
+    pointer-events: auto;
+}
+
+.touch-btn {
+    width: 64px;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    color: #ffffff;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    touch-action: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    transition: background 0.1s, transform 0.1s;
+}
+
+.touch-btn:active {
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(0.92);
+}
+
+.touch-btn.jump {
+    width: 72px;
+    height: 72px;
+    background: rgba(245, 83, 56, 0.35);
+    border-color: #f55338;
+}
+
+.touch-btn.jump:active {
+    background: rgba(245, 83, 56, 0.7);
+}
+
+/* Hide touch buttons on mouse-only desktop screens if window is large */
+@media (hover: hover) and (pointer: fine) and (min-width: 900px) {
+    #touchControls {
+        display: none;
+    }
+}
+
+/* =============================================================================
+   MODALS (Pause, Level Select, Victory)
+   ============================================================================= */
+.modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(18, 2, 1, 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 100;
+}
+
+.modal.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-content {
+    background: #280603;
+    border: 2px solid #581108;
+    border-radius: 16px;
+    padding: 30px 40px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    max-width: 440px;
+    width: 90%;
+}
+
+.modal-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ff9f43;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+}
+
+.modal-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.1s, filter 0.2s;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #f55338 0%, #d63031 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 15px rgba(245, 83, 56, 0.4);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-primary:hover, .btn-secondary:hover {
+    filter: brightness(1.15);
+    transform: translateY(-2px);
+}
+
+.btn-primary:active, .btn-secondary:active {
+    transform: translateY(1px);
+}
+
+/* Level Select Grid */
+#levelGrid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.level-item {
+    aspect-ratio: 1;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.level-item.unlocked {
+    background: #3e0a05;
+    border-color: #f55338;
+}
+
+.level-item.unlocked:hover {
+    background: #f55338;
+    transform: scale(1.08);
+}
+
+.level-item.current {
+    box-shadow: 0 0 14px #ffd32a;
+    border-color: #ffd32a;
+}
+
+.level-item.locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.level-item .lvl-num {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.level-item .lvl-title {
+    font-size: 9px;
+    opacity: 0.8;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 90%;
+    margin-top: 4px;
+}
+
+/* =============================================================================
+   PORTRAIT ROTATE OVERLAY
+   ============================================================================= */
+#rotateOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #180301;
+    z-index: 9999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px;
+}
+
+.rotate-icon {
+    font-size: 54px;
+    animation: rotatePhone 2.2s infinite ease-in-out;
+    margin-bottom: 20px;
+}
+
+@keyframes rotatePhone {
+    0%, 15% { transform: rotate(0deg); }
+    50%, 65% { transform: rotate(90deg); }
+    100% { transform: rotate(0deg); }
+}
+
+#rotateOverlay h2 {
+    font-size: 22px;
+    color: #ff9f43;
+    margin-bottom: 8px;
+}
+
+#rotateOverlay p {
+    font-size: 14px;
+    color: #cccccc;
+}
+
+/* Show rotate prompt on mobile when held in portrait */
+@media screen and (orientation: portrait) and (max-width: 768px) {
+    #rotateOverlay {
+        display: flex;
+    }
+}

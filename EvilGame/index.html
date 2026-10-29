@@ -1,265 +1,112 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
- <head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, minimal-ui, shrink-to-fit=no, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="mobile-web-app-capable" content="yes">
-  
-  <title>Level Devil | CIEL WebGames</title>
-  <meta name="Title" content="Level Devil | CIEL WebGames">
-  <meta name="description" content="Play Level Devil on CIEL WebGames. A hilarious, troll-filled platformer puzzle where the unexpected always happens.">
-  <meta name="keywords" content="level devil, platformer, rage game, troll puzzle, ciel webgames, ciel tech">
-  <meta name="author" content="CIEL Tech">
-  <meta name="publisher" content="CIEL WebGames">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Level Devil | CIEL WebGames</title>
+    
+    <meta name="description" content="Play Level Devil on CIEL WebGames. An addictive, troll-filled rage platformer puzzle where the unexpected always happens.">
+    <meta name="keywords" content="level devil, platformer, rage game, troll puzzle, ciel webgames, ciel tech, html5 games">
+    <meta name="author" content="CIEL Tech">
+    <meta name="theme-color" content="#1a0301">
+    
+    <link rel="shortcut icon" href="icon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="css/style.css">
 
-  <link rel="shortcut icon" href="icon.ico" type="image/x-icon">
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <!-- ============================================================= -->
+    <!-- ADSENSE PLACEHOLDER                                           -->
+    <!-- When ready, uncomment and insert your client ID:             -->
+    <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXX" crossorigin="anonymous"></script> -->
+    <!-- ============================================================= -->
+</head>
+<body>
 
-  <!-- Resource Preloads for Instant Parallel Download -->
-  <link rel="preload" href="LevelDevil.wasm" as="fetch" type="application/wasm" crossorigin>
-  <link rel="preload" href="LevelDevil_wasm.js" as="script">
-  <link rel="preload" href="dmloader.js" as="script">
-  <link rel="preload" href="archive/game0.arcd" as="fetch" crossorigin>
-  <link rel="preload" href="archive/game1.arcd" as="fetch" crossorigin>
-  <link rel="preload" href="archive/game2.arcd" as="fetch" crossorigin>
-  <link rel="preload" href="logo.png" as="image">
+    <!-- Main Game Viewport -->
+    <div id="gameWrapper">
+        <div id="canvasContainer">
+            <!-- 16:9 Canvas -->
+            <canvas id="gameCanvas" width="960" height="540"></canvas>
 
-  <!-- ============================================================= -->
-  <!-- ADSENSE ADS PLACEHOLDER                                       -->
-  <!-- When ready, add your Google AdSense script tag here:          -->
-  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXX" crossorigin="anonymous"></script> -->
-  <!-- ============================================================= -->
+            <!-- HUD Overlay -->
+            <div id="hudOverlay">
+                <div class="hud-left">
+                    <button id="btnPause" class="hud-btn" title="Pause (Esc / P)">⏸</button>
+                    <button id="btnRestart" class="hud-btn" title="Restart (R)">🔄</button>
+                    <button id="btnLevelSelect" class="hud-btn" title="Level Select">☰</button>
+                </div>
+                <div class="hud-center">
+                    <span id="uiLevelNumber">LEVEL 1</span>
+                    <span id="uiLevelTitle">BABY STEPS</span>
+                </div>
+                <div class="hud-right">
+                    <span id="uiDeaths">DEATHS: 0</span>
+                    <button id="btnMute" class="hud-btn" title="Toggle Sound">🔊</button>
+                    <button id="btnFullscreen" class="hud-btn" title="Toggle Fullscreen">⛶</button>
+                </div>
+            </div>
 
-  <style type="text/css">
-	/* Disable user selection to avoid strange bug in Chrome on Windows */
-	body {
-		position: fixed;
-		margin: 0;
-		padding: 0;
-		background-color: #2c0701;
-	}
+            <!-- Touch Controls for Mobile Landscape -->
+            <div id="touchControls">
+                <div class="touch-cluster-left">
+                    <button id="touchLeft" class="touch-btn" aria-label="Move Left">◀</button>
+                    <button id="touchRight" class="touch-btn" aria-label="Move Right">▶</button>
+                </div>
+                <div class="touch-cluster-right">
+                    <button id="touchJump" class="touch-btn jump" aria-label="Jump">▲</button>
+                </div>
+            </div>
 
-	.canvas-app-container {
-		width: 100%;
-		height: 100%;
-		position: absolute;
-		align-items: center;
-		justify-content: center;
-		overflow: hidden;
-		background: #6d1102;
-		background: linear-gradient(135deg, rgba(109,17,2,1) 0%, rgba(109,17,2,1) 49%, rgba(109,17,2,1) 50%, rgba(109,17,2,1) 100%);
-	}
+            <!-- Pause Modal -->
+            <div id="modalPause" class="modal">
+                <div class="modal-content">
+                    <h2 class="modal-title">GAME PAUSED</h2>
+                    <div class="modal-buttons">
+                        <button id="btnResume" class="btn-primary">RESUME</button>
+                        <button class="btn-secondary" onclick="window.game.restartLevel(); window.game.togglePause();">RESTART LEVEL</button>
+                        <button class="btn-secondary" onclick="window.game.showLevelSelect();">LEVEL SELECT</button>
+                    </div>
+                </div>
+            </div>
 
-	.canvas-app-container:-webkit-full-screen {
-		width: auto;
-		height: auto;
-	}
+            <!-- Level Select Modal -->
+            <div id="modalLevelSelect" class="modal">
+                <div class="modal-content" style="max-width: 520px;">
+                    <h2 class="modal-title">SELECT LEVEL</h2>
+                    <div id="levelGrid"></div>
+                    <div class="modal-buttons" style="margin-top: 15px;">
+                        <button id="btnCloseLevels" class="btn-secondary">CLOSE</button>
+                    </div>
+                </div>
+            </div>
 
-	#canvas {
-		outline: none;
-		border: 0;
-		width: 100%;
-		vertical-align: bottom;
-	}
+            <!-- Victory Modal -->
+            <div id="modalVictory" class="modal">
+                <div class="modal-content">
+                    <h2 class="modal-title">🎉 YOU ESCAPED!</h2>
+                    <p id="victoryText" style="line-height: 1.6; margin-bottom: 20px; font-size: 16px;"></p>
+                    <div class="modal-buttons">
+                        <button id="btnNextLevel" class="btn-primary">PLAY AGAIN</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-	#canvas-container {
-		position: relative;
-	}
+    <!-- Mobile Rotate Overlay -->
+    <div id="rotateOverlay">
+        <div class="rotate-icon">📱</div>
+        <h2>PLEASE ROTATE YOUR DEVICE</h2>
+        <p>Level Devil is designed to be played in landscape mode.</p>
+    </div>
 
-	canvas:focus, canvas:active {
-		outline: none;
-		border: 0;
-		-moz-outline-style: none;
-	}
+    <!-- Scripts -->
+    <script src="js/audio.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/levels.js"></script>
+    <script src="js/game.js"></script>
 
-	body, div {
-		-webkit-tap-highlight-color: rgba(0,0,0,0);
-		-webkit-touch-callout: none;
-		-webkit-user-select: none;
-		-khtml-user-select: none;
-		-moz-user-select: none;
-		-ms-user-select: none;
-		user-select: none;
-	}
-
-	.canvas-app-progress {
-		position: absolute;
-		top: calc(50vh + max(5vh, 10vw));
-		left: 50%;
-		transform: translateX(-50%);
-		background-color: #2f1509;
-		width: 20vw;
-		height: 1vw;
-	}
-
-	.canvas-app-progress-bar {
-		font-size: 12px;
-		height: 100%;
-		color: rgb(0, 255, 38);
-		background-color: #d34f2b;
-		text-align: center;
-		line-height: 20px;
-		transition: transform 0.15s ease-out;
-		transform-origin: left;
-		transform: scaleX(0.0);
-	}
-
-	.link, .button {
-		font-family: sans-serif;
-		font-size: 14px;
-		font-weight: normal;
-		line-height: normal;
-		letter-spacing: 0px;
-		padding-top: 12px;
-	}
-
-	.buttons-background {
-		background-color: #2c0701;
-		width: 100%;
-		height: 42px;
-	}
-
-	.canvas-app-canvas {
-		background-image: url("logo.png");
-		background-repeat: no-repeat;
-		background-position: center 20%;
-		background-size: 50vw;
-		image-rendering: pixelated;
-	}
-
-	#ciel-watermark {
-		position: absolute;
-		bottom: 12px;
-		left: 50%;
-		transform: translateX(-50%);
-		color: rgba(255, 255, 255, 0.4);
-		font-family: sans-serif;
-		font-size: 11px;
-		font-weight: 600;
-		letter-spacing: 1px;
-		text-transform: uppercase;
-		pointer-events: none;
-		z-index: 10;
-	}
-  </style>
-
-  <script>
-    // Lightweight runtime shim (Zero ads - uninterrupted gameplay)
-    // When ready to connect AdSense, insert your adBreak calls inside commercialBreak & rewardedBreak.
-    window.PokiSDK = {
-      init: function() {
-        return Promise.resolve();
-      },
-      gameLoadingStart: function() {},
-      gameLoadingProgress: function(data) {},
-      gameLoadingFinished: function() {},
-      gameplayStart: function() {},
-      gameplayStop: function() {},
-      commercialBreak: function(fn) {
-        // [ADSENSE INTERSTITIAL PLACEHOLDER]
-        if (typeof fn === 'function') fn();
-        return Promise.resolve();
-      },
-      rewardedBreak: function(fn) {
-        // [ADSENSE REWARDED AD PLACEHOLDER]
-        if (typeof fn === 'function') fn();
-        return Promise.resolve(true); // Automatically grants reward
-      },
-      displayAd: function(e, t, o, i) { if (i) i(true); if (o) o(); },
-      destroyAd: function() {},
-      getLeaderboard: function() { return Promise.resolve(); },
-      shareableURL: function() { return Promise.reject(); },
-      getURLParam: function() { return ''; },
-      getLanguage: function() { return (navigator.language || 'en').split('-')[0]; },
-      getDeviceInfo: function() {
-        var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-        return { category: isMobile ? 'mobile' : 'desktop' };
-      },
-      isAdBlocked: function() { return false; },
-      measure: function() {},
-      happyTime: function() {}
-    };
-  </script>
- </head>
- <body>
-  <div id="app-container" class="canvas-app-container">
-   <div id="running-from-file-warning" style="display: none; margin: 3em;">
-    <h1>Running from local file ⚠️</h1>
-    <p>Please run this game on a web server or localhost.</p>
-   </div>
-   <div id="webgl-not-supported" style="display: none; margin: 3em;">
-    <h1>WebGL not supported ⚠️</h1>
-    <p>WebGL is not supported by your browser - visit <a href="https://get.webgl.org/">https://get.webgl.org/</a> to learn more.</p>
-   </div>
-   <div id="canvas-container" class="canvas-app-canvas-container">
-    <canvas id="canvas" class="canvas-app-canvas" tabindex="1" width="854" height="480"></canvas>
-   </div>
-   <div id="ciel-watermark">CIEL WebGames</div>
-   <div class="buttons-background"></div>
-  </div>
-
-  <script>
-    if (typeof globalThis === 'undefined') {
-      window.globalThis = window;
-    }
-  </script>
-  <script id="engine-loader" type="text/javascript" src="dmloader.js"></script>
-  <script id="engine-setup" type="text/javascript"></script>
-  <script id="engine-start" type="text/javascript">
-    var runningFromFileWarning = document.getElementById("running-from-file-warning");
-    if (window.location.href.startsWith("file://")) {
-      runningFromFileWarning.style.display = "block";
-    } else {
-      EngineLoader.load("canvas", "LevelDevil");
-      if (runningFromFileWarning && runningFromFileWarning.parentNode) {
-        runningFromFileWarning.parentNode.removeChild(runningFromFileWarning);
-      }
-    }
-  </script>
-  <script type="text/javascript">
-    async function clipboard_copy(thing_to_copy) {
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(thing_to_copy);
-      }
-    }
-  </script>
-  <script id="poki-sdk-setup" type="text/javascript">
-    var isWasmLoaded = false;
-    var isPokiSDKInited = false;
-    var runFunc = function() {
-      if (isPokiSDKInited && isWasmLoaded) {
-        Module.runApp("canvas");
-      }
-    };
-    Module['onRuntimeInitialized'] = function() {
-      isWasmLoaded = true;
-      runFunc();
-    };
-
-    function startEngine() {
-      var data = {};
-      var isLoadFinished = false;
-      if (typeof Progress !== 'undefined') {
-        Progress.addListener(function(percentage) {
-          data.percentageDone = percentage / 100;
-          if (!isLoadFinished && window.PokiSDK) {
-            window.PokiSDK.gameLoadingProgress(data);
-          }
-          if (percentage === 100 && !isLoadFinished) {
-            if (window.PokiSDK) window.PokiSDK.gameLoadingFinished();
-            isLoadFinished = true;
-          }
-        });
-      }
-      isPokiSDKInited = true;
-      runFunc();
-    }
-
-    // Launch immediately
-    startEngine();
-  </script>
- </body>
+</body>
 </html>
