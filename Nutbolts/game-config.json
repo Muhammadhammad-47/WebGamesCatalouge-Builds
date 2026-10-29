@@ -1,0 +1,24 @@
+{
+    "gameId": "nuts-and-bolts",
+    "productName": "Nuts and Bolts Screwing Puzzle",
+    "companyName": "Ciel Tech",
+    "version": "1.0.0",
+    "bundleVersion": "1",
+    "description": "Nuts and Bolts: Screwing Puzzle is a brain puzzle game where you strategically unscrew bolts and untangle metal sheets and wooden plates.",
+    "category": "Puzzle",
+    "tags": [
+        "puzzle",
+        "nuts-and-bolts",
+        "brain",
+        "physics",
+        "casual",
+        "html5"
+    ],
+    "orientation": "portrait",
+    "portalMetadata": {
+        "developer": "CIEL Tech",
+        "releaseDate": "2026-10-29",
+        "rating": "Everyone",
+        "controls": "Desktop: Mouse Click / Drag. Mobile: Touch Tap."
+    }
+}

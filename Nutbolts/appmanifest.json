@@ -1,0 +1,11 @@
+{
+	"name": "Nuts and Bolts Screwing Puzzle",
+	"short_name": "Nuts and Bolts Screwing Puzzle",
+	"description": "",
+	"start_url": "index.html",
+	"display": "fullscreen",
+	"orientation": "any",
+	"background_color": "#ffffff",
+	"icons": [],
+	"screenshots": []
+}
