@@ -49,13 +49,61 @@
         <!-- 8x8 BOARD -->
         <main class="board-container">
             <div id="game-board" class="game-board"></div>
+
+            <!-- ACTIVE POWERUP MODE BANNER -->
+            <div id="powerup-mode-banner" class="powerup-banner">
+                <span id="powerup-mode-text">TAP ANY CELL</span>
+                <button id="powerup-mode-cancel" class="powerup-cancel-btn">✕</button>
+            </div>
         </main>
+
+        <!-- POWERUP TOOLBAR -->
+        <div class="powerup-toolbar" id="powerup-toolbar">
+            <button id="powerup-hammer" class="powerup-btn" title="Hammer: Smash 1 block">
+                <img src="assets/icons/hammer.png" alt="Hammer" class="powerup-icon-img">
+                <span class="powerup-badge" id="count-hammer">3</span>
+            </button>
+            <button id="powerup-bomb" class="powerup-btn" title="Bomb: 3x3 blast">
+                <img src="assets/icons/bomb.png" alt="Bomb" class="powerup-icon-img">
+                <span class="powerup-badge" id="count-bomb">2</span>
+            </button>
+            <button id="powerup-refresh" class="powerup-btn" title="Shuffle dock pieces">
+                <img src="assets/icons/refresh.png" alt="Refresh" class="powerup-icon-img">
+                <span class="powerup-badge" id="count-refresh">3</span>
+            </button>
+            <button id="powerup-rotate" class="powerup-btn" title="Rotate dock piece">
+                <img src="assets/icons/rotate.png" alt="Rotate" class="powerup-icon-img">
+                <span class="powerup-badge" id="count-rotate">4</span>
+            </button>
+        </div>
 
         <!-- 3-PIECE DOCK -->
         <footer class="piece-dock" id="piece-dock"></footer>
 
         <!-- PARTICLES LAYER -->
         <div id="particles-layer"></div>
+
+        <!-- REWARDED AD / MONETIZATION MODAL -->
+        <div id="ad-modal" class="game-modal ad-modal" role="dialog" aria-modal="true">
+            <div class="modal-card ad-card">
+                <div class="ad-tag">SPONSORED REWARD</div>
+                <h3 id="ad-modal-title" class="ad-title">CLAIM POWERUPS</h3>
+                
+                <div class="ad-tv-frame">
+                    <div class="ad-screen">
+                        <div class="ad-spinner"></div>
+                        <div class="ad-logo-pulse">CIEL ARCADE</div>
+                        <p id="ad-reward-desc" class="ad-screen-text">Watching rewarded message...</p>
+                        <div class="ad-timer" id="ad-timer-countdown">5s</div>
+                    </div>
+                    <div class="ad-progress-track">
+                        <div id="ad-progress-bar" class="ad-progress-fill"></div>
+                    </div>
+                </div>
+
+                <button id="btn-close-ad" class="btn-primary btn-claim-ad" style="display: none;">Claim Reward</button>
+            </div>
+        </div>
 
         <!-- GAME OVER MODAL -->
         <div id="game-over-modal" class="game-modal" role="dialog" aria-modal="true">
@@ -71,7 +119,21 @@
                         <span id="final-best" class="modal-value gold">0</span>
                     </div>
                 </div>
-                <button id="btn-play-again" class="btn-primary">Play Again</button>
+
+                <!-- SECOND CHANCE REVIVE MONETIZATION -->
+                <button id="btn-revive-ad" class="btn-revive">
+                    <span class="revive-icon">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </span>
+                    <span class="revive-text">
+                        <strong>SECOND CHANCE</strong>
+                        <small>Clear 3x3 Center & Keep Score!</small>
+                    </span>
+                </button>
+
+                <button id="btn-play-again" class="btn-primary" style="margin-top: 10px;">Play Again</button>
             </div>
         </div>
 
@@ -95,6 +157,8 @@
     <script src="js/pieces.js"></script>
     <script src="js/board.js"></script>
     <script src="js/particles.js"></script>
+    <script src="js/monetization.js"></script>
+    <script src="js/powerups.js"></script>
     <script src="js/game.js"></script>
 
     <!-- PORTAL BACK NAVIGATION -->

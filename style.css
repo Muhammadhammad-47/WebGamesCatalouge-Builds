@@ -438,3 +438,302 @@ html, body {
     color: #ffffff;
     cursor: pointer;
 }
+
+/* POWERUP TOOLBAR */
+.powerup-toolbar {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 2px 0;
+    z-index: 10;
+}
+
+.powerup-btn {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #2A3F6D 0%, #172440 100%);
+    border: 2px solid #4A6BA8;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.powerup-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    border-color: #60A5FA;
+    box-shadow: 0 6px 14px rgba(96, 165, 250, 0.4);
+}
+
+.powerup-btn:active {
+    transform: translateY(1px) scale(0.96);
+}
+
+.powerup-btn.active-powerup {
+    border-color: #FBBF24;
+    background: linear-gradient(180deg, #4F46E5 0%, #312E81 100%);
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.7), inset 0 0 8px rgba(251, 191, 36, 0.5);
+    animation: pulseGlow 1.2s infinite alternate;
+}
+
+@keyframes pulseGlow {
+    from { transform: scale(1.02); box-shadow: 0 0 12px rgba(251, 191, 36, 0.6); }
+    to { transform: scale(1.08); box-shadow: 0 0 22px rgba(251, 191, 36, 0.95); }
+}
+
+.powerup-icon-img {
+    width: 32px;
+    height: 32px;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+
+.powerup-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%);
+    border: 1.5px solid #FEF3C7;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.powerup-badge.badge-ad {
+    background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+    border-color: #A7F3D0;
+}
+
+/* POWERUP MODE BANNER */
+.powerup-banner {
+    display: none;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.92);
+    border: 2px solid #FBBF24;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #FDE047;
+    letter-spacing: 0.5px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+    z-index: 50;
+    align-items: center;
+    gap: 8px;
+    pointer-events: auto;
+}
+
+.powerup-banner.active {
+    display: flex;
+    animation: bannerPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes bannerPop {
+    from { transform: translateX(-50%) scale(0.7); opacity: 0; }
+    to { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+.powerup-cancel-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #EF4444;
+    border: none;
+    color: #fff;
+    font-weight: 900;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* TARGETABLE BOARD CELLS */
+.board-cell.powerup-targetable {
+    cursor: pointer;
+    animation: targetPulse 0.9s infinite alternate ease-in-out;
+}
+
+@keyframes targetPulse {
+    from { box-shadow: inset 0 0 4px rgba(251, 191, 36, 0.5); }
+    to { box-shadow: inset 0 0 14px rgba(251, 191, 36, 0.95); }
+}
+
+.dock-slot.powerup-rotatable {
+    border-color: #FBBF24 !important;
+    animation: rotateSlotPulse 1s infinite alternate;
+    cursor: pointer;
+}
+
+@keyframes rotateSlotPulse {
+    from { transform: scale(1); box-shadow: 0 0 6px rgba(251, 191, 36, 0.4); }
+    to { transform: scale(1.06); box-shadow: 0 0 16px rgba(251, 191, 36, 0.8); }
+}
+
+/* SECOND CHANCE BUTTON */
+.btn-revive {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%);
+    border: 2px solid #FCD34D;
+    color: #FFFFFF;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(245, 158, 11, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.4);
+    transition: transform 0.15s ease, filter 0.15s ease;
+    margin-bottom: 6px;
+}
+
+.btn-revive:hover {
+    transform: scale(1.02);
+    filter: brightness(1.1);
+}
+
+.btn-revive:active {
+    transform: scale(0.97);
+}
+
+.revive-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.revive-text {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.revive-text strong {
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+}
+
+.revive-text small {
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+/* REWARDED AD MODAL */
+.ad-modal .modal-card {
+    background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+    border: 3px solid #38BDF8;
+    max-width: 340px;
+    padding: 24px 20px;
+}
+
+.ad-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: rgba(56, 189, 248, 0.18);
+    border: 1px solid rgba(56, 189, 248, 0.5);
+    color: #38BDF8;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.ad-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: #FBBF24;
+    margin-bottom: 16px;
+}
+
+.ad-tv-frame {
+    width: 100%;
+    background: #020617;
+    border-radius: 14px;
+    border: 2px solid #334155;
+    overflow: hidden;
+    margin-bottom: 16px;
+    box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.7);
+}
+
+.ad-screen {
+    position: relative;
+    padding: 30px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 140px;
+}
+
+.ad-logo-pulse {
+    font-size: 18px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #38BDF8, #818CF8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 2px;
+}
+
+.ad-screen-text {
+    font-size: 13px;
+    color: #94A3B8;
+    text-align: center;
+    max-width: 220px;
+}
+
+.ad-timer {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #38BDF8;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 800;
+    color: #38BDF8;
+}
+
+.ad-progress-track {
+    width: 100%;
+    height: 6px;
+    background: #1E293B;
+}
+
+.ad-progress-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #38BDF8, #10B981);
+    transition: width 0.1s linear;
+}
+
+.btn-claim-ad {
+    background: linear-gradient(180deg, #10B981 0%, #047857 100%);
+    border-color: #34D399;
+}
