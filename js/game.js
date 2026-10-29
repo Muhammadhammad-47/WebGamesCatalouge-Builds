@@ -214,6 +214,13 @@ class BlockyGame {
     renderDock() {
         this.dockEl.innerHTML = '';
 
+        // Determine available slot size dynamically so pieces never overflow
+        const dockRect = this.dockEl.getBoundingClientRect();
+        const dockHeight = dockRect.height > 0 ? dockRect.height : 114;
+        const dockWidth = dockRect.width > 0 ? dockRect.width : 360;
+        const availHeight = Math.max(60, dockHeight - 20);
+        const slotWidth = Math.max(60, (dockWidth - 28) / 3);
+
         for (let i = 0; i < 3; i++) {
             const slot = document.createElement('div');
             slot.className = 'dock-slot';
@@ -221,7 +228,20 @@ class BlockyGame {
 
             const piece = this.availablePieces[i];
             if (piece) {
-                const pieceEl = this.createPieceElement(piece, 24);
+                const shape = piece.shape;
+                const rows = shape.length;
+                const cols = shape[0].length;
+
+                // Dynamically fit piece inside slot with comfortable margins
+                const maxAllowedW = slotWidth * 0.82;
+                const maxAllowedH = availHeight * 0.82;
+                const cellFromW = Math.floor(maxAllowedW / cols);
+                const cellFromH = Math.floor(maxAllowedH / rows);
+
+                let dockCellSize = Math.min(cellFromW, cellFromH);
+                dockCellSize = Math.max(14, Math.min(26, dockCellSize));
+
+                const pieceEl = this.createPieceElement(piece, dockCellSize);
                 pieceEl.dataset.index = i;
                 slot.appendChild(pieceEl);
 
@@ -674,6 +694,17 @@ class BlockyGame {
                 updateMuteIcons();
             });
         }
+
+        // Window resize handler for responsive dock & board scaling
+        let resizeTimeout = null;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (this.appEl && this.appEl.style.display !== 'none') {
+                    this.renderDock();
+                }
+            }, 100);
+        });
     }
 }
 
