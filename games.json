@@ -1,5 +1,18 @@
 [
   {
+    "id": "nuts-and-bolts",
+    "title": "Nuts and Bolts: Screwing Puzzle",
+    "category": "Puzzle",
+    "branch": "Nutbolts",
+    "path": "./Nutbolts/",
+    "thumbnail": "./assets/nuts-and-bolts.png",
+    "rating": "4.9",
+    "plays": "25.4K",
+    "featured": true,
+    "orientation": "portrait",
+    "description": "Unscrew bolts and untangle metal sheets and wooden plates in this brain-teasing physics puzzle!"
+  },
+  {
     "id": "bus-stop",
     "title": "Bus Stop Jam",
     "category": "Puzzle",

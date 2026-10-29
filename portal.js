@@ -152,6 +152,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeModal);
 
+  // Listen for close/exit events from game iframes
+  window.addEventListener('message', (e) => {
+    if (e.data === 'closeModal' || (e.data && e.data.action === 'closeModal')) {
+      closeModal();
+    }
+  });
+
   if (gameModal) {
     gameModal.addEventListener('click', (e) => {
       if (e.target === gameModal) closeModal();
