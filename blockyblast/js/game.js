@@ -15,6 +15,10 @@ class BlockyGame {
         this.touchFingerOffset = 70; // Offset above finger so player sees placement clearly
 
         // DOM elements
+        this.appEl = document.getElementById('app');
+        this.loadingEl = document.getElementById('ciel-loading-screen');
+        this.menuEl = document.getElementById('main-menu-screen');
+        this.menuBestEl = document.getElementById('menu-best-score');
         this.boardEl = document.getElementById('game-board');
         this.dockEl = document.getElementById('piece-dock');
         this.scoreEl = document.getElementById('current-score');
@@ -37,8 +41,49 @@ class BlockyGame {
 
     init() {
         this.bestScoreEl.innerText = this.bestScore;
+        if (this.menuBestEl) this.menuBestEl.innerText = this.bestScore;
         this.buildBoardDOM();
         this.bindEvents();
+        this.runLoadingSequence();
+    }
+
+    runLoadingSequence() {
+        const progressBar = document.getElementById('ciel-progress-bar');
+        const loadingText = document.getElementById('ciel-loading-text');
+
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.floor(Math.random() * 15) + 10;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+                if (progressBar) progressBar.style.width = '100%';
+                if (loadingText) loadingText.innerText = 'READY!';
+
+                setTimeout(() => {
+                    if (this.loadingEl) this.loadingEl.classList.add('fade-out');
+                    setTimeout(() => {
+                        if (this.loadingEl) this.loadingEl.style.display = 'none';
+                        this.showMainMenu();
+                    }, 400);
+                }, 500);
+            } else {
+                if (progressBar) progressBar.style.width = `${progress}%`;
+                if (loadingText) loadingText.innerText = `LOADING ${progress}%`;
+            }
+        }, 120);
+    }
+
+    showMainMenu() {
+        if (this.menuBestEl) this.menuBestEl.innerText = this.bestScore;
+        if (this.menuEl) this.menuEl.style.display = 'flex';
+        if (this.appEl) this.appEl.style.display = 'none';
+    }
+
+    startPlayingFromMenu() {
+        window.audioManager.play('button', 1.0);
+        if (this.menuEl) this.menuEl.style.display = 'none';
+        if (this.appEl) this.appEl.style.display = 'flex';
         this.startNewGame();
     }
 
@@ -476,6 +521,14 @@ class BlockyGame {
             });
         }
 
+        // Play Button on Main Menu
+        const menuPlayBtn = document.getElementById('btn-menu-play');
+        if (menuPlayBtn) {
+            menuPlayBtn.addEventListener('click', () => {
+                this.startPlayingFromMenu();
+            });
+        }
+
         // Play Again button on Game Over modal
         const playAgainBtn = document.getElementById('btn-play-again');
         if (playAgainBtn) {
@@ -503,14 +556,24 @@ class BlockyGame {
 
         // Mute toggle
         const muteBtn = document.getElementById('btn-mute');
+        const menuMuteBtn = document.getElementById('menu-btn-mute');
+        
+        const updateMuteIcons = () => {
+            if (muteBtn) muteBtn.classList.toggle('muted', window.audioManager.muted);
+            if (menuMuteBtn) menuMuteBtn.classList.toggle('muted', window.audioManager.muted);
+        };
+        updateMuteIcons();
+
         if (muteBtn) {
-            const updateMuteIcon = () => {
-                muteBtn.classList.toggle('muted', window.audioManager.muted);
-            };
-            updateMuteIcon();
             muteBtn.addEventListener('click', () => {
                 window.audioManager.toggleMute();
-                updateMuteIcon();
+                updateMuteIcons();
+            });
+        }
+        if (menuMuteBtn) {
+            menuMuteBtn.addEventListener('click', () => {
+                window.audioManager.toggleMute();
+                updateMuteIcons();
             });
         }
     }
