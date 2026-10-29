@@ -1,0 +1,25 @@
+{
+    "gameId": "blocky-blast",
+    "productName": "Blocky Blast Puzzle",
+    "companyName": "Ciel Tech",
+    "version": "1.0.0",
+    "bundleVersion": "1",
+    "description": "Blocky Blast Puzzle is an addictive block-clearing puzzle game. Drag and drop vibrant shapes onto the board, complete rows and columns, and trigger spectacular block blast combos!",
+    "category": "Puzzle",
+    "tags": [
+        "puzzle",
+        "blocky-blast",
+        "blocks",
+        "brain",
+        "casual",
+        "tetris",
+        "html5"
+    ],
+    "orientation": "portrait",
+    "portalMetadata": {
+        "developer": "CIEL Tech",
+        "releaseDate": "2026-10-29",
+        "rating": "Everyone",
+        "controls": "Desktop: Mouse Drag & Drop. Mobile: Touch Drag & Drop."
+    }
+}
