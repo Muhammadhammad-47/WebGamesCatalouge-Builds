@@ -1,555 +1,153 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
- <head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, minimal-ui, shrink-to-fit=no">
-  <meta name="apple-mobile-web-app-capable" content="yes"> <!-- The above 4 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-  <title>Blocky Blast Puzzle</title>
-  <link rel="icon" type="image/png" href="favicon.ico">
-  <style type="text/css">
-	/* Disable user selection to avoid strange bug in Chrome on Windows:
-	* Selecting a text outside the canvas, then clicking+draging would
-	* drag the selected text but block mouse down/up events to the engine.
-	*/
-	body {
-	
-		position: fixed; /* Prevent overscroll */
-	
-		margin:0;
-		padding:0;
-	}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Blocky Blast Puzzle</title>
+    <link rel="icon" type="image/png" href="favicon.ico">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- TOP HEADER -->
+        <header class="game-header">
+            <div class="header-left">
+                <button id="btn-back" class="icon-btn" title="Leave Game" aria-label="Leave Game">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <div class="score-box main-score">
+                    <span class="score-label">Score</span>
+                    <span id="current-score" class="score-value">0</span>
+                </div>
+            </div>
 
-	.canvas-app-container {
-		width: 100%;
-		height: 100%;
-		position: absolute;
-		align-items: center;
-		justify-content: center;
-		overflow: hidden;
-	}
+            <div class="header-right">
+                <div class="score-box">
+                    <svg class="trophy-icon" viewBox="0 0 24 24" fill="#FBBF24">
+                        <path d="M19 4h-3V2H8v2H5c-1.1 0-2 .9-2 2v2c0 2.5 1.9 4.6 4.4 4.9.7 1.6 2.1 2.8 3.8 3.1V19H9v2h6v-2h-2.2v-3c1.7-.3 3.1-1.5 3.8-3.1 2.5-.3 4.4-2.4 4.4-4.9V6c0-1.1-.9-2-2-2zM5 8V6h3v4.8C6.3 10.4 5 9.4 5 8zm14 0c0 1.4-1.3 2.4-3 2.8V6h3v2z"/>
+                    </svg>
+                    <span id="best-score" class="score-value">0</span>
+                </div>
+                <button id="btn-mute" class="icon-btn" title="Toggle Sound" aria-label="Toggle Sound">
+                    <svg class="sound-on-icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.8-1-3.3-2.5-4v8c1.5-.7 2.5-2.2 2.5-4zM14 3.2v2.1c2.9.9 5 3.5 5 6.7s-2.1 5.8-5 6.7v2.1c4-.9 7-4.5 7-8.8s-3-7.9-7-8.8z"/>
+                    </svg>
+                    <svg class="sound-off-icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                        <path d="M16.5 12c0-1.8-1-3.3-2.5-4v2.2l2.5 2.5c0-.2 0-.5 0-.7zM19 12c0 1.2-.3 2.4-.8 3.4l1.5 1.5c1-1.5 1.6-3.2 1.6-4.9 0-4.3-3-7.9-7-8.8v2.1c2.9.9 5 3.5 5 6.7zm-2.5 8.1l-1.4-1.4v-2.1l-5-5H3V9h4.9L3.4 4.5 4.8 3.1l15.6 15.6-1.4 1.4zM12 4L9.9 6.1l2.1 2.1V4z"/>
+                    </svg>
+                </button>
+                <button id="btn-restart" class="icon-btn" title="Restart Game" aria-label="Restart Game">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
 
-	.canvas-app-container:-webkit-full-screen {
-		/* Auto width and height in Safari/Chrome fullscreen. */
-		width: auto;
-		height: auto;
-	}
+        <!-- 8x8 BOARD -->
+        <main class="board-container">
+            <div id="game-board" class="game-board"></div>
+        </main>
 
-	#canvas {
-		outline: none;
-		border: 0;
-		width: 100%;
-		vertical-align: bottom;
-	}
+        <!-- 3-PIECE DOCK -->
+        <footer class="piece-dock" id="piece-dock"></footer>
 
-	#canvas-container {
-		position: relative;
-	}
+        <!-- PARTICLES LAYER -->
+        <div id="particles-layer"></div>
 
-	canvas:focus, canvas:active {
-		outline: none;
-		border: 0;
-		ie-dummy: expression(this.hideFocus=true);
-		-moz-outline-style: none;
-	}
+        <!-- GAME OVER MODAL -->
+        <div id="game-over-modal" class="game-modal" role="dialog" aria-modal="true">
+            <div class="modal-card">
+                <h2 class="modal-title">NO MORE MOVES!</h2>
+                <div class="modal-scores">
+                    <div class="modal-score-item">
+                        <span class="modal-label">Final Score</span>
+                        <span id="final-score" class="modal-value">0</span>
+                    </div>
+                    <div class="modal-score-item">
+                        <span class="modal-label">Best Score</span>
+                        <span id="final-best" class="modal-value gold">0</span>
+                    </div>
+                </div>
+                <button id="btn-play-again" class="btn-primary">Play Again</button>
+            </div>
+        </div>
 
-	body, div {
-		-webkit-tap-highlight-color: rgba(0,0,0,0);
-		-webkit-touch-callout: none;
-		-webkit-user-select: none;
-		-khtml-user-select: none;
-		-moz-user-select: none;
-		-ms-user-select: none;
-		user-select: none;
-	}
+        <!-- PORTAL EXIT MODAL -->
+        <div id="exit-modal" class="game-modal" role="dialog" aria-modal="true">
+            <div class="modal-card">
+                <h2 class="modal-title" style="color: #38BDF8;">LEAVE GAME?</h2>
+                <p style="color: #94A3B8; font-size: 15px; margin-bottom: 20px;">
+                    Are you sure you want to exit?<br>Your high score is safely saved.
+                </p>
+                <div class="exit-modal-actions">
+                    <button id="btn-confirm-exit" class="btn-exit-danger">Exit</button>
+                    <button id="btn-cancel-exit" class="btn-exit-stay">Keep Playing</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-	.loading-screen-container {
-		position: absolute;
-		top: 0;
-		left: 0;
-        height: 100%;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .message {
-        height: 30px;
-        display: flex;
-        align-items: center;
-        font-family: Verdana, Helvetica, sans-serif;
-    }
+    <!-- SCRIPTS -->
+    <script src="js/audio.js"></script>
+    <script src="js/pieces.js"></script>
+    <script src="js/board.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/game.js"></script>
 
-	.logo-small {
-		width: 100%;
-		max-width: 180px;
-	}
-    
-    .logo {
-		width: 100%;
-		max-width: 256px;
-		height: auto;
-		animation: scalePulse 1.2s infinite;
-	}
+    <!-- PORTAL BACK NAVIGATION -->
+    <script>
+    (function() {
+        const backBtn = document.getElementById('btn-back');
+        const exitModal = document.getElementById('exit-modal');
+        const confirmExit = document.getElementById('btn-confirm-exit');
+        const cancelExit = document.getElementById('btn-cancel-exit');
 
-	@keyframes scalePulse {
-		0% {
-			transform: scale(1); /* Начальный размер */
-		}
-		50% {
-			transform: scale(1.1);
-		}
-		100% {
-			transform: scale(1);
-		}
-	}
-    
-    .loading-bar {
-        margin-top: 0px;
-        width: 180px;
-      display: flex;
-      background: rgba(255,255,255,0.1);
-    }
+        function openModal() {
+            if (exitModal) exitModal.classList.add('active');
+        }
+        function closeModal() {
+            if (exitModal) exitModal.classList.remove('active');
+        }
+        function doExit() {
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ action: 'closeModal', type: 'GAME_ENDED' }, '*');
+                    window.parent.postMessage('closeModal', '*');
+                }
+            } catch (e) {}
 
-    .main-container {
-        flex-grow: 1;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-    }
+            try { window.close(); } catch (e) {}
 
-	.block {
-		background: linear-gradient(#FF6B6B, #FF3B3B); /* Градиент от светлого красного к тёмному красному */
-		border-top: 5px solid #FF8C8C; /* Светло-красный */
-		border-bottom: 5px solid #B20000; /* Тёмно-красный */
-		border-left: 5px solid #FF5A5A; /* Средний красный */
-		border-right: 5px solid #CC0000; /* Более глубокий красный */
-		width: 20px;
-		min-width: 20px;
-		height: 20px;
-		min-height: 20px;
-		box-shadow: 1px 2px 36px #FFAAAA7A; /* Красное свечение */
-		opacity: 0;
-		animation: fadeInOut 3s linear 0s infinite;
-	}
-    
-    .block:nth-child(2) { 
-        animation: fadeInOut1 3s linear 0s infinite;
-    }
-    
-    .block:nth-child(3) {
-        animation: fadeInOut2 3s linear 0s infinite;
-    }
-    
-    .block:nth-child(4) {
-        animation: fadeInOut3 3s linear 0s infinite;
-    }
-    
-    .block:nth-child(5) {
-        animation: fadeInOut4 3s linear 0s infinite;
-    }
-    
-    .block:nth-child(6) {
-        animation: fadeInOut5 3s linear 0s infinite;
-    }
-    
-    @keyframes fadeInOut {
-      0%, 15% {
-        opacity: 0;
-        transform: scale(0.5);
-      }
-      20%, 100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-    @keyframes fadeInOut1 {
-      0%, 30% {
-        opacity: 0;
-        transform: scale(0.5);
-      }
-      35%, 100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-    @keyframes fadeInOut2 {
-      0%, 45% {
-        opacity: 0;
-        transform: scale(0.5);
-      }
-      50%, 100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-    @keyframes fadeInOut3 {
-      0%, 60% {
-        opacity: 0;
-        transform: scale(0.5);
-      }
-      66%, 100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-    @keyframes fadeInOut4 {
-      0%, 75% {
-        opacity: 0;
-        transform: scale(0.5);
-      }
-      81%, 100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-    @keyframes fadeInOut5 {
-      0%, 90% {
-        opacity: 0;
-        transform: scale(0.5);
-      }
-      96%, 100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
+            setTimeout(() => {
+                if (window.history && window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.href = '../';
+                }
+            }, 120);
+        }
 
-		.canvas-app-progress {
-		position: absolute;
-		background-color: #d1dbeb;
-		height: 6px;
-		margin-top: -6px;
-		width: 100%;
-	}
-
-	.canvas-app-progress-bar {
-		font-size: 12px;
-		height: 6px;
-		color: rgb(255, 255, 255);
-		background-color: #1a72eb;
-		text-align: center;
-		line-height: 20px;
-		transition: transform 1s ease;
-		transform-origin: left;
-		transform: scaleX(1.0);
-	}
-
-
-	.link, .button {
-		font-family: sans-serif;
-		font-size: 14px;
-		font-weight: normal;
-		font-style: normal;
-		font-stretch: normal;
-		line-height: normal;
-		letter-spacing: 0px;
-		padding-top: 12px;
-	}
-
-	.buttons-background {
-		background-color: #ffffff;
-		width: 100%;
-		height: 42px;
-	}
-
-	body {
-		background-color: #52AAEC;
-	}
-
-	.canvas-app-canvas {
-
-	}
-
-	.canvas-app-container {
-		background: #52AAEC;
-	}
-	
-	/* BACK / EXIT BUTTON (Styled for Blocky Blast Puzzle) */
-	.game-back-btn {
-		position: fixed;
-		top: 14px;
-		left: 14px;
-		width: 46px;
-		height: 46px;
-		border-radius: 12px;
-		background: linear-gradient(180deg, #38BDF8 0%, #0284C7 100%);
-		border: 3px solid #7DD3FC;
-		box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.4);
-		color: #ffffff;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		cursor: pointer;
-		z-index: 999999;
-		transition: transform 0.15s ease, filter 0.15s ease;
-		user-select: none;
-		-webkit-tap-highlight-color: transparent;
-	}
-	.game-back-btn:hover {
-		transform: scale(1.06);
-		filter: brightness(1.1);
-	}
-	.game-back-btn:active {
-		transform: scale(0.95);
-	}
-
-	/* EXIT CONFIRMATION MODAL */
-	.game-exit-modal {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background: rgba(10, 20, 45, 0.8);
-		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
-		display: none;
-		align-items: center;
-		justify-content: center;
-		z-index: 1000000;
-	}
-	.game-exit-modal.active {
-		display: flex;
-	}
-	.exit-modal-card {
-		background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
-		border: 3px solid #38BDF8;
-		border-radius: 20px;
-		padding: 28px 24px;
-		max-width: 380px;
-		width: 90%;
-		text-align: center;
-		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(56, 189, 248, 0.3);
-		color: #ffffff;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-	}
-	.exit-modal-badge {
-		font-size: 22px;
-		font-weight: 800;
-		letter-spacing: 1px;
-		color: #38BDF8;
-		text-transform: uppercase;
-		margin-bottom: 12px;
-		text-shadow: 0 2px 8px rgba(56, 189, 248, 0.5);
-	}
-	.exit-modal-text {
-		font-size: 15px;
-		line-height: 1.5;
-		color: #CBD5E1;
-		margin: 0 0 24px 0;
-	}
-	.exit-modal-actions {
-		display: flex;
-		gap: 12px;
-		justify-content: center;
-	}
-	.exit-btn {
-		flex: 1;
-		padding: 12px 18px;
-		border-radius: 12px;
-		font-size: 15px;
-		font-weight: 700;
-		cursor: pointer;
-		border: none;
-		transition: transform 0.15s ease, filter 0.15s ease;
-	}
-	.exit-btn:hover {
-		transform: scale(1.03);
-		filter: brightness(1.08);
-	}
-	.btn-exit-danger {
-		background: linear-gradient(180deg, #EF4444 0%, #B91C1C 100%);
-		color: #ffffff;
-		box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-	}
-	.btn-exit-stay {
-		background: linear-gradient(180deg, #10B981 0%, #047857 100%);
-		color: #ffffff;
-		box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-	}
-
-	</style>
-  <script src="poki-sdk.js"></script>
-  <script type="text/javascript" src="GameAnalytics.js"></script>
- </head>
- <body>
-  <div id="app-container" class="canvas-app-container">
-   <div id="running-from-file-warning" style="display: none; margin: 3em;">
-    <h1>Running from local file ⚠️</h1>
-    <p>It seems like you have opened this file by double-clicking on it. In order to test your build in a browser <b>you need to load this file from a web server</b>. You can either upload this file and the rest of the files from a Defold HTML5 bundle to a web hosting service OR host them using a local web server on your home network.</p>
-    <p><a href="https://defold.com/manuals/html5/#testing-html5-build" target="_blank">Learn more about running a local web server in the Defold HTML5 manual</a>.</p>
-   </div>
-   <div id="webgl-not-supported" style="display: none; margin: 3em;">
-    <h1>WebGL not supported ⚠️</h1>
-    <p>WebGL is not supported by your browser - visit <a href="https://get.webgl.org/">https://get.webgl.org/</a> to learn more.</p>
-   </div>
-   <div id="canvas-container" class="canvas-app-canvas-container">
-    <canvas id="canvas" class="canvas-app-canvas" tabindex="1" width="590" height="960"></canvas>
-   </div>
-   <div class="buttons-background">
-   </div>
-  </div> <!-- -->
-  <script id="engine-loader" type="text/javascript" src="dmloader.js"></script>
-  <script id="engine-setup" type="text/javascript"></script>
-  <script id="custom-progress-bar" type="text/javascript">
-		ProgressView.addProgress = function(canvas) {
-			canvas.insertAdjacentHTML('afterend',
-			`
-				<div class="loading-screen-container" id="loading-screen-container">
-       				<div class="main-container">
-       				    <img src="game_logo.png" class="logo">
-						<div class="message" id="percentage" style="margin-top: 6px;">0%</div>
-       				    <div class="loading-bar">
-       				        <div class="block"></div>
-       				        <div class="block"></div>
-       				        <div class="block"></div>
-       				        <div class="block"></div>
-       				        <div class="block"></div>
-       				        <div class="block"></div>
-       				      </div>
-       				    <div class="message" id="message"></div>
-       				</div>
-				
-       				<img src="oplay_logo.png" class="logo-small" style="width: 100%; max-width: 160px; height: auto;">
-    			</div>
-			`)
-
-			ProgressView.progress = document.getElementById("loading-screen-container");
-			document.getElementById("percentage").style.fontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
-			function updateProgress(percentage) {
-				let percentageText = document.getElementById("percentage")
-				if (percentageText){
-					percentageText.innerHTML = Math.min(Math.ceil(percentage), 100) + "%";
-				}
-			}
-			Progress.addListener(updateProgress);
-
-			const phrases = ["Polishing blocks...", "Preparing gems...", "Loading effects...", "Loading game..."];
-        	let index = 0;
-
-        	function changeText() {
-				let messageText = document.getElementById("message")
-				if (messageText) {
-					messageText.innerHTML = phrases[index];
-				}
-        	    index++;
-        	    if (index < phrases.length) {
-        	        setTimeout(changeText, 2000);
-        	    }
-        	}
-        	changeText();
-		};
-	</script>
-  <script id="engine-start" type="text/javascript">
-		var runningFromFileWarning = document.getElementById("running-from-file-warning");
-		if (window.location.href.startsWith("file://")) {
-			runningFromFileWarning.style.display = "block";
-		}
-		else {
-			EngineLoader.load("canvas", "blockypuzzle");
-			runningFromFileWarning.parentNode.removeChild(runningFromFileWarning);
-		}
-	</script>
-  <script id="poki-sdk-setup" type="text/javascript">
-		var data = {};
-		var isLoadFinished = false;
-		Progress.addListener(function(percentage){
-			data.percentageDone = percentage / 100;
-			if (!isLoadFinished)
-				PokiSDK.gameLoadingProgress(data);
-			if (percentage == 100 && !isLoadFinished) {
-				PokiSDK.gameLoadingFinished();
-				isLoadFinished = true;
-			}
-		});
-		Module['onRuntimeInitialized'] = function() {
-			PokiSDK.init().then(()=>{
-				Module.runApp("canvas");
-			}, ()=>{
-				Module.runApp("canvas");
-			});
-		};
-	</script>
- 
-	<!-- PORTAL BACK / CLOSE BUTTON -->
-	<button id="gameBackBtn" class="game-back-btn" title="Exit Game" aria-label="Exit Game">
-		<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-			<path d="M19 12H5M12 19l-7-7 7-7"/>
-		</svg>
-	</button>
-
-	<!-- EXIT CONFIRMATION MODAL -->
-	<div id="gameExitModal" class="game-exit-modal" role="dialog" aria-modal="true">
-		<div class="exit-modal-card">
-			<div class="exit-modal-badge">LEAVE GAME?</div>
-			<div class="exit-modal-body">
-				<p class="exit-modal-text">Are you sure you want to exit?<br>Your high score is safely saved.</p>
-			</div>
-			<div class="exit-modal-actions">
-				<button id="btnConfirmExit" class="exit-btn btn-exit-danger">Exit</button>
-				<button id="btnCancelExit" class="exit-btn btn-exit-stay">Keep Playing</button>
-			</div>
-		</div>
-	</div>
-
-	<script>
-	(function() {
-		var backBtn = document.getElementById('gameBackBtn');
-		var modal = document.getElementById('gameExitModal');
-		var confirmBtn = document.getElementById('btnConfirmExit');
-		var cancelBtn = document.getElementById('btnCancelExit');
-
-		function openModal() {
-			if (modal) modal.classList.add('active');
-		}
-
-		function closeModal() {
-			if (modal) modal.classList.remove('active');
-		}
-
-		function doExit() {
-			try {
-				if (window.parent && window.parent !== window) {
-					window.parent.postMessage({ action: 'closeModal', type: 'GAME_ENDED' }, '*');
-					window.parent.postMessage('closeModal', '*');
-				}
-			} catch (e) {}
-
-			try { window.close(); } catch (e) {}
-
-			setTimeout(function() {
-				if (window.history && window.history.length > 1) {
-					window.history.back();
-				} else {
-					window.location.href = '../';
-				}
-			}, 120);
-		}
-
-		if (backBtn) backBtn.addEventListener('click', openModal);
-		if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
-		if (confirmBtn) confirmBtn.addEventListener('click', doExit);
-
-		if (modal) {
-			modal.addEventListener('click', function(e) {
-				if (e.target === modal) closeModal();
-			});
-		}
-
-		window.addEventListener('keydown', function(e) {
-			if (e.key === 'Escape') {
-				if (modal && modal.classList.contains('active')) {
-					closeModal();
-				} else {
-					openModal();
-				}
-			}
-		});
-	})();
-	</script>
-
+        if (backBtn) backBtn.addEventListener('click', openModal);
+        if (cancelExit) cancelExit.addEventListener('click', closeModal);
+        if (confirmExit) confirmExit.addEventListener('click', doExit);
+        if (exitModal) {
+            exitModal.addEventListener('click', (e) => {
+                if (e.target === exitModal) closeModal();
+            });
+        }
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (exitModal && exitModal.classList.contains('active')) {
+                    closeModal();
+                } else {
+                    openModal();
+                }
+            }
+        });
+    })();
+    </script>
 </body>
 </html>
