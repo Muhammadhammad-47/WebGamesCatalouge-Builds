@@ -8,7 +8,82 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="app">
+    <!-- 1. CIEL GAMES LOADING SCREEN -->
+    <div id="ciel-loading-screen" class="ciel-loading-overlay">
+        <div class="ciel-loading-content">
+            <div class="ciel-brand-badge">
+                <span class="ciel-brand-logo-box">C</span>
+                <span class="ciel-brand-text">CIEL GAMES</span>
+            </div>
+
+            <div class="game-logo-wrapper">
+                <img src="assets/game_logo_hd.png" alt="Blocky Blast Puzzle" class="game-logo-img">
+            </div>
+
+            <!-- Animated 3D Beveled Block Cluster -->
+            <div class="loading-blocks-row">
+                <img src="assets/blocks/block_blue.png" class="loader-block lb-1" alt="">
+                <img src="assets/blocks/block_gold.png" class="loader-block lb-2" alt="">
+                <img src="assets/blocks/block_green.png" class="loader-block lb-3" alt="">
+                <img src="assets/blocks/block_red.png" class="loader-block lb-4" alt="">
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="loading-bar-container">
+                <div id="ciel-progress-bar" class="loading-bar-fill"></div>
+            </div>
+            <div id="ciel-loading-text" class="loading-status-text">LOADING 0%</div>
+        </div>
+    </div>
+
+    <!-- 2. MAIN MENU SCREEN -->
+    <div id="main-menu-screen" class="main-menu-overlay" style="display: none;">
+        <div class="menu-top-bar">
+            <button id="menu-btn-back" class="icon-btn" title="Leave Game" aria-label="Leave Game">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <div class="menu-brand">CIEL ARCADE</div>
+            <button id="menu-btn-mute" class="icon-btn" title="Toggle Sound" aria-label="Toggle Sound">
+                <svg class="sound-on-icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.8-1-3.3-2.5-4v8c1.5-.7 2.5-2.2 2.5-4zM14 3.2v2.1c2.9.9 5 3.5 5 6.7s-2.1 5.8-5 6.7v2.1c4-.9 7-4.5 7-8.8s-3-7.9-7-8.8z"/>
+                </svg>
+                <svg class="sound-off-icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <path d="M16.5 12c0-1.8-1-3.3-2.5-4v2.2l2.5 2.5c0-.2 0-.5 0-.7zM19 12c0 1.2-.3 2.4-.8 3.4l1.5 1.5c1-1.5 1.6-3.2 1.6-4.9 0-4.3-3-7.9-7-8.8v2.1c2.9.9 5 3.5 5 6.7zm-2.5 8.1l-1.4-1.4v-2.1l-5-5H3V9h4.9L3.4 4.5 4.8 3.1l15.6 15.6-1.4 1.4zM12 4L9.9 6.1l2.1 2.1V4z"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="menu-hero">
+            <div class="game-logo-wrapper menu-logo-bounce">
+                <img src="assets/game_logo_hd.png" alt="Blocky Blast Puzzle" class="game-logo-img">
+            </div>
+
+            <!-- Best Score Card -->
+            <div class="menu-best-card">
+                <div class="crown-icon-wrap">
+                    <img src="assets/icons/crown.png" alt="Crown" class="menu-crown-img">
+                </div>
+                <div class="menu-best-info">
+                    <span class="menu-best-label">ALL-TIME BEST</span>
+                    <span id="menu-best-score" class="menu-best-value">0</span>
+                </div>
+            </div>
+
+            <!-- Original Big Green Play Button -->
+            <button id="btn-menu-play" class="btn-menu-play-action" aria-label="Play Now">
+                <div class="play-btn-glow"></div>
+                <span class="play-btn-label">PLAY</span>
+            </button>
+        </div>
+
+        <div class="menu-footer-tips">
+            <span class="menu-tip-text">Drag blocks onto 8×8 board • Clear lines for big combos!</span>
+        </div>
+    </div>
+
+    <div id="app" style="display: none;">
         <!-- TOP HEADER -->
         <header class="game-header">
             <div class="header-left">
@@ -161,10 +236,11 @@
     <script src="js/powerups.js"></script>
     <script src="js/game.js"></script>
 
-    <!-- PORTAL BACK NAVIGATION -->
+    <!-- PORTAL BACK NAVIGATION & MENU LOGIC -->
     <script>
     (function() {
         const backBtn = document.getElementById('btn-back');
+        const menuBackBtn = document.getElementById('menu-btn-back');
         const exitModal = document.getElementById('exit-modal');
         const confirmExit = document.getElementById('btn-confirm-exit');
         const cancelExit = document.getElementById('btn-cancel-exit');
@@ -195,6 +271,7 @@
         }
 
         if (backBtn) backBtn.addEventListener('click', openModal);
+        if (menuBackBtn) menuBackBtn.addEventListener('click', openModal);
         if (cancelExit) cancelExit.addEventListener('click', closeModal);
         if (confirmExit) confirmExit.addEventListener('click', doExit);
         if (exitModal) {
