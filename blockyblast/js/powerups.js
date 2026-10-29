@@ -161,7 +161,55 @@ class PowerupManager {
 
     clearBoardModeHighlights() {
         document.querySelectorAll('.board-cell').forEach(cell => {
-            cell.classList.remove('powerup-targetable', 'powerup-hover-bomb', 'powerup-hover-hammer');
+            cell.classList.remove(
+                'powerup-targetable',
+                'powerup-hover-target',
+                'powerup-hover-bomb-area',
+                'powerup-hover-bomb-center'
+            );
+        });
+    }
+
+    onCellHover(r, c) {
+        if (!this.activeMode) return;
+        this.clearBoardHoverPreviews();
+
+        if (this.activeMode === 'hammer') {
+            const cell = this.game.cellElements[r] && this.game.cellElements[r][c];
+            if (cell && cell.classList && this.game.board.grid[r][c]) {
+                cell.classList.add('powerup-hover-target');
+            }
+        } else if (this.activeMode === 'bomb') {
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    const nr = r + dr;
+                    const nc = c + dc;
+                    if (this.game.board.isValidCoord(nr, nc)) {
+                        const targetCell = this.game.cellElements[nr] && this.game.cellElements[nr][nc];
+                        if (targetCell && targetCell.classList) {
+                            if (dr === 0 && dc === 0) {
+                                targetCell.classList.add('powerup-hover-bomb-center');
+                            } else {
+                                targetCell.classList.add('powerup-hover-bomb-area');
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    onCellLeave(r, c) {
+        this.clearBoardHoverPreviews();
+    }
+
+    clearBoardHoverPreviews() {
+        document.querySelectorAll('.board-cell').forEach(cell => {
+            cell.classList.remove(
+                'powerup-hover-target',
+                'powerup-hover-bomb-area',
+                'powerup-hover-bomb-center'
+            );
         });
     }
 
@@ -206,6 +254,15 @@ class PowerupManager {
 
         this.counts.rotate--;
         this.updateBadges();
+
+        // Animate spin effect on the slot
+        const slotEl = document.querySelector(`.dock-slot[data-index="${index}"]`);
+        if (slotEl) {
+            slotEl.classList.add('rotating');
+            setTimeout(() => {
+                slotEl.classList.remove('rotating');
+            }, 300);
+        }
 
         // Rotate piece shape clockwise
         piece.shape = rotateShapeClockwise(piece.shape);
@@ -253,6 +310,8 @@ class PowerupManager {
         this.game.renderBoard();
         this.cancelActiveMode();
 
+        // Check if removing this block allowed any line clears or changes game over state
+        this.game.processCompletedLines();
         this.game.checkGameOver();
         return true;
     }
@@ -302,6 +361,7 @@ class PowerupManager {
         this.game.renderBoard();
         this.cancelActiveMode();
 
+        this.game.processCompletedLines();
         this.game.checkGameOver();
         return true;
     }
