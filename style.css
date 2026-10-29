@@ -452,6 +452,89 @@ html, body {
     cursor: pointer;
 }
 
+/* PAUSE MODAL & ACTIONS */
+.pause-card {
+    max-width: 320px;
+    padding: 26px 20px;
+    background: linear-gradient(180deg, #1B2B4C 0%, #0F192E 100%);
+    border: 3px solid #38BDF8;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(56, 189, 248, 0.25);
+}
+
+.pause-title {
+    color: #38BDF8;
+    text-shadow: 0 0 14px rgba(56, 189, 248, 0.6);
+    margin-bottom: 24px;
+    font-size: 24px;
+    letter-spacing: 2px;
+}
+
+.pause-actions-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+}
+
+.pause-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: 16px;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.pause-action-btn:hover {
+    transform: scale(1.03);
+    filter: brightness(1.1);
+}
+
+.pause-action-btn:active {
+    transform: scale(0.96);
+}
+
+.pause-btn-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pause-btn-label {
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Resume: Emerald Green */
+.btn-resume-action {
+    background: linear-gradient(180deg, #10B981 0%, #047857 100%);
+    border: 2px solid #34D399;
+    color: #ffffff;
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* Restart: Vibrant Amber/Orange */
+.btn-restart-action {
+    background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%);
+    border: 2px solid #FCD34D;
+    color: #ffffff;
+    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* Home: Radiant Blue */
+.btn-home-action {
+    background: linear-gradient(180deg, #0284C7 0%, #0369A1 100%);
+    border: 2px solid #38BDF8;
+    color: #ffffff;
+    box-shadow: 0 6px 16px rgba(2, 132, 199, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.35);
+}
+
 /* POWERUP TOOLBAR */
 .powerup-toolbar {
     width: 100%;
