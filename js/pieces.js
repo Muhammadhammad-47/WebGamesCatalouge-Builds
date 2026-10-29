@@ -91,3 +91,4 @@ function getRandomPiece() {
         texture: BLOCK_TEXTURES[def.color] || BLOCK_TEXTURES.blue
     };
 }
+
