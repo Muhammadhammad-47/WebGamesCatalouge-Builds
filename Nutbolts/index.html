@@ -131,14 +131,14 @@ if (location.protocol.substr(0, 4) === "file")
 			if (e.key === 'Escape') {
 				if (modal && modal.classList.contains('active')) {
 					closeModal();
-				} else {
+				} else if (backBtn && backBtn.classList.contains('visible')) {
 					openModal();
 				}
 			}
 		});
 
-		// Dynamic position adjustment between Home layout and Gameplay layout
-		function syncPosition() {
+		// Only show Back button on the Level Selection screen ('Home'), remove/hide from game screen
+		function syncVisibility() {
 			try {
 				const lr = window.c3_runtimeInterface && window.c3_runtimeInterface._localRuntime;
 				if (lr && lr.GetMainRunningLayout) {
@@ -146,15 +146,24 @@ if (location.protocol.substr(0, 4) === "file")
 					if (l) {
 						const name = l.GetName();
 						if (name === 'Home') {
-							backBtn.classList.remove('in-gameplay');
+							backBtn.classList.add('visible');
 						} else {
-							backBtn.classList.add('in-gameplay');
+							backBtn.classList.remove('visible');
 						}
 					}
 				}
 			} catch (e) {}
 		}
-		setInterval(syncPosition, 300);
+		setInterval(syncVisibility, 150);
+
+		if (typeof window.runOnStartup === 'function') {
+			window.runOnStartup(async (runtime) => {
+				try {
+					runtime.addEventListener('beforelayoutstart', () => syncVisibility());
+					runtime.addEventListener('afterlayoutstart', () => syncVisibility());
+				} catch (e) {}
+			});
+		}
 	})();
 	</script>
 </body>

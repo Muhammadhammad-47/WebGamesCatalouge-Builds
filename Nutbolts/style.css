@@ -100,17 +100,17 @@ html[ioswebview] .c3htmlwrap > * {
 	box-shadow: 0 4px 0 #321404, 0 6px 12px rgba(0, 0, 0, 0.4);
 	color: #fff;
 	cursor: pointer;
-	display: flex;
+	display: none; /* Hidden by default; only displayed on level selection screen */
 	align-items: center;
 	justify-content: center;
 	padding: 0;
 	outline: none;
 	-webkit-tap-highlight-color: transparent;
-	transition: transform 0.1s ease, filter 0.1s ease, box-shadow 0.1s ease, left 0.2s ease;
+	transition: transform 0.1s ease, filter 0.1s ease, box-shadow 0.1s ease;
 }
 
-.game-back-btn.in-gameplay {
-	left: 68px;
+.game-back-btn.visible {
+	display: flex;
 }
 
 .game-back-btn:hover {
