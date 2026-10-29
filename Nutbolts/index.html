@@ -43,5 +43,119 @@ if (location.protocol.substr(0, 4) === "file")
 	<script src="scripts/main.js" type="module"></script>
 	<script src="scripts/register-sw.js" type="module"></script>
 
-</body> 
+	<!-- BACK / CLOSE BUTTON (Matching game wooden UI style) -->
+	<button id="gameBackBtn" class="game-back-btn" title="Exit Game" aria-label="Exit Game">
+		<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+			<path d="M19 12H5M12 19l-7-7 7-7"/>
+		</svg>
+	</button>
+
+	<!-- EXIT CONFIRMATION MODAL -->
+	<div id="gameExitModal" class="game-exit-modal" role="dialog" aria-modal="true" aria-labelledby="exitModalTitle">
+		<div class="exit-modal-card">
+			<div class="exit-modal-badge" id="exitModalTitle">LEAVE GAME?</div>
+			<div class="exit-modal-body">
+				<p class="exit-modal-text">Are you sure you want to exit?<br>Your stars and unlocked levels are safely saved.</p>
+			</div>
+			<div class="exit-modal-actions">
+				<button id="btnConfirmExit" class="exit-btn btn-exit-danger">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+					Exit
+				</button>
+				<button id="btnCancelExit" class="exit-btn btn-exit-stay">
+					Keep Playing
+				</button>
+			</div>
+		</div>
+	</div>
+
+	<script>
+	(function() {
+		const backBtn = document.getElementById('gameBackBtn');
+		const modal = document.getElementById('gameExitModal');
+		const confirmBtn = document.getElementById('btnConfirmExit');
+		const cancelBtn = document.getElementById('btnCancelExit');
+
+		function playClick() {
+			try {
+				const snd = new Audio('media/button_press.webm');
+				snd.volume = 0.6;
+				snd.play().catch(() => {});
+			} catch (e) {}
+		}
+
+		function openModal() {
+			playClick();
+			if (modal) modal.classList.add('active');
+		}
+
+		function closeModal() {
+			playClick();
+			if (modal) modal.classList.remove('active');
+		}
+
+		function doExit() {
+			playClick();
+			// 1. If running inside iframe (e.g. portal modal), notify parent window
+			try {
+				if (window.parent && window.parent !== window) {
+					window.parent.postMessage({ action: 'closeModal', type: 'GAME_ENDED' }, '*');
+					window.parent.postMessage('closeModal', '*');
+				}
+			} catch (e) {}
+
+			// 2. Try window.close()
+			try { window.close(); } catch (e) {}
+
+			// 3. Fallback: navigate back in history or redirect to main catalog
+			setTimeout(() => {
+				if (window.history && window.history.length > 1) {
+					window.history.back();
+				} else {
+					window.location.href = '../';
+				}
+			}, 120);
+		}
+
+		if (backBtn) backBtn.addEventListener('click', openModal);
+		if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+		if (confirmBtn) confirmBtn.addEventListener('click', doExit);
+
+		if (modal) {
+			modal.addEventListener('click', (e) => {
+				if (e.target === modal) closeModal();
+			});
+		}
+
+		window.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') {
+				if (modal && modal.classList.contains('active')) {
+					closeModal();
+				} else {
+					openModal();
+				}
+			}
+		});
+
+		// Dynamic position adjustment between Home layout and Gameplay layout
+		function syncPosition() {
+			try {
+				const lr = window.c3_runtimeInterface && window.c3_runtimeInterface._localRuntime;
+				if (lr && lr.GetMainRunningLayout) {
+					const l = lr.GetMainRunningLayout();
+					if (l) {
+						const name = l.GetName();
+						if (name === 'Home') {
+							backBtn.classList.remove('in-gameplay');
+						} else {
+							backBtn.classList.add('in-gameplay');
+						}
+					}
+				}
+			} catch (e) {}
+		}
+		setInterval(syncPosition, 300);
+	})();
+	</script>
+</body>
 </html>

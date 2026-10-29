@@ -77,6 +77,192 @@ html[ioswebview] .c3htmlwrap > * {
 	font-weight: bold;
 }
 
+@font-face {
+	font-family: 'Baloo';
+	src: url('fonts/baloo-regular.otf') format('opentype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+/* ==========================================================================
+   BACK / CLOSE BUTTON (Matching Wood Aesthetic of the Game)
+   ========================================================================== */
+.game-back-btn {
+	position: fixed;
+	top: 14px;
+	left: 14px;
+	width: 44px;
+	height: 44px;
+	z-index: 99999;
+	background: linear-gradient(180deg, #ba6a32 0%, #82431b 100%);
+	border: 3px solid #4a2108;
+	border-radius: 12px;
+	box-shadow: 0 4px 0 #321404, 0 6px 12px rgba(0, 0, 0, 0.4);
+	color: #fff;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	outline: none;
+	-webkit-tap-highlight-color: transparent;
+	transition: transform 0.1s ease, filter 0.1s ease, box-shadow 0.1s ease, left 0.2s ease;
+}
+
+.game-back-btn.in-gameplay {
+	left: 68px;
+}
+
+.game-back-btn:hover {
+	filter: brightness(1.12);
+}
+
+.game-back-btn:active {
+	transform: translateY(2px);
+	box-shadow: 0 2px 0 #321404, 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+
+.game-back-btn svg {
+	width: 24px;
+	height: 24px;
+	stroke: #fff;
+	filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+/* ==========================================================================
+   EXIT CONFIRMATION MODAL POPUP
+   ========================================================================== */
+.game-exit-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	background: rgba(0, 0, 0, 0.65);
+	backdrop-filter: blur(5px);
+	-webkit-backdrop-filter: blur(5px);
+	display: none;
+	align-items: center;
+	justify-content: center;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.2s ease;
+}
+
+.game-exit-modal.active {
+	display: flex;
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.exit-modal-card {
+	width: 90%;
+	max-width: 380px;
+	background: linear-gradient(180deg, #d89e6e 0%, #b87740 100%);
+	border: 4px solid #54270a;
+	border-radius: 22px;
+	box-shadow: 0 10px 0 #331504, 0 16px 36px rgba(0, 0, 0, 0.65);
+	padding: 26px 22px 22px;
+	text-align: center;
+	font-family: 'Baloo', 'Segoe UI', system-ui, sans-serif;
+	box-sizing: border-box;
+	animation: modalPopIn 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalPopIn {
+	from {
+		transform: scale(0.85);
+		opacity: 0;
+	}
+	to {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+.exit-modal-badge {
+	background: #6a3412;
+	border: 2px solid #431c05;
+	border-radius: 12px;
+	padding: 6px 22px;
+	display: inline-block;
+	color: #fff;
+	font-size: 20px;
+	font-weight: bold;
+	letter-spacing: 0.5px;
+	text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+	box-shadow: 0 3px 0 #301303, inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.exit-modal-body {
+	margin: 18px 0 22px;
+}
+
+.exit-modal-text {
+	color: #3b1b06;
+	font-size: 16px;
+	line-height: 1.45;
+	font-weight: 700;
+	margin: 0;
+	text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.exit-modal-actions {
+	display: flex;
+	gap: 12px;
+	justify-content: center;
+}
+
+.exit-btn {
+	font-family: 'Baloo', 'Segoe UI', system-ui, sans-serif;
+	font-size: 16px;
+	font-weight: bold;
+	border-radius: 14px;
+	padding: 12px 18px;
+	cursor: pointer;
+	outline: none;
+	border: none;
+	transition: transform 0.1s ease, filter 0.1s ease, box-shadow 0.1s ease;
+	-webkit-tap-highlight-color: transparent;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.exit-btn:hover {
+	filter: brightness(1.08);
+}
+
+.exit-btn:active {
+	transform: translateY(2px);
+}
+
+/* Exit Button (Red/Danger) */
+.btn-exit-danger {
+	background: linear-gradient(180deg, #e85538 0%, #b52510 100%);
+	border: 3px solid #631205;
+	box-shadow: 0 4px 0 #4a0c03, 0 6px 10px rgba(0, 0, 0, 0.3);
+	color: #fff;
+	flex: 1;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.btn-exit-danger:active {
+	box-shadow: 0 2px 0 #4a0c03, 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Keep Playing Button (Lush Green - exact match of game Play button) */
+.btn-exit-stay {
+	background: linear-gradient(180deg, #5ec928 0%, #2f8c0d 100%);
+	border: 3px solid #1a5606;
+	box-shadow: 0 4px 0 #123d04, 0 6px 10px rgba(0, 0, 0, 0.3);
+	color: #fff;
+	flex: 1.3;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.btn-exit-stay:active {
+	box-shadow: 0 2px 0 #123d04, 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
 .bbCodeH2 {
 	font-size: 1.5em;
 	font-weight: bold;
