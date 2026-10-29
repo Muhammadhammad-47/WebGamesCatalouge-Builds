@@ -427,3 +427,4 @@ class BlockyGame {
 window.addEventListener('DOMContentLoaded', () => {
     window.game = new BlockyGame();
 });
+
