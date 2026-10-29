@@ -81,6 +81,18 @@ const PIECE_DEFINITIONS = [
     { shape: [[0, 1], [1, 0]], color: 'pink' }
 ];
 
+function rotateShapeClockwise(shape) {
+    const rows = shape.length;
+    const cols = shape[0].length;
+    const newShape = Array(cols).fill(0).map(() => Array(rows).fill(0));
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            newShape[c][rows - 1 - r] = shape[r][c];
+        }
+    }
+    return newShape;
+}
+
 function getRandomPiece() {
     const def = PIECE_DEFINITIONS[Math.floor(Math.random() * PIECE_DEFINITIONS.length)];
     // Deep clone shape

@@ -28,7 +28,9 @@ class AudioManager {
             game_over: 'assets/sounds/sound_03.ogg',
             button: 'assets/sounds/sound_09.ogg',
             whoosh: 'assets/sounds/sound_10.ogg',
-            win: 'assets/sounds/sound_12.ogg'
+            win: 'assets/sounds/sound_12.ogg',
+            powerup: 'assets/sounds/sound_01.ogg',
+            revive: 'assets/sounds/sound_11.ogg'
         };
 
         for (const [key, path] of Object.entries(soundFiles)) {

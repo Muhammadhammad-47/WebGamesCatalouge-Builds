@@ -27,6 +27,11 @@ class BlockyGame {
         this.finalScoreEl = document.getElementById('final-score');
         this.finalBestEl = document.getElementById('final-best');
 
+        // Monetization & Powerups
+        this.monetization = new MonetizationManager(this);
+        this.powerups = new PowerupManager(this);
+        this.hasRevivedThisGame = false;
+
         this.init();
     }
 
@@ -48,6 +53,18 @@ class BlockyGame {
                 cell.className = 'board-cell';
                 cell.dataset.row = r;
                 cell.dataset.col = c;
+                
+                // Click handler for powerups (Hammer & Bomb)
+                cell.addEventListener('click', () => {
+                    if (this.powerups && this.powerups.activeMode) {
+                        if (this.powerups.activeMode === 'hammer') {
+                            this.powerups.executeHammer(r, c);
+                        } else if (this.powerups.activeMode === 'bomb') {
+                            this.powerups.executeBomb(r, c);
+                        }
+                    }
+                });
+
                 this.boardEl.appendChild(cell);
                 this.cellElements[r][c] = cell;
             }
@@ -58,6 +75,8 @@ class BlockyGame {
         this.board.reset();
         this.score = 0;
         this.streak = 0;
+        this.hasRevivedThisGame = false;
+        if (this.powerups) this.powerups.cancelActiveMode();
         this.updateScore(0);
         this.renderBoard();
         this.spawnDockPieces();
@@ -122,9 +141,25 @@ class BlockyGame {
                 pieceEl.dataset.index = i;
                 slot.appendChild(pieceEl);
 
-                // Add pointer drag event
-                pieceEl.addEventListener('pointerdown', (e) => this.onPointerDown(e, i, piece, pieceEl));
+                // Add pointer drag or rotate event
+                pieceEl.addEventListener('pointerdown', (e) => {
+                    if (this.powerups && this.powerups.activeMode === 'rotate') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.powerups.executeRotate(i);
+                        return;
+                    }
+                    this.onPointerDown(e, i, piece, pieceEl);
+                });
             }
+
+            slot.addEventListener('click', (e) => {
+                if (this.powerups && this.powerups.activeMode === 'rotate') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.powerups.executeRotate(i);
+                }
+            });
 
             this.dockEl.appendChild(slot);
         }
@@ -385,9 +420,50 @@ class BlockyGame {
                 window.audioManager.play('game_over', 1.0);
                 if (this.finalScoreEl) this.finalScoreEl.innerText = this.score;
                 if (this.finalBestEl) this.finalBestEl.innerText = this.bestScore;
+                
+                // If already revived once this game, hide revive button
+                const reviveBtn = document.getElementById('btn-revive-ad');
+                if (reviveBtn) {
+                    reviveBtn.style.display = this.hasRevivedThisGame ? 'none' : 'flex';
+                }
+
                 if (this.gameOverModal) this.gameOverModal.classList.add('active');
             }, 500);
         }
+    }
+
+    reviveGame() {
+        if (this.hasRevivedThisGame) return;
+        this.hasRevivedThisGame = true;
+
+        if (this.gameOverModal) {
+            this.gameOverModal.classList.remove('active');
+        }
+
+        // Clear 3x3 center of board (r 3..5, c 3..5)
+        const cleared = this.board.clearArea(3, 4, 1);
+        this.renderBoard();
+
+        // Spawn a fresh set of accessible pieces
+        this.spawnDockPieces();
+
+        window.audioManager.play('revive', 1.0);
+
+        const boardRect = this.boardEl.getBoundingClientRect();
+        const cRect = this.particlesContainer.getBoundingClientRect();
+        const x = boardRect.left - cRect.left + boardRect.width / 2;
+        const y = boardRect.top - cRect.top + boardRect.height / 2;
+
+        cleared.forEach(item => {
+            const itemCell = this.cellElements[item.r][item.c];
+            const itemRect = itemCell.getBoundingClientRect();
+            const bx = itemRect.left - cRect.left + itemRect.width / 2;
+            const by = itemRect.top - cRect.top + itemRect.height / 2;
+            this.particles.createBlast(bx, by, '#38BDF8');
+        });
+
+        this.particles.showPopup('REVIVED!', x, y - 40, true);
+        this.particles.showPopup('KEEP GOING!', x, y + 10, false);
     }
 
     bindEvents() {
@@ -406,6 +482,22 @@ class BlockyGame {
             playAgainBtn.addEventListener('click', () => {
                 window.audioManager.play('button');
                 this.startNewGame();
+            });
+        }
+
+        // Second Chance Revive Button
+        const reviveBtn = document.getElementById('btn-revive-ad');
+        if (reviveBtn) {
+            reviveBtn.addEventListener('click', () => {
+                window.audioManager.play('button');
+                this.monetization.showRewardAd(
+                    'revive',
+                    'SECOND CHANCE REVIVE',
+                    'Watch this short clip to clear the board center and continue playing!',
+                    () => {
+                        this.reviveGame();
+                    }
+                );
             });
         }
 

@@ -123,5 +123,47 @@ class Board {
         }
         return false;
     }
+
+    clearCell(r, c) {
+        if (!this.isValidCoord(r, c)) return null;
+        const block = this.grid[r][c];
+        this.grid[r][c] = null;
+        return block ? { r, c, block } : null;
+    }
+
+    clearArea(centerR, centerC, radius = 1) {
+        const cleared = [];
+        for (let r = centerR - radius; r <= centerR + radius; r++) {
+            for (let c = centerC - radius; c <= centerC + radius; c++) {
+                if (this.isValidCoord(r, c) && this.grid[r][c]) {
+                    cleared.push({ r, c, block: this.grid[r][c] });
+                    this.grid[r][c] = null;
+                }
+            }
+        }
+        return cleared;
+    }
+
+    clearRowAndCol(targetR, targetC) {
+        const cleared = [];
+        const seen = new Set();
+        // Clear row
+        for (let c = 0; c < this.size; c++) {
+            if (this.grid[targetR][c]) {
+                cleared.push({ r: targetR, c, block: this.grid[targetR][c] });
+                this.grid[targetR][c] = null;
+                seen.add(`${targetR},${c}`);
+            }
+        }
+        // Clear col
+        for (let r = 0; r < this.size; r++) {
+            const key = `${r},${targetC}`;
+            if (this.grid[r][targetC] && !seen.has(key)) {
+                cleared.push({ r, c: targetC, block: this.grid[r][targetC] });
+                this.grid[r][targetC] = null;
+            }
+        }
+        return cleared;
+    }
 }
 
