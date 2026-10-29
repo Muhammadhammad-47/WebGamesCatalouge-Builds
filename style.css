@@ -439,6 +439,16 @@ html, body {
     background: linear-gradient(180deg, #EF4444 0%, #B91C1C 100%);
     color: #ffffff;
     cursor: pointer;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.btn-exit-danger:hover {
+    filter: brightness(1.1);
+    transform: scale(1.02);
+}
+
+.btn-exit-danger:active {
+    transform: scale(0.96);
 }
 
 .btn-exit-stay {
@@ -450,6 +460,16 @@ html, body {
     background: linear-gradient(180deg, #10B981 0%, #047857 100%);
     color: #ffffff;
     cursor: pointer;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.btn-exit-stay:hover {
+    filter: brightness(1.1);
+    transform: scale(1.02);
+}
+
+.btn-exit-stay:active {
+    transform: scale(0.96);
 }
 
 /* PAUSE MODAL & ACTIONS */

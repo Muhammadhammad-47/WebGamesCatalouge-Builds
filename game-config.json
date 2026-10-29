@@ -2,8 +2,8 @@
     "gameId": "blocky-blast",
     "productName": "Blocky Blast Puzzle",
     "companyName": "Ciel Tech",
-    "version": "1.1.0",
-    "bundleVersion": "2",
+    "version": "1.1.1",
+    "bundleVersion": "3",
     "description": "Blocky Blast Puzzle is an addictive block-clearing puzzle game. Drag and drop vibrant shapes onto the board, complete rows and columns, and trigger spectacular block blast combos!",
     "category": "Puzzle",
     "tags": [
