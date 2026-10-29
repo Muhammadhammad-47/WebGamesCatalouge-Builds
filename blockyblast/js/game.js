@@ -27,9 +27,11 @@ class BlockyGame {
         this.particles = new ParticleSystem(this.particlesContainer);
 
         // Modals
+        this.pauseModal = document.getElementById('pause-modal');
         this.gameOverModal = document.getElementById('game-over-modal');
         this.finalScoreEl = document.getElementById('final-score');
         this.finalBestEl = document.getElementById('final-best');
+        this.isPaused = false;
 
         // Monetization & Powerups
         this.monetization = new MonetizationManager(this);
@@ -75,6 +77,8 @@ class BlockyGame {
     }
 
     showMainMenu() {
+        this.closePause();
+        if (this.powerups) this.powerups.cancelActiveMode();
         if (this.menuBestEl) this.menuBestEl.innerText = this.bestScore;
         if (this.menuEl) this.menuEl.style.display = 'flex';
         if (this.appEl) this.appEl.style.display = 'none';
@@ -82,9 +86,22 @@ class BlockyGame {
 
     startPlayingFromMenu() {
         window.audioManager.play('button', 1.0);
+        this.closePause();
         if (this.menuEl) this.menuEl.style.display = 'none';
         if (this.appEl) this.appEl.style.display = 'flex';
         this.startNewGame();
+    }
+
+    openPause() {
+        this.isPaused = true;
+        if (this.powerups) this.powerups.cancelActiveMode();
+        if (this.pauseModal) this.pauseModal.classList.add('active');
+        window.audioManager.play('button', 1.0);
+    }
+
+    closePause() {
+        this.isPaused = false;
+        if (this.pauseModal) this.pauseModal.classList.remove('active');
     }
 
     buildBoardDOM() {
@@ -271,8 +288,8 @@ class BlockyGame {
         e.preventDefault();
         e.stopPropagation();
 
-        // If dragged piece is null or active powerup mode, don't drag
-        if (this.powerups && this.powerups.activeMode) {
+        // If game is paused, or dragged piece is null, or active powerup mode, don't drag
+        if (this.isPaused || (this.powerups && this.powerups.activeMode)) {
             return;
         }
 
@@ -568,12 +585,37 @@ class BlockyGame {
     }
 
     bindEvents() {
-        // Restart button
-        const restartBtn = document.getElementById('btn-restart');
-        if (restartBtn) {
-            restartBtn.addEventListener('click', () => {
-                window.audioManager.play('button');
+        // Pause Button on Gameplay Screen
+        const pauseBtn = document.getElementById('btn-pause');
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => {
+                this.openPause();
+            });
+        }
+
+        // Pause Modal Actions: Resume, Restart, Home
+        const pauseResumeBtn = document.getElementById('btn-pause-resume');
+        if (pauseResumeBtn) {
+            pauseResumeBtn.addEventListener('click', () => {
+                window.audioManager.play('button', 1.0);
+                this.closePause();
+            });
+        }
+
+        const pauseRestartBtn = document.getElementById('btn-pause-restart');
+        if (pauseRestartBtn) {
+            pauseRestartBtn.addEventListener('click', () => {
+                window.audioManager.play('button', 1.0);
+                this.closePause();
                 this.startNewGame();
+            });
+        }
+
+        const pauseHomeBtn = document.getElementById('btn-pause-home');
+        if (pauseHomeBtn) {
+            pauseHomeBtn.addEventListener('click', () => {
+                window.audioManager.play('button', 1.0);
+                this.showMainMenu();
             });
         }
 
