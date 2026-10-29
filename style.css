@@ -572,6 +572,34 @@ html, body {
     animation: targetPulse 0.9s infinite alternate ease-in-out;
 }
 
+.board-cell.powerup-targetable:hover {
+    filter: brightness(1.3);
+}
+
+.board-cell.powerup-hover-target {
+    background-color: rgba(239, 68, 68, 0.45) !important;
+    box-shadow: inset 0 0 10px #EF4444, 0 0 8px rgba(239, 68, 68, 0.8) !important;
+    border-radius: 6px;
+}
+
+.board-cell.powerup-hover-bomb-area {
+    background-color: rgba(245, 158, 11, 0.4) !important;
+    box-shadow: inset 0 0 8px #F59E0B, 0 0 6px rgba(245, 158, 11, 0.6) !important;
+    border-radius: 6px;
+}
+
+.board-cell.powerup-hover-bomb-center {
+    background-color: rgba(239, 68, 68, 0.6) !important;
+    box-shadow: inset 0 0 12px #EF4444, 0 0 10px #F59E0B !important;
+    border-radius: 6px;
+    animation: pulseBombCenter 0.5s infinite alternate;
+}
+
+@keyframes pulseBombCenter {
+    from { transform: scale(0.96); }
+    to { transform: scale(1.04); }
+}
+
 @keyframes targetPulse {
     from { box-shadow: inset 0 0 4px rgba(251, 191, 36, 0.5); }
     to { box-shadow: inset 0 0 14px rgba(251, 191, 36, 0.95); }
@@ -581,6 +609,20 @@ html, body {
     border-color: #FBBF24 !important;
     animation: rotateSlotPulse 1s infinite alternate;
     cursor: pointer;
+}
+
+.dock-slot.powerup-rotatable:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.95);
+}
+
+.dock-slot.rotating .piece-container {
+    animation: spinPiece 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes spinPiece {
+    from { transform: rotate(0deg) scale(0.9); }
+    to { transform: rotate(90deg) scale(1); }
 }
 
 @keyframes rotateSlotPulse {

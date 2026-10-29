@@ -110,6 +110,18 @@ class BlockyGame {
                     }
                 });
 
+                // Hover preview handlers for Hammer & Bomb
+                cell.addEventListener('pointerenter', () => {
+                    if (this.powerups && this.powerups.activeMode) {
+                        this.powerups.onCellHover(r, c);
+                    }
+                });
+                cell.addEventListener('pointerleave', () => {
+                    if (this.powerups && this.powerups.activeMode) {
+                        this.powerups.onCellLeave(r, c);
+                    }
+                });
+
                 this.boardEl.appendChild(cell);
                 this.cellElements[r][c] = cell;
             }
@@ -146,6 +158,12 @@ class BlockyGame {
             for (let c = 0; c < 8; c++) {
                 const cell = this.cellElements[r][c];
                 const block = this.board.grid[r][c];
+                
+                // Retain powerup preview classes if active
+                const isHoverTarget = cell.classList.contains('powerup-hover-target');
+                const isHoverBombArea = cell.classList.contains('powerup-hover-bomb-area');
+                const isHoverBombCenter = cell.classList.contains('powerup-hover-bomb-center');
+
                 cell.className = 'board-cell';
                 cell.innerHTML = '';
 
@@ -157,6 +175,10 @@ class BlockyGame {
                     img.draggable = false;
                     cell.appendChild(img);
                 }
+
+                if (isHoverTarget) cell.classList.add('powerup-hover-target');
+                if (isHoverBombArea) cell.classList.add('powerup-hover-bomb-area');
+                if (isHoverBombCenter) cell.classList.add('powerup-hover-bomb-center');
             }
         }
     }
@@ -248,6 +270,11 @@ class BlockyGame {
     onPointerDown(e, index, piece, originalEl) {
         e.preventDefault();
         e.stopPropagation();
+
+        // If dragged piece is null or active powerup mode, don't drag
+        if (this.powerups && this.powerups.activeMode) {
+            return;
+        }
 
         this.draggedPieceIndex = index;
         this.draggedPiece = piece;
