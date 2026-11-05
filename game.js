@@ -147,8 +147,7 @@
       n === 3 ? "Don't let the tray fill up with 7 tiles!" : '';
     trayEl.classList.remove('danger');
     hud();
-    // tip changes board height on the first levels
-    requestAnimationFrame(() => { measure(); layoutAll(true); });
+    relayout();
   }
 
   function makeTile(t) {
@@ -180,12 +179,17 @@
     const maxZ = Math.max(...ts.map((t) => t.z));
     const lift = 0.16;
     const wU = maxX - minX + 2, hU = maxY - minY + 2 + maxZ * lift + 0.2;
-    const unit = Math.min(b.width / wU, b.height / hU, 46);
+    const unit = Math.max(8, Math.min(b.width / wU, b.height / hU, 62));
+    // Read the real slot boxes so tray tiles line up at every screen size.
+    const slots = trayEl.querySelectorAll('.slot');
+    const s0 = slots[0].getBoundingClientRect(), sN = slots[slots.length - 1].getBoundingClientRect();
     L = {
       unit, lift,
       ox: b.left - a.left + (b.width - wU * unit) / 2 - minX * unit,
       oy: b.top - a.top + (b.height - hU * unit) / 2 + maxZ * lift * unit - minY * unit,
-      tx: tr.left - a.left + 8, ty: tr.top - a.top, th: tr.height, tw: tr.width - 16,
+      tx: tr.left - a.left, ty: tr.top - a.top, tw: tr.width,
+      sx: s0.left - a.left, sy: s0.top - a.top, sw: s0.width, sh: s0.height,
+      step: (sN.left - s0.left) / (slots.length - 1),
     };
   }
 
@@ -194,9 +198,10 @@
     return { x: L.ox + t.x * L.unit + gap, y: L.oy + t.y * L.unit - t.z * L.lift * L.unit + gap - w * 0.03, w };
   }
   function trayRect(i, n) {
-    const slot = L.tw / Math.max(TRAY, n);
-    const w = Math.min(slot * 0.86, L.th * 0.74);
-    return { x: L.tx + slot * i + (slot - w) / 2, y: L.ty + (L.th - w) / 2 - w * 0.05, w };
+    const k = n > TRAY ? TRAY / n : 1; // squeeze briefly if a clearing set overflows
+    const sw = L.sw * k;
+    const w = Math.min(sw, L.sh) * 0.88;
+    return { x: L.sx + L.step * k * i + (sw - w) / 2, y: L.sy + (L.sh - w * 1.085) / 2, w };
   }
   function place(t, r) {
     const s = t.el.style;
@@ -220,11 +225,19 @@
     if (instant) { void stage.offsetWidth; stage.classList.remove('noanim'); }
   }
 
+  // Re-layout on any size change: window resize, rotation, fonts loading, tip text, etc.
   let rz = 0;
-  window.addEventListener('resize', () => {
+  const relayout = () => {
     cancelAnimationFrame(rz);
-    rz = requestAnimationFrame(() => { measure(); layoutAll(true); });
-  });
+    rz = requestAnimationFrame(() => { if (G) { measure(); layoutAll(true); } });
+  };
+  window.addEventListener('resize', relayout);
+  window.addEventListener('orientationchange', relayout);
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(relayout);
+    ro.observe($('#board')); ro.observe(trayEl);
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(relayout);
 
   // ---------- Core play ----------
   function tap(t) {

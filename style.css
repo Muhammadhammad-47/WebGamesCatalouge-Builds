@@ -53,11 +53,13 @@ svg { display: block; }
 #app {
   position: fixed;
   inset: 0;
-  max-width: 600px;
+  max-width: 680px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* ---------- HUD ---------- */
@@ -128,13 +130,21 @@ svg { display: block; }
 }
 #tip:empty { display: none; }
 
-#board { flex: 1; margin: 10px 12px 6px; min-height: 120px; }
+#board { flex: 1; margin: 10px 12px 6px; min-height: 100px; }
 
 /* ---------- Tray ---------- */
-#trayWrap { flex: none; padding: 4px 10px 6px; position: relative; z-index: 1; }
+/* The tray's height follows its width (square slots), and its width is capped by
+   screen height so the tray never eats the board on short screens. */
+#trayWrap {
+  flex: none;
+  width: min(100%, 92vh);
+  align-self: center;
+  padding: 4px 10px 6px;
+  position: relative;
+  z-index: 1;
+}
 #tray {
-  height: clamp(62px, 11.5vh, 92px);
-  border-radius: 20px;
+  border-radius: clamp(14px, 3.2vw, 22px);
   padding: 8px;
   display: flex;
   background:
@@ -149,8 +159,10 @@ svg { display: block; }
 }
 #tray .slot {
   flex: 1;
+  min-width: 0;
+  aspect-ratio: 1 / 1.1;
   margin: 0 3px;
-  border-radius: 12px;
+  border-radius: 22%;
   background: rgba(70,35,10,.32);
   box-shadow: inset 0 3px 6px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.18);
 }
@@ -175,7 +187,7 @@ svg { display: block; }
   flex: none;
   display: flex;
   justify-content: center;
-  gap: 22px;
+  gap: clamp(16px, 6vw, 30px);
   padding: 10px 0 calc(28px + env(safe-area-inset-bottom));
   position: relative;
   z-index: 10;
@@ -430,3 +442,102 @@ svg { display: block; }
 .btn.red { background: linear-gradient(#ff8a80, #e8413a); box-shadow: 0 5px 0 #a8241f, 0 8px 12px rgba(0,0,0,.18), inset 0 2px 0 rgba(255,255,255,.5); }
 .btn.red:active { box-shadow: 0 1px 0 #a8241f, inset 0 2px 0 rgba(255,255,255,.5); }
 .card .brand { margin: 14px 0 0; font-size: 12px; letter-spacing: 2px; box-shadow: 0 3px 0 rgba(0,60,70,.25); }
+
+/* ---------- Responsive ---------- */
+
+/* Small phones (iPhone SE, small Androids) */
+@media (max-width: 380px) {
+  #hud { gap: 6px; padding-left: 8px; padding-right: 8px; }
+  .round-btn { width: 40px; height: 40px; border-radius: 13px; }
+  .round-btn svg { width: 22px; height: 22px; }
+  .level-pill { font-size: 18px; }
+  .level-pill b { font-size: 22px; }
+  .coins-pill { font-size: 15px; padding: 4px 10px 4px 5px; }
+  .coins-pill .coin { width: 20px; height: 20px; }
+  #tip { font-size: 13px; padding: 0 12px; }
+  #board { margin: 8px 6px 4px; }
+  #trayWrap { padding-left: 6px; padding-right: 6px; }
+  #tray { padding: 6px; }
+  #tray .slot { margin: 0 2px; }
+  .booster { width: 54px; height: 54px; border-radius: 17px; }
+  .booster svg { width: 28px; height: 28px; }
+  .booster small { font-size: 12px; }
+  .btn.big { width: 210px; font-size: 26px; }
+  .card { padding: 20px 16px 22px; }
+  .mtitle { font-size: 26px; }
+}
+
+/* Short screens in portrait */
+@media (max-height: 640px) and (orientation: portrait) {
+  #hud { padding-top: calc(6px + env(safe-area-inset-top)); }
+  #tip { font-size: 13px; }
+  #board { margin-top: 6px; }
+  #logoTiles { height: 70px; margin-bottom: 10px; }
+  #logoTiles .tile { width: 56px; height: 56px; --e: 5px; }
+  .tag { margin: 10px 0 20px; }
+}
+
+/* Landscape phones: boosters move to a side column so the board keeps its height */
+@media (orientation: landscape) and (max-height: 560px) {
+  #app {
+    max-width: none;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto 1fr auto;
+  }
+  #hud { grid-column: 1 / -1; grid-row: 1; padding-top: calc(6px + env(safe-area-inset-top)); padding-bottom: 0; }
+  .round-btn { width: 40px; height: 40px; }
+  .round-btn svg { width: 22px; height: 22px; }
+  .level-pill { font-size: 19px; }
+  #tip { display: none; }
+  #board { grid-column: 1; grid-row: 2; margin: 4px 10px 2px; min-height: 0; }
+  #trayWrap {
+    grid-column: 1; grid-row: 3;
+    justify-self: center;
+    width: min(100%, 520px, 105vh);
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+  #tray { padding: 6px; }
+  #boosters {
+    grid-column: 2; grid-row: 2 / 4;
+    flex-direction: column;
+    justify-content: center;
+    gap: 30px;
+    padding: 0 16px 24px 4px;
+  }
+  .booster { width: 52px; height: 52px; border-radius: 16px; }
+  .booster svg { width: 28px; height: 28px; }
+  .booster small { font-size: 12px; bottom: -18px; }
+  .home-inner { padding: 10px; }
+  #logoTiles { height: 56px; margin-bottom: 6px; }
+  #logoTiles .tile { width: 46px; height: 46px; --e: 4px; }
+  .brand { margin-bottom: 8px; font-size: 13px; }
+  .logo { font-size: 44px; }
+  .tag { margin: 8px 0 4px; font-size: 14px; }
+  .by { margin: 0 0 12px; }
+  .btn.big { font-size: 22px; padding: 10px 16px 8px; }
+  .home-row { margin-top: 12px; }
+  #modal { padding: 10px; }
+  .card { padding: 14px 18px 16px; max-height: 100%; overflow: auto; }
+  .card .btn { padding: 9px 14px; font-size: 17px; margin-top: 8px; }
+  .card .exit-icon { width: 44px; height: 44px; border-radius: 14px; }
+  .card .exit-icon svg { width: 24px; height: 24px; }
+  .stars { font-size: 32px; }
+}
+
+/* Tablets and desktop */
+@media (min-width: 700px) and (min-height: 800px) {
+  .round-btn { width: 54px; height: 54px; border-radius: 17px; }
+  .round-btn svg { width: 30px; height: 30px; }
+  .level-pill { font-size: 26px; }
+  .level-pill b { font-size: 30px; }
+  .coins-pill { font-size: 21px; }
+  #tip { font-size: 17px; }
+  .booster { width: 76px; height: 76px; border-radius: 24px; }
+  .booster svg { width: 40px; height: 40px; }
+  .booster small { font-size: 15px; bottom: -23px; }
+  #boosters { padding-bottom: calc(36px + env(safe-area-inset-bottom)); }
+}
+
+/* Let the page background show through so wide screens have no visible column edges */
+#home { background: transparent; }
