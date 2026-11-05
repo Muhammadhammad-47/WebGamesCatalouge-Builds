@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Pet Merge Haven</title>
+  <meta name="description" content="Merge adorable pets, fill adoption orders and grow your pet haven.">
+  <meta name="theme-color" content="#9be0a0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+
+  <div id="app">
+    <header id="top">
+      <div class="lvl-badge"><small>LV</small><b id="lvl">1</b></div>
+      <div id="xpBar"><div id="xpFill"></div><span id="xpText">0 / 10</span></div>
+      <div class="top-btns">
+        <button class="icon-btn" id="bookBtn" aria-label="Pet collection">
+          <svg viewBox="0 0 24 24"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5a2.5 2.5 0 0 0 0 5H20v-2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 4.5v15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </button>
+        <button class="icon-btn" id="soundBtn" aria-label="Toggle sound">
+          <svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path class="wave" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
+        <button class="icon-btn" id="fsBtn" aria-label="Toggle full screen">
+          <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <aside id="left" class="panel">
+      <div class="panel-title">Adoption Board</div>
+      <div id="orders"></div>
+    </aside>
+
+    <main id="boardWrap"><div id="board"></div></main>
+
+    <aside id="right" class="panel">
+      <div class="pill coins"><i class="coin"></i><b id="coins">0</b><small id="rate">0/s</small></div>
+      <button class="btn big" id="buyBtn">
+        <img id="buyIcon" alt="">
+        <span><em>Buy egg</em><b><i class="coin"></i><span id="cost">0</span></b></span>
+      </button>
+      <div id="hatch"><div id="hatchFill"></div><span>Free egg</span></div>
+      <div class="row2">
+        <button class="btn small" id="shopBtn">
+          <svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 12H6.2z" fill="currentColor"/><path d="M9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>
+          Shop
+        </button>
+        <div class="btn small sell" id="sell">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>
+          Sell
+        </div>
+      </div>
+      <p class="hint">Drag matching pets together to merge. Tap a locked tile to unlock it.</p>
+    </aside>
+  </div>
+
+  <div id="fx"></div>
+  <div id="toast"></div>
+  <div id="modal" class="hidden"><div class="card" id="modalCard"></div></div>
+
+  <script src="art.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
