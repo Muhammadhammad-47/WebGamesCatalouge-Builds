@@ -1,2 +1,10 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Treat game archive and binary files as binary without line ending modifications
+*.projectc -text
+*.arcd -text
+*.arci -text
+*.dmanifest -text
+*.wasm -text
+archive/* -text
