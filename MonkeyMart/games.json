@@ -1,0 +1,16 @@
+[
+  {
+    "id": "monkey-mart",
+    "title": "Monkey Mart",
+    "category": "Simulation",
+    "branch": "MonkeyMart",
+    "path": "./",
+    "thumbnail": "./assets/monkey-mart.png",
+    "rating": "4.9",
+    "plays": "35.8K",
+    "featured": true,
+    "orientation": "landscape",
+    "description": "Manage your own supermarket in Monkey Mart! Plant crops, harvest fresh bananas, stock displays, serve customers, and expand your grocery aisles!"
+  }
+]
+
