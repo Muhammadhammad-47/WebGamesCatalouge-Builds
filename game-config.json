@@ -1,0 +1,24 @@
+{
+    "gameId": "ciel-monkey-mart",
+    "productName": "Monkey Mart",
+    "companyName": "TinyDobbins",
+    "publisher": "CIEL WebGames",
+    "version": "1.0.0",
+    "category": "Simulation",
+    "orientation": "landscape",
+    "tags": [
+        "simulation",
+        "idle",
+        "management",
+        "tycoon",
+        "casual",
+        "html5"
+    ],
+    "portalMetadata": {
+        "developer": "TinyDobbins",
+        "releaseDate": "2022-11-10",
+        "rating": "4.9",
+        "plays": "35.8K",
+        "controls": "Desktop: WASD or Arrow Keys to move your monkey. Mobile/Tablet: Drag or touch joystick to walk around the supermarket."
+    }
+}

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Monkey Mart | CIEL WebGames</title>
+    
+    <link rel="icon" type="image/png" href="assets/monkey-mart.png">
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Preload core assets -->
+    <link rel="preload" href="bg_loading.png" as="image">
+    <link rel="preload" href="load_bar_bg.png" as="image">
+    <link rel="preload" href="load_bar_fg.png" as="image">
+    <link rel="preload" href="assets/sprites/player_idle.png" as="image">
+    <link rel="preload" href="assets/audio/sound_1.ogg" as="audio">
+</head>
+<body>
+
+<div id="app-container">
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <img class="loading-logo" src="assets/poki/logo.png" alt="Monkey Mart Logo">
+        <div class="loading-bar-wrapper">
+            <div id="loading-bar-fill"></div>
+        </div>
+        <div class="loading-text">LOADING MARKET...</div>
+    </div>
+
+    <!-- Top HUD Bar -->
+    <div id="top-hud">
+        <!-- Left: Currency counters -->
+        <div class="hud-group">
+            <div class="hud-pill">
+                <img src="assets/sprites/ui_coin.png" alt="Cash">
+                <span id="hud-cash">$25</span>
+            </div>
+            <div class="hud-pill diamond-pill">
+                <img src="assets/sprites/ui_diamond.png" alt="Gems">
+                <span id="hud-diamonds">10</span>
+            </div>
+        </div>
+
+        <!-- Right: Control & Action Buttons -->
+        <div class="hud-group">
+            <button id="btn-upgrade" class="hud-btn btn-upgrade" title="Supermarket Upgrades">
+                <img src="assets/sprites/upgrade_stand.png" alt="Upgrades">
+                <span class="badge">!</span>
+            </button>
+            <button id="btn-hats" class="hud-btn btn-hats" title="Hats & Wardrobe">
+                <img src="assets/sprites/hat_cowboy.png" alt="Hats">
+            </button>
+            <button id="btn-sound" class="hud-btn" title="Toggle Sound">
+                🔊
+            </button>
+            <button id="btn-pause" class="hud-btn" title="Menu / Pause">
+                ⏸
+            </button>
+        </div>
+    </div>
+
+    <!-- Virtual Touch Joystick (Mobile & Tablet) -->
+    <div id="joystick-zone">
+        <div id="joystick-base"></div>
+        <div id="joystick-knob"></div>
+    </div>
+
+    <!-- Floating Toast Notification Banner -->
+    <div id="toast-banner">🍌 Welcome to Monkey Mart!</div>
+
+    <!-- Upgrades Modal -->
+    <div id="upgrades-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-title">⭐ Mart Upgrades</div>
+                <div class="modal-close">&times;</div>
+            </div>
+            <div id="upgrades-list" class="modal-content">
+                <!-- Dynamically populated by game.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Hats & Wardrobe Modal -->
+    <div id="hats-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-title">🎩 Monkey Boutique</div>
+                <div class="modal-close">&times;</div>
+            </div>
+            <div id="hats-grid" class="modal-content hats-grid">
+                <!-- Dynamically populated by game.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Exit / Pause Modal -->
+    <div id="exit-modal" class="modal-overlay">
+        <div class="exit-box">
+            <div class="exit-title">Game Paused</div>
+            <div class="exit-text">Are you ready to head back to the games catalog or keep expanding your supermarket?</div>
+            <div class="exit-btns">
+                <button id="btn-resume" class="btn-primary">Keep Playing</button>
+                <button id="btn-confirm-exit" class="btn-secondary">Exit Game</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Game Engine -->
+<script src="game.js"></script>
+
+</body>
+</html>
