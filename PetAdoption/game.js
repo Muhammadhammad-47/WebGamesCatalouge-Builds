@@ -467,11 +467,146 @@
   $('#bookBtn').addEventListener('click', showBook);
   $('#fsBtn').addEventListener('click', toggleFullscreen);
   $('#soundBtn').addEventListener('click', () => { S.sound = !S.sound; renderHUD(); save(); if (S.sound) SFX.pop(); });
+
+  // ---------- exit confirmation modal ("Leave the Tab" & "Keep Playing") ----------
+  const backBtn = $('#gameBackBtn');
+  const exitModal = $('#gameExitModal');
+  const confirmExitBtn = $('#btnConfirmExit');
+  const cancelExitBtn = $('#btnCancelExit');
+  const exitModalPetImg = $('#exitModalPetImg');
+
+  function openExitModal() {
+    SFX.pop();
+    if (exitModalPetImg) {
+      const petIndex = Math.min(Math.max(0, S.maxLevel - 1), IMGS.length - 1);
+      exitModalPetImg.src = IMGS[petIndex] || IMGS[2]; // Default to Kitten Puff or highest pet
+    }
+    if (exitModal) exitModal.classList.add('active');
+  }
+
+  function closeExitModal() {
+    SFX.tap();
+    if (exitModal) exitModal.classList.remove('active');
+  }
+
+  function doLeaveTab() {
+    SFX.bad();
+    save();
+
+    // 1. If inside an iframe (e.g. CIEL games portal modal), notify parent window
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ action: 'closeModal', type: 'GAME_ENDED' }, '*');
+        window.parent.postMessage('closeModal', '*');
+      }
+    } catch (e) {}
+
+    // 2. Try window.close()
+    try { window.close(); } catch (e) {}
+
+    // 3. Fallback: browser history or back to game portal root
+    setTimeout(() => {
+      if (window.history && window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = '../';
+      }
+    }, 120);
+  }
+
+  if (backBtn) backBtn.addEventListener('click', openExitModal);
+  if (cancelExitBtn) cancelExitBtn.addEventListener('click', closeExitModal);
+  if (confirmExitBtn) confirmExitBtn.addEventListener('click', doLeaveTab);
+  if (exitModal) {
+    exitModal.addEventListener('click', (e) => {
+      if (e.target === exitModal) closeExitModal();
+    });
+  }
+
   window.addEventListener('keydown', (e) => {
-    if (!modal.classList.contains('hidden')) return;
+    if (e.key === 'Escape') {
+      if (exitModal && exitModal.classList.contains('active')) {
+        closeExitModal();
+        return;
+      }
+      if (!modal.classList.contains('hidden')) {
+        closeModal();
+        return;
+      }
+      openExitModal();
+      return;
+    }
+    if (!modal.classList.contains('hidden') || (exitModal && exitModal.classList.contains('active'))) return;
     if (e.code === 'Space') { e.preventDefault(); buyEgg(); }
     if (e.code === 'KeyF') toggleFullscreen();
   });
+
+  // ---------- ciel games loading screen & art generation ----------
+  function initLoadingScreen() {
+    const loadingScreen = $('#ciel-loading-screen');
+    const heroCanvas = $('#loading-hero-canvas');
+    const petsRow = $('#loading-pets-row');
+    const progressBar = $('#ciel-progress-bar');
+    const statusText = $('#ciel-loading-status');
+    const percentText = $('#ciel-loading-percent');
+
+    // 1. Procedural art generation for loading hero banner
+    if (typeof renderLoadingHero === 'function' && heroCanvas) {
+      try {
+        renderLoadingHero(heroCanvas);
+      } catch (err) {
+        console.warn('Hero canvas render:', err);
+      }
+    }
+
+    // 2. Procedural mini pets row generation
+    if (petsRow && typeof renderPet === 'function') {
+      petsRow.innerHTML = '';
+      [1, 2, 3, 4, 5].forEach((lv, idx) => {
+        try {
+          const miniCv = renderPet(lv, 76);
+          miniCv.className = 'mini-loader-pet';
+          miniCv.style.animationDelay = `${idx * 0.16}s`;
+          miniCv.title = PETS[lv - 1]?.name || 'Cute Pet';
+          petsRow.appendChild(miniCv);
+        } catch (e) {}
+      });
+    }
+
+    // 3. Smooth animated loading sequence
+    let currentPct = 0;
+    const stages = [
+      { at: 20, text: 'Waking up baby pets...' },
+      { at: 50, text: 'Gathering pet treats & cushions...' },
+      { at: 75, text: 'Preparing Adoption Haven...' },
+      { at: 95, text: 'Finalizing cuddles & toys...' },
+      { at: 100, text: 'Welcome to Pet Haven!' }
+    ];
+
+    const timer = setInterval(() => {
+      // Advance progress smoothly
+      const inc = Math.floor(Math.random() * 8) + 4;
+      currentPct = Math.min(100, currentPct + inc);
+
+      if (progressBar) progressBar.style.width = `${currentPct}%`;
+      if (percentText) percentText.textContent = `${currentPct}%`;
+
+      const curStage = stages.find((s) => currentPct <= s.at) || stages[stages.length - 1];
+      if (statusText) statusText.textContent = curStage.text;
+
+      if (currentPct >= 100) {
+        clearInterval(timer);
+        setTimeout(() => {
+          if (loadingScreen) {
+            loadingScreen.classList.add('fade-out');
+            setTimeout(() => {
+              loadingScreen.style.display = 'none';
+            }, 450);
+          }
+        }, 300);
+      }
+    }, 45);
+  }
 
   // ---------- loop ----------
   let tick = 0, lastFrame = performance.now(), acc = 0;
@@ -512,6 +647,7 @@
   window.addEventListener('pagehide', save);
 
   // ---------- boot ----------
+  initLoadingScreen();
   renderAll();
   const away = Math.min(7200, (Date.now() - S.last) / 1000);
   if (away > 60 && totalIncome() > 0) {

@@ -255,3 +255,96 @@ function drawPet(ctx, p) {
     ctx.lineWidth = 3.5; ctx.strokeStyle = '#3a2630'; ctx.stroke();
   }
 }
+
+// Procedural Art Generation for CIEL Games Loading Panel
+function renderLoadingHero(canvas) {
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  // Soft radiant backdrop glow
+  const bgGrad = ctx.createRadialGradient(w / 2, h / 2 + 10, 20, w / 2, h / 2 + 10, w * 0.48);
+  bgGrad.addColorStop(0, 'rgba(255, 248, 220, 0.95)');
+  bgGrad.addColorStop(0.65, 'rgba(255, 235, 190, 0.55)');
+  bgGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = bgGrad;
+  ctx.beginPath();
+  ctx.arc(w / 2, h / 2 + 10, w * 0.48, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Floating decorative sparkles & stars
+  const stars = [
+    { x: w * 0.14, y: h * 0.28, r: 6, col: '#ffc531' },
+    { x: w * 0.86, y: h * 0.24, r: 7, col: '#ffc531' },
+    { x: w * 0.24, y: h * 0.16, r: 5, col: '#ff7fa8' },
+    { x: w * 0.76, y: h * 0.16, r: 5, col: '#ff7fa8' },
+    { x: w * 0.50, y: h * 0.12, r: 4, col: '#5ccf6b' },
+  ];
+  stars.forEach(s => {
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.fillStyle = s.col;
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4;
+      const rad = i % 2 ? s.r * 0.38 : s.r;
+      ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // Floating central heart
+  ctx.save();
+  ctx.fillStyle = '#ff6b95';
+  ctx.beginPath();
+  const hx = w / 2, hy = h * 0.23, hr = 9;
+  ctx.moveTo(hx, hy);
+  ctx.bezierCurveTo(hx - hr, hy - hr * 1.2, hx - hr * 1.6, hy + hr * 0.5, hx, hy + hr * 1.5);
+  ctx.bezierCurveTo(hx + hr * 1.6, hy + hr * 0.5, hx + hr, hy - hr * 1.2, hx, hy);
+  ctx.fill();
+  ctx.restore();
+
+  // Cute lush meadow hill / cushion
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(w / 2, h * 0.90, w * 0.46, h * 0.22, 0, 0, Math.PI * 2);
+  const grassGrad = ctx.createLinearGradient(0, h * 0.68, 0, h);
+  grassGrad.addColorStop(0, '#9fe28d');
+  grassGrad.addColorStop(1, '#6ec659');
+  ctx.fillStyle = grassGrad;
+  ctx.fill();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = '#4e993b';
+  ctx.stroke();
+
+  // Daisies on the lawn
+  const flowers = [
+    { x: w * 0.15, y: h * 0.84 },
+    { x: w * 0.85, y: h * 0.84 }
+  ];
+  flowers.forEach(fl => {
+    ctx.fillStyle = '#ffffff';
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
+      ctx.beginPath();
+      ctx.arc(fl.x + Math.cos(a) * 4.5, fl.y + Math.sin(a) * 4.5, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#ffc531';
+    ctx.beginPath();
+    ctx.arc(fl.x, fl.y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+
+  // Procedural pets: Kitten Puff (Lv 3), Pudding Pup (Lv 4), Speckled Egg (Lv 1)
+  const kittenCanvas = renderPet(3, 140);
+  const eggCanvas = renderPet(1, 100);
+  const pupCanvas = renderPet(4, 140);
+
+  ctx.drawImage(kittenCanvas, w * 0.12, h * 0.30, 94, 94);
+  ctx.drawImage(pupCanvas, w * 0.56, h * 0.30, 94, 94);
+  ctx.drawImage(eggCanvas, w * 0.38, h * 0.40, 72, 72);
+}
