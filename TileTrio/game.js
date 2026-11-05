@@ -147,8 +147,7 @@
       n === 3 ? "Don't let the tray fill up with 7 tiles!" : '';
     trayEl.classList.remove('danger');
     hud();
-    // tip changes board height on the first levels
-    requestAnimationFrame(() => { measure(); layoutAll(true); });
+    relayout();
   }
 
   function makeTile(t) {
@@ -180,12 +179,17 @@
     const maxZ = Math.max(...ts.map((t) => t.z));
     const lift = 0.16;
     const wU = maxX - minX + 2, hU = maxY - minY + 2 + maxZ * lift + 0.2;
-    const unit = Math.min(b.width / wU, b.height / hU, 46);
+    const unit = Math.max(8, Math.min(b.width / wU, b.height / hU, 62));
+    // Read the real slot boxes so tray tiles line up at every screen size.
+    const slots = trayEl.querySelectorAll('.slot');
+    const s0 = slots[0].getBoundingClientRect(), sN = slots[slots.length - 1].getBoundingClientRect();
     L = {
       unit, lift,
       ox: b.left - a.left + (b.width - wU * unit) / 2 - minX * unit,
       oy: b.top - a.top + (b.height - hU * unit) / 2 + maxZ * lift * unit - minY * unit,
-      tx: tr.left - a.left + 8, ty: tr.top - a.top, th: tr.height, tw: tr.width - 16,
+      tx: tr.left - a.left, ty: tr.top - a.top, tw: tr.width,
+      sx: s0.left - a.left, sy: s0.top - a.top, sw: s0.width, sh: s0.height,
+      step: (sN.left - s0.left) / (slots.length - 1),
     };
   }
 
@@ -194,9 +198,10 @@
     return { x: L.ox + t.x * L.unit + gap, y: L.oy + t.y * L.unit - t.z * L.lift * L.unit + gap - w * 0.03, w };
   }
   function trayRect(i, n) {
-    const slot = L.tw / Math.max(TRAY, n);
-    const w = Math.min(slot * 0.86, L.th * 0.74);
-    return { x: L.tx + slot * i + (slot - w) / 2, y: L.ty + (L.th - w) / 2 - w * 0.05, w };
+    const k = n > TRAY ? TRAY / n : 1; // squeeze briefly if a clearing set overflows
+    const sw = L.sw * k;
+    const w = Math.min(sw, L.sh) * 0.88;
+    return { x: L.sx + L.step * k * i + (sw - w) / 2, y: L.sy + (L.sh - w * 1.085) / 2, w };
   }
   function place(t, r) {
     const s = t.el.style;
@@ -220,11 +225,19 @@
     if (instant) { void stage.offsetWidth; stage.classList.remove('noanim'); }
   }
 
+  // Re-layout on any size change: window resize, rotation, fonts loading, tip text, etc.
   let rz = 0;
-  window.addEventListener('resize', () => {
+  const relayout = () => {
     cancelAnimationFrame(rz);
-    rz = requestAnimationFrame(() => { measure(); layoutAll(true); });
-  });
+    rz = requestAnimationFrame(() => { if (G) { measure(); layoutAll(true); } });
+  };
+  window.addEventListener('resize', relayout);
+  window.addEventListener('orientationchange', relayout);
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(relayout);
+    ro.observe($('#board')); ro.observe(trayEl);
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(relayout);
 
   // ---------- Core play ----------
   function tap(t) {
@@ -525,6 +538,7 @@
     closeModal();
     hud();
     $('#home').classList.remove('hidden');
+    document.body.classList.add('at-home');
   }
 
   function toggleSound() { S.sound = !S.sound; Sound.setSound(S.sound); save(); hud(); Sound.click(); }
@@ -533,8 +547,41 @@
   $('#playBtn').addEventListener('click', () => {
     Sound.unlock(); Sound.setMusic(S.music); Sound.click();
     $('#home').classList.add('hidden');
+    document.body.classList.remove('at-home');
     startLevel(S.level);
   });
+  // ---------- Exit ----------
+  function exitGame() {
+    closeModal();
+    if (window.parent !== window) {
+      // Embedded in the CIEL Games portal: ask it to close the game window.
+      try { window.parent.postMessage({ action: 'closeModal' }, '*'); } catch (e) { /* ignore */ }
+      return;
+    }
+    window.close();
+    // Browsers only allow scripts to close tabs they opened; fall back gracefully.
+    setTimeout(() => {
+      if (window.closed) return;
+      if (history.length > 1) history.back();
+      else toast('You can close this tab now');
+    }, 300);
+  }
+
+  function exitPrompt() {
+    Sound.unlock(); Sound.click();
+    modal(
+      `<div class="exit-icon"><svg viewBox="0 0 24 24"><path d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+       <div class="mtitle red">Leaving so soon?</div>
+       <p>Your progress is saved. Do you want to close the game?</p>
+       <button class="btn green" id="mKeep">Keep Playing</button>
+       <button class="btn red" id="mExit">Close Game</button>
+       <div class="brand"><span class="brand-mark">CIEL</span><span class="brand-word">GAMES</span></div>`,
+      { mKeep: closeModal, mExit: exitGame },
+    );
+  }
+
+  $('#backBtn').addEventListener('click', exitPrompt);
+  $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal' && $('#mKeep')) closeModal(); });
   $('#sndBtn').addEventListener('click', toggleSound);
   $('#musBtn').addEventListener('click', toggleMusic);
   $('#homeBtn').addEventListener('click', () => { Sound.click(); showHome(); });
@@ -549,7 +596,8 @@
        </div>
        <button class="btn green" id="mResume">Resume</button>
        <button class="btn blue" id="mRestart">Restart Level</button>
-       <button class="btn" id="mHome">Home</button>`,
+       <button class="btn" id="mHome">Home</button>
+       <div class="brand"><span class="brand-mark">CIEL</span><span class="brand-word">GAMES</span></div>`,
       {
         mSnd: () => { toggleSound(); $('#mSnd').classList.toggle('off', !S.sound); },
         mMus: () => { toggleMusic(); $('#mMus').classList.toggle('off', !S.music); },
