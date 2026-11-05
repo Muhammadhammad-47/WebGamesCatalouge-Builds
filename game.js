@@ -535,6 +535,38 @@
     $('#home').classList.add('hidden');
     startLevel(S.level);
   });
+  // ---------- Exit ----------
+  function exitGame() {
+    closeModal();
+    if (window.parent !== window) {
+      // Embedded in the CIEL Games portal: ask it to close the game window.
+      try { window.parent.postMessage({ action: 'closeModal' }, '*'); } catch (e) { /* ignore */ }
+      return;
+    }
+    window.close();
+    // Browsers only allow scripts to close tabs they opened; fall back gracefully.
+    setTimeout(() => {
+      if (window.closed) return;
+      if (history.length > 1) history.back();
+      else toast('You can close this tab now');
+    }, 300);
+  }
+
+  function exitPrompt() {
+    Sound.unlock(); Sound.click();
+    modal(
+      `<div class="exit-icon"><svg viewBox="0 0 24 24"><path d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+       <div class="mtitle red">Leaving so soon?</div>
+       <p>Your progress is saved. Do you want to close the game?</p>
+       <button class="btn green" id="mKeep">Keep Playing</button>
+       <button class="btn red" id="mExit">Close Game</button>
+       <div class="brand"><span class="brand-mark">CIEL</span><span class="brand-word">GAMES</span></div>`,
+      { mKeep: closeModal, mExit: exitGame },
+    );
+  }
+
+  $('#backBtn').addEventListener('click', exitPrompt);
+  $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal' && $('#mKeep')) closeModal(); });
   $('#sndBtn').addEventListener('click', toggleSound);
   $('#musBtn').addEventListener('click', toggleMusic);
   $('#homeBtn').addEventListener('click', () => { Sound.click(); showHome(); });
@@ -549,7 +581,8 @@
        </div>
        <button class="btn green" id="mResume">Resume</button>
        <button class="btn blue" id="mRestart">Restart Level</button>
-       <button class="btn" id="mHome">Home</button>`,
+       <button class="btn" id="mHome">Home</button>
+       <div class="brand"><span class="brand-mark">CIEL</span><span class="brand-word">GAMES</span></div>`,
       {
         mSnd: () => { toggleSound(); $('#mSnd').classList.toggle('off', !S.sound); },
         mMus: () => { toggleMusic(); $('#mMus').classList.toggle('off', !S.music); },

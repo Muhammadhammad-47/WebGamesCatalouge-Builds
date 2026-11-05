@@ -380,3 +380,53 @@ svg { display: block; }
   #boosters { padding-top: 8px; padding-bottom: calc(26px + env(safe-area-inset-bottom)); }
   .round-btn { width: 40px; height: 40px; }
 }
+
+/* ---------- Home back button + CIEL Games branding ---------- */
+.home-back {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 12px;
+  z-index: 2;
+}
+.brand {
+  display: inline-flex;
+  align-items: stretch;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 0 rgba(0,60,70,.35), 0 8px 14px rgba(0,40,50,.2);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 3px;
+  line-height: 1;
+}
+.brand-mark {
+  padding: 8px 10px 7px 13px;
+  background: linear-gradient(var(--orange1), var(--orange2));
+  color: #fff;
+  text-shadow: 0 2px 0 var(--orange3);
+}
+.brand-word {
+  padding: 8px 13px 7px 10px;
+  background: #fff;
+  color: #2f7f8f;
+}
+.by {
+  margin: -16px 0 26px;
+  color: rgba(255,255,255,.85);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .5px;
+}
+.card .exit-icon {
+  width: 64px; height: 64px; margin: 0 auto 8px;
+  border-radius: 20px;
+  display: grid; place-items: center;
+  background: linear-gradient(#ff9b9b, #e8413a);
+  box-shadow: 0 5px 0 #a8241f;
+  color: #fff;
+}
+.card .exit-icon svg { width: 34px; height: 34px; }
+.btn.red { background: linear-gradient(#ff8a80, #e8413a); box-shadow: 0 5px 0 #a8241f, 0 8px 12px rgba(0,0,0,.18), inset 0 2px 0 rgba(255,255,255,.5); }
+.btn.red:active { box-shadow: 0 1px 0 #a8241f, inset 0 2px 0 rgba(255,255,255,.5); }
+.card .brand { margin: 14px 0 0; font-size: 12px; letter-spacing: 2px; box-shadow: 0 3px 0 rgba(0,60,70,.25); }
