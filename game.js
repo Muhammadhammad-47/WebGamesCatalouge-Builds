@@ -1630,20 +1630,6 @@
                 this.drawPopcornMachine(ctx, stand);
             }
         }
-            } else if (stand.type === 'farm') {
-                this.drawCornFarm(ctx, stand);
-            } else if (stand.type === 'shelf') {
-                this.drawProduceShelf(ctx, stand);
-            } else if (stand.type === 'cashbox') {
-                this.drawCashierCounter(ctx, stand);
-            } else if (stand.type === 'coop') {
-                this.drawChickenCoop(ctx, stand);
-            } else if (stand.type === 'pen') {
-                this.drawCowPen(ctx, stand);
-            } else if (stand.type === 'machine') {
-                this.drawPopcornMachine(ctx, stand);
-            }
-        }
 
         drawUnlockPad(ctx, pad, cost, name) {
             const time = performance.now() * 0.003;
