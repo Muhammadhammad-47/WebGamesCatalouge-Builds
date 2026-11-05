@@ -375,7 +375,7 @@ svg { display: block; }
 
 /* ---------- Toast ---------- */
 #toast {
-  position: absolute; left: 50%; top: 22%;
+  position: fixed; left: 50%; top: 22%;
   transform: translate(-50%, -10px);
   z-index: 60;
   background: rgba(30,20,10,.82);
