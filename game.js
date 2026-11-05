@@ -538,6 +538,7 @@
     closeModal();
     hud();
     $('#home').classList.remove('hidden');
+    document.body.classList.add('at-home');
   }
 
   function toggleSound() { S.sound = !S.sound; Sound.setSound(S.sound); save(); hud(); Sound.click(); }
@@ -546,6 +547,7 @@
   $('#playBtn').addEventListener('click', () => {
     Sound.unlock(); Sound.setMusic(S.music); Sound.click();
     $('#home').classList.add('hidden');
+    document.body.classList.remove('at-home');
     startLevel(S.level);
   });
   // ---------- Exit ----------

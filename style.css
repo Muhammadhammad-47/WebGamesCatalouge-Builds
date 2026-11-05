@@ -541,3 +541,10 @@ svg { display: block; }
 
 /* Let the page background show through so wide screens have no visible column edges */
 #home { background: transparent; }
+
+/* Hide in-game controls while the home screen is showing */
+body.at-home #hud,
+body.at-home #tip,
+body.at-home #trayWrap,
+body.at-home #boosters,
+body.at-home #stage { visibility: hidden; }
