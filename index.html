@@ -84,68 +84,49 @@
             </div>
         </div>
 
-        <!-- Settings Modal (100% Local Controls) -->
+        <!-- Settings Modal (Authentic Poki Monkey Mart Design) -->
         <div class="modal-overlay" id="modal-settings">
-            <div class="modal-box">
-                <div class="modal-header">
-                    <div class="modal-title">⚙️ Settings</div>
-                    <div class="close-btn" id="close-settings">&times;</div>
+            <div class="settings-modal-box">
+                <!-- Close Button Circle -->
+                <div class="settings-close-circle" id="close-settings">&times;</div>
+
+                <!-- Top Header Pill -->
+                <div class="settings-header-pill">
+                    <span class="settings-header-icon">⚙️</span>
+                    <span class="settings-header-title">SETTINGS</span>
                 </div>
-                <div class="settings-list" id="settings-list">
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <span class="setting-icon">🎵</span>
-                            <div>
-                                <div class="setting-title">Music</div>
-                                <div class="setting-desc">Store BGM loop</div>
-                            </div>
-                        </div>
-                        <button class="toggle-btn active" id="toggle-music">ON</button>
+
+                <!-- Buttons Stack -->
+                <div class="settings-btn-stack">
+                    <button class="settings-pill-btn" id="toggle-music">
+                        <span>🎵</span> <span id="text-music">MUSIC ON</span>
+                    </button>
+
+                    <button class="settings-pill-btn" id="toggle-sfx">
+                        <span>🔊</span> <span id="text-sfx">SOUND ON</span>
+                    </button>
+
+                    <button class="settings-pill-btn" id="toggle-joystick">
+                        <span>🕹️</span> <span id="text-joystick">CONTROLS: DYNAMIC</span>
+                    </button>
+
+                    <button class="settings-pill-btn danger-pill" id="btn-reset-data">
+                        <span>🗑️</span> <span>RESET PROGRESS</span>
+                    </button>
+                </div>
+
+                <!-- Credits Section -->
+                <div class="settings-credits">
+                    <div class="credit-box">
+                        <div class="credit-label">DEVELOPED BY</div>
+                        <div class="ciel-brand-badge">★ CIEL GAMES ★</div>
                     </div>
 
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <span class="setting-icon">🔊</span>
-                            <div>
-                                <div class="setting-title">Sound Effects</div>
-                                <div class="setting-desc">Pops, coins & cash dings</div>
-                            </div>
-                        </div>
-                        <button class="toggle-btn active" id="toggle-sfx">ON</button>
+                    <div class="inspirations-box">
+                        INSPIRATIONS BY<br>PUBLICLY AVAILABLE GAMES
                     </div>
 
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <span class="setting-icon">🕹️</span>
-                            <div>
-                                <div class="setting-title">Joystick Mode</div>
-                                <div class="setting-desc" id="joystick-desc">Dynamic (Follows Touch)</div>
-                            </div>
-                        </div>
-                        <button class="toggle-btn" id="toggle-joystick">DYNAMIC</button>
-                    </div>
-
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <span class="setting-icon">📱</span>
-                            <div>
-                                <div class="setting-title">Full Screen</div>
-                                <div class="setting-desc">Toggle display mode</div>
-                            </div>
-                        </div>
-                        <button class="toggle-btn" id="toggle-fullscreen">EXPAND</button>
-                    </div>
-
-                    <div class="setting-row danger">
-                        <div class="setting-info">
-                            <span class="setting-icon">🗑️</span>
-                            <div>
-                                <div class="setting-title">Reset Progress</div>
-                                <div class="setting-desc">Clear local save data</div>
-                            </div>
-                        </div>
-                        <button class="danger-btn" id="btn-reset-data">RESET</button>
-                    </div>
+                    <div class="settings-version-tag">v1.0.0</div>
                 </div>
             </div>
         </div>

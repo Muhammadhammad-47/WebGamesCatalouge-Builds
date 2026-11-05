@@ -654,15 +654,17 @@
             // Music Toggle
             this.toggleMusic.addEventListener('click', () => {
                 const on = this.sound.toggleMusic();
-                this.toggleMusic.innerText = on ? 'ON' : 'OFF';
-                this.toggleMusic.classList.toggle('active', on);
+                const textEl = document.getElementById('text-music');
+                if (textEl) textEl.innerText = on ? 'MUSIC ON' : 'MUSIC OFF';
+                this.toggleMusic.classList.toggle('off', !on);
             });
 
             // SFX Toggle
             this.toggleSfx.addEventListener('click', () => {
                 const on = this.sound.toggleSFX();
-                this.toggleSfx.innerText = on ? 'ON' : 'OFF';
-                this.toggleSfx.classList.toggle('active', on);
+                const textEl = document.getElementById('text-sfx');
+                if (textEl) textEl.innerText = on ? 'SOUND ON' : 'SOUND OFF';
+                this.toggleSfx.classList.toggle('off', !on);
             });
 
             // Joystick Mode Toggle
@@ -670,22 +672,9 @@
                 const current = this.input.mode || 'dynamic';
                 const next = current === 'dynamic' ? 'fixed' : 'dynamic';
                 this.input.setMode(next);
-                this.toggleJoystick.innerText = next.toUpperCase();
-                this.toggleJoystick.classList.toggle('active', next === 'fixed');
-                this.joystickDesc.innerText = next === 'dynamic' ? 'Dynamic (Follows Touch)' : 'Fixed (Bottom-Left Corner)';
-            });
-
-            // Fullscreen Toggle
-            this.toggleFullscreen.addEventListener('click', () => {
-                if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen().catch(() => {});
-                    this.toggleFullscreen.innerText = 'EXIT';
-                    this.toggleFullscreen.classList.add('active');
-                } else {
-                    document.exitFullscreen().catch(() => {});
-                    this.toggleFullscreen.innerText = 'EXPAND';
-                    this.toggleFullscreen.classList.remove('active');
-                }
+                const textEl = document.getElementById('text-joystick');
+                if (textEl) textEl.innerText = next === 'dynamic' ? 'CONTROLS: DYNAMIC' : 'CONTROLS: FIXED';
+                this.toggleJoystick.classList.toggle('off', next !== 'dynamic');
             });
 
             // Reset Game Progress
@@ -706,16 +695,20 @@
         }
 
         syncSettingsUI() {
-            this.toggleMusic.innerText = this.sound.musicEnabled ? 'ON' : 'OFF';
-            this.toggleMusic.classList.toggle('active', this.sound.musicEnabled);
+            const musicOn = this.sound.musicEnabled;
+            const textMusic = document.getElementById('text-music');
+            if (textMusic) textMusic.innerText = musicOn ? 'MUSIC ON' : 'MUSIC OFF';
+            this.toggleMusic.classList.toggle('off', !musicOn);
 
-            this.toggleSfx.innerText = this.sound.sfxEnabled ? 'ON' : 'OFF';
-            this.toggleSfx.classList.toggle('active', this.sound.sfxEnabled);
+            const sfxOn = this.sound.sfxEnabled;
+            const textSfx = document.getElementById('text-sfx');
+            if (textSfx) textSfx.innerText = sfxOn ? 'SOUND ON' : 'SOUND OFF';
+            this.toggleSfx.classList.toggle('off', !sfxOn);
 
             const mode = this.input.mode || 'dynamic';
-            this.toggleJoystick.innerText = mode.toUpperCase();
-            this.toggleJoystick.classList.toggle('active', mode === 'fixed');
-            this.joystickDesc.innerText = mode === 'dynamic' ? 'Dynamic (Follows Touch)' : 'Fixed (Bottom-Left Corner)';
+            const textJoystick = document.getElementById('text-joystick');
+            if (textJoystick) textJoystick.innerText = mode === 'dynamic' ? 'CONTROLS: DYNAMIC' : 'CONTROLS: FIXED';
+            this.toggleJoystick.classList.toggle('off', mode !== 'dynamic');
         }
 
         resize() {
