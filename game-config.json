@@ -12,7 +12,8 @@
         "management",
         "tycoon",
         "casual",
-        "html5"
+        "html5",
+        "defold"
     ],
     "portalMetadata": {
         "developer": "TinyDobbins",
@@ -22,4 +23,3 @@
         "controls": "Desktop: WASD or Arrow Keys to move your monkey. Mobile/Tablet: Drag or touch joystick to walk around the supermarket."
     }
 }
-
