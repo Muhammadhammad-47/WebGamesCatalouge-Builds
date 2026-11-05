@@ -146,11 +146,111 @@ html, body {
     color: white;
 }
 
-.hud-btn.hats-btn {
-    background: linear-gradient(180deg, #ff66c4 0%, #cb1b81 100%);
-    border-color: #6a0b42;
-    box-shadow: 0 5px 0 #6a0b42, 0 8px 15px rgba(0,0,0,0.2);
+.hud-btn.settings-btn {
+    background: linear-gradient(180deg, #ffde59 0%, #ff914d 100%);
+    border-color: #4a2810;
+    box-shadow: 0 5px 0 #4a2810, 0 8px 15px rgba(0,0,0,0.2);
+    color: #4a2810;
+}
+
+/* Settings Modal Elements */
+.settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.setting-row {
+    display: flex;
+    align-items: center;
+    background: #fbf7ee;
+    border: 3px solid #4a2810;
+    border-radius: 18px;
+    padding: 12px 14px;
+    box-shadow: 0 4px 0 #4a2810;
+    justify-content: space-between;
+}
+
+.setting-row.danger {
+    background: #fff0f0;
+    border-color: #d32f2f;
+    box-shadow: 0 4px 0 #b71c1c;
+}
+
+.setting-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+}
+
+.setting-icon {
+    font-size: 26px;
+    width: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.setting-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #4a2810;
+}
+
+.setting-desc {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8c735c;
+    margin-top: 2px;
+}
+
+.toggle-btn {
+    min-width: 80px;
+    padding: 8px 14px;
+    background: #cccccc;
+    color: #666666;
+    border: 2px solid #4a2810;
+    border-radius: 16px;
+    font-weight: 900;
+    font-size: 14px;
+    box-shadow: 0 4px 0 #4a2810;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.15s;
+    outline: none;
+}
+
+.toggle-btn.active {
+    background: linear-gradient(180deg, #70e000 0%, #38b000 100%);
     color: white;
+}
+
+.toggle-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #4a2810;
+}
+
+.danger-btn {
+    min-width: 80px;
+    padding: 8px 14px;
+    background: linear-gradient(180deg, #ff5252 0%, #d32f2f 100%);
+    border: 2px solid #7f0000;
+    border-radius: 16px;
+    color: white;
+    font-weight: 900;
+    font-size: 14px;
+    box-shadow: 0 4px 0 #7f0000;
+    cursor: pointer;
+    transition: transform 0.1s;
+    outline: none;
+}
+
+.danger-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #7f0000;
 }
 
 /* Capacity stack counter */
@@ -459,3 +559,4 @@ html, body {
         display: none;
     }
 }
+

@@ -12,7 +12,8 @@
     // ==========================================================================
     class SoundManager {
         constructor() {
-            this.enabled = true;
+            this.musicEnabled = true;
+            this.sfxEnabled = true;
             this.ctx = null;
             this.bgmAudio = null;
             this.buffers = {};
@@ -29,8 +30,11 @@
                 pig: 'assets/audio/sound_9.ogg'
             };
 
-            const saved = localStorage.getItem('mm_sound_enabled');
-            if (saved !== null) this.enabled = (saved === 'true');
+            const savedMusic = localStorage.getItem('mm_music_enabled');
+            if (savedMusic !== null) this.musicEnabled = (savedMusic === 'true');
+
+            const savedSfx = localStorage.getItem('mm_sfx_enabled');
+            if (savedSfx !== null) this.sfxEnabled = (savedSfx === 'true');
 
             this.initAudioContext();
         }
@@ -46,15 +50,15 @@
             if (this.ctx && this.ctx.state === 'suspended') {
                 this.ctx.resume();
             }
-            if (this.enabled && !this.bgmAudio) {
+            if (this.musicEnabled && !this.bgmAudio) {
                 this.playBGM();
             }
         }
 
-        toggle() {
-            this.enabled = !this.enabled;
-            localStorage.setItem('mm_sound_enabled', this.enabled);
-            if (this.enabled) {
+        toggleMusic() {
+            this.musicEnabled = !this.musicEnabled;
+            localStorage.setItem('mm_music_enabled', this.musicEnabled);
+            if (this.musicEnabled) {
                 this.playBGM();
             } else {
                 if (this.bgmAudio) {
@@ -62,11 +66,17 @@
                     this.bgmAudio = null;
                 }
             }
-            return this.enabled;
+            return this.musicEnabled;
+        }
+
+        toggleSFX() {
+            this.sfxEnabled = !this.sfxEnabled;
+            localStorage.setItem('mm_sfx_enabled', this.sfxEnabled);
+            return this.sfxEnabled;
         }
 
         playBGM() {
-            if (!this.enabled) return;
+            if (!this.musicEnabled) return;
             try {
                 if (!this.bgmAudio) {
                     this.bgmAudio = new Audio(this.soundFiles.bgm);
@@ -78,7 +88,7 @@
         }
 
         play(name, volume = 0.6) {
-            if (!this.enabled) return;
+            if (!this.sfxEnabled) return;
             try {
                 const url = this.soundFiles[name];
                 if (url) {
@@ -96,7 +106,7 @@
         }
 
         playSynth(name) {
-            if (!this.enabled || !this.ctx) return;
+            if (!this.sfxEnabled || !this.ctx) return;
             try {
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
@@ -166,9 +176,28 @@
             this.currentX = 0;
             this.currentY = 0;
             this.maxRadius = 50;
+            this.mode = localStorage.getItem('mm_joystick_mode') || 'dynamic';
 
             this.setupKeyboard();
             this.setupPointer();
+
+            if (this.mode === 'fixed') {
+                this.setMode('fixed');
+            }
+        }
+
+        setMode(m) {
+            this.mode = m;
+            localStorage.setItem('mm_joystick_mode', m);
+            if (m === 'fixed') {
+                this.joystickContainer.style.display = 'block';
+                this.joystickContainer.style.left = '100px';
+                this.joystickContainer.style.top = `${window.innerHeight - 100}px`;
+                this.startX = 100;
+                this.startY = window.innerHeight - 100;
+            } else {
+                this.joystickContainer.style.display = 'none';
+            }
         }
 
         setupKeyboard() {
@@ -186,14 +215,20 @@
         setupPointer() {
             const onDown = (clientX, clientY) => {
                 this.isPointerDown = true;
-                this.startX = clientX;
-                this.startY = clientY;
+
+                if (this.mode === 'fixed') {
+                    this.startX = 100;
+                    this.startY = window.innerHeight - 100;
+                } else {
+                    this.startX = clientX;
+                    this.startY = clientY;
+                    this.joystickContainer.style.display = 'block';
+                    this.joystickContainer.style.left = `${clientX}px`;
+                    this.joystickContainer.style.top = `${clientY}px`;
+                }
+
                 this.currentX = clientX;
                 this.currentY = clientY;
-
-                this.joystickContainer.style.display = 'block';
-                this.joystickContainer.style.left = `${clientX}px`;
-                this.joystickContainer.style.top = `${clientY}px`;
                 this.joystickKnob.style.transform = `translate(0px, 0px)`;
             };
 
@@ -223,7 +258,10 @@
 
             const onUp = () => {
                 this.isPointerDown = false;
-                this.joystickContainer.style.display = 'none';
+                this.joystickKnob.style.transform = 'translate(0px, 0px)';
+                if (this.mode !== 'fixed') {
+                    this.joystickContainer.style.display = 'none';
+                }
                 this.moveX = 0;
                 this.moveY = 0;
             };
@@ -304,13 +342,21 @@
             this.cashDisplay = document.getElementById('cash-display');
             this.cashBadge = document.getElementById('cash-badge');
             this.capacityDisplay = document.getElementById('capacity-display');
-            this.btnAudio = document.getElementById('btn-audio');
+            this.btnSettings = document.getElementById('btn-settings');
             this.btnUpgrades = document.getElementById('btn-upgrades');
             this.btnHats = document.getElementById('btn-hats');
             this.modalUpgrades = document.getElementById('modal-upgrades');
             this.modalHats = document.getElementById('modal-hats');
+            this.modalSettings = document.getElementById('modal-settings');
             this.closeUpgrades = document.getElementById('close-upgrades');
             this.closeHats = document.getElementById('close-hats');
+            this.closeSettings = document.getElementById('close-settings');
+            this.toggleMusic = document.getElementById('toggle-music');
+            this.toggleSfx = document.getElementById('toggle-sfx');
+            this.toggleJoystick = document.getElementById('toggle-joystick');
+            this.joystickDesc = document.getElementById('joystick-desc');
+            this.toggleFullscreen = document.getElementById('toggle-fullscreen');
+            this.btnResetData = document.getElementById('btn-reset-data');
             this.upgradeListEl = document.getElementById('upgrade-list');
             this.hatsGridEl = document.getElementById('hats-grid');
 
@@ -573,12 +619,6 @@
         }
 
         setupUI() {
-            // Audio toggle
-            this.btnAudio.addEventListener('click', () => {
-                const on = this.sound.toggle();
-                this.btnAudio.innerText = on ? '🔊' : '🔇';
-            });
-
             // Unlock audio on first user touch/click
             window.addEventListener('pointerdown', () => {
                 this.sound.ensureUnlocked();
@@ -602,13 +642,80 @@
                 this.modalHats.classList.remove('active');
             });
 
+            // Settings Modal
+            this.btnSettings.addEventListener('click', () => {
+                this.syncSettingsUI();
+                this.modalSettings.classList.add('active');
+            });
+            this.closeSettings.addEventListener('click', () => {
+                this.modalSettings.classList.remove('active');
+            });
+
+            // Music Toggle
+            this.toggleMusic.addEventListener('click', () => {
+                const on = this.sound.toggleMusic();
+                this.toggleMusic.innerText = on ? 'ON' : 'OFF';
+                this.toggleMusic.classList.toggle('active', on);
+            });
+
+            // SFX Toggle
+            this.toggleSfx.addEventListener('click', () => {
+                const on = this.sound.toggleSFX();
+                this.toggleSfx.innerText = on ? 'ON' : 'OFF';
+                this.toggleSfx.classList.toggle('active', on);
+            });
+
+            // Joystick Mode Toggle
+            this.toggleJoystick.addEventListener('click', () => {
+                const current = this.input.mode || 'dynamic';
+                const next = current === 'dynamic' ? 'fixed' : 'dynamic';
+                this.input.setMode(next);
+                this.toggleJoystick.innerText = next.toUpperCase();
+                this.toggleJoystick.classList.toggle('active', next === 'fixed');
+                this.joystickDesc.innerText = next === 'dynamic' ? 'Dynamic (Follows Touch)' : 'Fixed (Bottom-Left Corner)';
+            });
+
+            // Fullscreen Toggle
+            this.toggleFullscreen.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                    this.toggleFullscreen.innerText = 'EXIT';
+                    this.toggleFullscreen.classList.add('active');
+                } else {
+                    document.exitFullscreen().catch(() => {});
+                    this.toggleFullscreen.innerText = 'EXPAND';
+                    this.toggleFullscreen.classList.remove('active');
+                }
+            });
+
+            // Reset Game Progress
+            this.btnResetData.addEventListener('click', () => {
+                const sure = confirm('Are you sure you want to reset all progress and restart?');
+                if (sure) {
+                    localStorage.removeItem('monkey_mart_save_v1');
+                    window.location.reload();
+                }
+            });
+
             // Close modals on clicking background
-            this.modalUpgrades.addEventListener('click', (e) => {
-                if (e.target === this.modalUpgrades) this.modalUpgrades.classList.remove('active');
+            [this.modalUpgrades, this.modalHats, this.modalSettings].forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) modal.classList.remove('active');
+                });
             });
-            this.modalHats.addEventListener('click', (e) => {
-                if (e.target === this.modalHats) this.modalHats.classList.remove('active');
-            });
+        }
+
+        syncSettingsUI() {
+            this.toggleMusic.innerText = this.sound.musicEnabled ? 'ON' : 'OFF';
+            this.toggleMusic.classList.toggle('active', this.sound.musicEnabled);
+
+            this.toggleSfx.innerText = this.sound.sfxEnabled ? 'ON' : 'OFF';
+            this.toggleSfx.classList.toggle('active', this.sound.sfxEnabled);
+
+            const mode = this.input.mode || 'dynamic';
+            this.toggleJoystick.innerText = mode.toUpperCase();
+            this.toggleJoystick.classList.toggle('active', mode === 'fixed');
+            this.joystickDesc.innerText = mode === 'dynamic' ? 'Dynamic (Follows Touch)' : 'Fixed (Bottom-Left Corner)';
         }
 
         resize() {
