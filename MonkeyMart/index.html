@@ -10,7 +10,7 @@
     <title>Monkey Mart | CIEL WebGames</title>
     <meta name="title" content="Monkey Mart | CIEL WebGames">
     <meta name="description" content="Play Monkey Mart! Run your own supermarket, harvest bananas, sell products to customers and expand your monkey grocery empire in pure HTML5 and JavaScript.">
-    <meta name="keywords" content="monkey mart, idle game, simulation, supermarket, poki, html5 game">
+    <meta name="keywords" content="monkey mart, idle game, simulation, supermarket, standalone, html5 game">
 
     <link rel="icon" type="image/png" href="assets/monkey-mart.png">
     <link rel="apple-touch-icon" href="assets/monkey-mart.png">
@@ -42,7 +42,7 @@
                 <div class="hud-buttons">
                     <button class="hud-btn hats-btn" id="btn-hats" title="Hats & Outfits">🧢</button>
                     <button class="hud-btn upgrade-btn" id="btn-upgrades" title="Upgrades">⚡</button>
-                    <button class="hud-btn" id="btn-audio" title="Toggle Sound">🔊</button>
+                    <button class="hud-btn settings-btn" id="btn-settings" title="Settings">⚙️</button>
                 </div>
             </div>
 
@@ -80,6 +80,72 @@
                 </div>
                 <div class="hats-grid" id="hats-grid">
                     <!-- Populated dynamically by game.js -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal (100% Local Controls) -->
+        <div class="modal-overlay" id="modal-settings">
+            <div class="modal-box">
+                <div class="modal-header">
+                    <div class="modal-title">⚙️ Settings</div>
+                    <div class="close-btn" id="close-settings">&times;</div>
+                </div>
+                <div class="settings-list" id="settings-list">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-icon">🎵</span>
+                            <div>
+                                <div class="setting-title">Music</div>
+                                <div class="setting-desc">Store BGM loop</div>
+                            </div>
+                        </div>
+                        <button class="toggle-btn active" id="toggle-music">ON</button>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-icon">🔊</span>
+                            <div>
+                                <div class="setting-title">Sound Effects</div>
+                                <div class="setting-desc">Pops, coins & cash dings</div>
+                            </div>
+                        </div>
+                        <button class="toggle-btn active" id="toggle-sfx">ON</button>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-icon">🕹️</span>
+                            <div>
+                                <div class="setting-title">Joystick Mode</div>
+                                <div class="setting-desc" id="joystick-desc">Dynamic (Follows Touch)</div>
+                            </div>
+                        </div>
+                        <button class="toggle-btn" id="toggle-joystick">DYNAMIC</button>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-icon">📱</span>
+                            <div>
+                                <div class="setting-title">Full Screen</div>
+                                <div class="setting-desc">Toggle display mode</div>
+                            </div>
+                        </div>
+                        <button class="toggle-btn" id="toggle-fullscreen">EXPAND</button>
+                    </div>
+
+                    <div class="setting-row danger">
+                        <div class="setting-info">
+                            <span class="setting-icon">🗑️</span>
+                            <div>
+                                <div class="setting-title">Reset Progress</div>
+                                <div class="setting-desc">Clear local save data</div>
+                            </div>
+                        </div>
+                        <button class="danger-btn" id="btn-reset-data">RESET</button>
+                    </div>
                 </div>
             </div>
         </div>
