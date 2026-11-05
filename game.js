@@ -363,10 +363,10 @@
             this.sound = new SoundManager();
             this.input = new InputManager(this.canvas, this.joystickContainer, this.joystickKnob);
 
-            // World Dimensions (2.5D store)
-            this.worldWidth = 2000;
-            this.worldHeight = 1600;
-            this.camera = { x: 400, y: 350, zoom: 1 };
+            // World Dimensions (Compact Authentic Supermarket)
+            this.worldWidth = 1400;
+            this.worldHeight = 1100;
+            this.camera = { x: 500, y: 350, zoom: 1.35 };
 
             // Game State
             this.cash = 0;
@@ -388,13 +388,13 @@
 
             // Player character
             this.player = {
-                x: 420,
-                y: 360,
+                x: 360,
+                y: 300,
                 vx: 0,
                 vy: 0,
-                baseSpeed: 230,
-                currentSpeed: 230,
-                angle: Math.PI / 2,
+                baseSpeed: 240,
+                currentSpeed: 240,
+                angle: 0,
                 stepCycle: 0,
                 stack: [], // carried items
                 maxCapacity: 4,
@@ -415,7 +415,7 @@
 
             // Golden Pig event
             this.goldenPig = null;
-            this.pigSpawnTimer = 35;
+            this.pigSpawnTimer = 45;
 
             // Setup
             this.loadSave();
@@ -430,18 +430,19 @@
         }
 
         initStands() {
-            // Layout matching authentic Poki Monkey Mart supermarket
+            // Layout matching authentic Poki Monkey Mart supermarket with sequential unlocking
             this.stands = [
-                // 1. Banana Tree Plot (Always unlocked)
+                // 1. Banana Tree Plot (Unlocked from start)
                 {
                     id: 'banana_tree',
                     type: 'tree',
                     product: 'banana',
-                    x: 200,
-                    y: 240,
+                    x: 280,
+                    y: 280,
                     w: 140,
                     h: 140,
                     unlocked: true,
+                    requires: null,
                     cost: 0,
                     stock: 6,
                     maxStock: 8,
@@ -449,173 +450,190 @@
                     interval: 1.8,
                     name: 'Banana Tree'
                 },
-                // 2. Banana Display Shelf
+                // 2. Banana Display Shelf (First unlock pad)
                 {
                     id: 'banana_shelf',
                     type: 'shelf',
                     product: 'banana',
                     price: 5,
-                    x: 420,
-                    y: 180,
+                    x: 520,
+                    y: 280,
                     w: 130,
                     h: 100,
                     unlocked: false,
+                    requires: null,
                     cost: 15,
                     stock: 0,
                     maxStock: 8,
                     name: 'Banana Stand',
-                    unlockPad: { x: 420, y: 260, r: 42 }
+                    unlockPad: { x: 520, y: 280, r: 44 }
                 },
-                // 3. Checkout Cashier Counter (Unlocked by default)
+                // 3. Checkout Cashier Counter (Unlocked from start)
                 {
                     id: 'cashbox',
                     type: 'cashbox',
-                    x: 720,
-                    y: 260,
+                    x: 820,
+                    y: 300,
                     w: 160,
                     h: 120,
                     unlocked: true,
+                    requires: null,
                     cost: 0,
                     billsOnCounter: 0,
                     name: 'Checkout Counter'
                 },
-                // 4. Corn Farm Plot
+                // 4. Corn Farm Plot (Requires Banana Shelf)
                 {
                     id: 'corn_farm',
                     type: 'farm',
                     product: 'corn',
-                    x: 200,
-                    y: 520,
+                    x: 280,
+                    y: 540,
                     w: 150,
                     h: 140,
                     unlocked: false,
+                    requires: 'banana_shelf',
                     cost: 35,
                     stock: 4,
                     maxStock: 8,
                     timer: 0,
                     interval: 2.2,
                     name: 'Corn Field',
-                    unlockPad: { x: 200, y: 520, r: 46 }
+                    unlockPad: { x: 280, y: 540, r: 46 }
                 },
-                // 5. Corn Display Shelf
+                // 5. Corn Display Shelf (Requires Corn Farm)
                 {
                     id: 'corn_shelf',
                     type: 'shelf',
                     product: 'corn',
                     price: 8,
-                    x: 420,
-                    y: 460,
+                    x: 520,
+                    y: 540,
                     w: 130,
                     h: 100,
                     unlocked: false,
+                    requires: 'corn_farm',
                     cost: 50,
                     stock: 0,
                     maxStock: 8,
                     name: 'Corn Stand',
-                    unlockPad: { x: 420, y: 540, r: 42 }
+                    unlockPad: { x: 520, y: 540, r: 44 }
                 },
-                // 6. Stockman Assistant
+                // 6. Stockman Assistant (Requires Corn Stand)
                 {
                     id: 'stockman_worker',
                     type: 'worker_pad',
                     workerType: 'stockman',
-                    x: 600,
-                    y: 400,
+                    x: 400,
+                    y: 410,
                     w: 90,
                     h: 90,
                     unlocked: false,
+                    requires: 'corn_shelf',
                     cost: 75,
                     name: 'Hire Stockman',
-                    unlockPad: { x: 600, y: 400, r: 44 }
+                    unlockPad: { x: 400, y: 410, r: 44 }
                 },
-                // 7. Chicken Coop / Egg Station
+                // 7. Chicken Coop / Egg Station (Requires Stockman)
                 {
                     id: 'chicken_coop',
                     type: 'coop',
                     product: 'egg',
-                    x: 200,
+                    x: 280,
                     y: 800,
                     w: 150,
                     h: 140,
                     unlocked: false,
+                    requires: 'stockman_worker',
                     cost: 110,
                     stock: 4,
                     maxStock: 8,
                     timer: 0,
                     interval: 2.5,
                     name: 'Chicken Coop',
-                    unlockPad: { x: 200, y: 800, r: 46 }
+                    unlockPad: { x: 280, y: 800, r: 46 }
                 },
-                // 8. Egg Display Shelf
+                // 8. Egg Display Shelf (Requires Chicken Coop)
                 {
                     id: 'egg_shelf',
                     type: 'shelf',
                     product: 'egg',
                     price: 12,
-                    x: 420,
-                    y: 740,
+                    x: 520,
+                    y: 800,
                     w: 130,
                     h: 100,
                     unlocked: false,
+                    requires: 'chicken_coop',
                     cost: 140,
                     stock: 0,
                     maxStock: 8,
                     name: 'Egg Stand',
-                    unlockPad: { x: 420, y: 820, r: 42 }
+                    unlockPad: { x: 520, y: 800, r: 44 }
                 },
-                // 9. Cashier Assistant
+                // 9. Cashier Assistant (Requires Egg Stand)
                 {
                     id: 'cashier_worker',
                     type: 'worker_pad',
                     workerType: 'cashier',
-                    x: 720,
-                    y: 420,
+                    x: 820,
+                    y: 200,
                     w: 90,
                     h: 90,
                     unlocked: false,
+                    requires: 'egg_shelf',
                     cost: 180,
                     name: 'Hire Cashier',
-                    unlockPad: { x: 720, y: 420, r: 44 }
+                    unlockPad: { x: 820, y: 200, r: 44 }
                 },
-                // 10. Popcorn Microwave Stand
+                // 10. Popcorn Machine (Requires Cashier Worker)
                 {
                     id: 'popcorn_stand',
                     type: 'machine',
                     product: 'popcorn',
                     price: 18,
-                    x: 720,
-                    y: 640,
+                    x: 740,
+                    y: 540,
                     w: 140,
                     h: 110,
                     unlocked: false,
+                    requires: 'cashier_worker',
                     cost: 240,
                     stock: 0,
                     maxStock: 6,
                     timer: 0,
                     interval: 2.6,
                     name: 'Popcorn Machine',
-                    unlockPad: { x: 720, y: 640, r: 46 }
+                    unlockPad: { x: 740, y: 540, r: 46 }
                 },
-                // 11. Dairy Cow Pen & Milk Stand
+                // 11. Dairy Cow Pen & Milk Stand (Requires Popcorn Machine)
                 {
                     id: 'cow_pen',
                     type: 'pen',
                     product: 'milk',
                     price: 25,
-                    x: 200,
-                    y: 1100,
+                    x: 280,
+                    y: 1040,
                     w: 160,
                     h: 150,
                     unlocked: false,
+                    requires: 'popcorn_stand',
                     cost: 320,
                     stock: 0,
                     maxStock: 6,
                     timer: 0,
                     interval: 3.0,
                     name: 'Dairy Cow Pen',
-                    unlockPad: { x: 200, y: 1100, r: 48 }
+                    unlockPad: { x: 280, y: 1040, r: 48 }
                 }
             ];
+        }
+
+        isStandAvailable(stand) {
+            if (stand.unlocked) return true;
+            if (!stand.requires) return true;
+            const req = this.stands.find(s => s.id === stand.requires);
+            return req && req.unlocked;
         }
 
         setupUI() {
@@ -986,9 +1004,9 @@
         }
 
         checkPlayerInteractions(dt) {
-            // 1. Check Unlock Pads
+            // 1. Check Unlock Pads (Only available sequential pad)
             this.stands.forEach(stand => {
-                if (!stand.unlocked && stand.unlockPad) {
+                if (!stand.unlocked && stand.unlockPad && this.isStandAvailable(stand)) {
                     const pad = stand.unlockPad;
                     const dist = Math.hypot(this.player.x - pad.x, this.player.y - pad.y);
                     if (dist < pad.r + 20) {
@@ -1297,9 +1315,9 @@
                         c.state = 'leaving';
                     }
                 } else if (c.state === 'leaving') {
-                    // Walk out towards entrance
-                    const targetX = 100;
-                    const targetY = 1400;
+                    // Walk out towards glass entrance doors
+                    const targetX = 820;
+                    const targetY = this.worldHeight - 60;
                     const dx = targetX - c.x;
                     const dy = targetY - c.y;
                     const dist = Math.hypot(dx, dy);
@@ -1327,8 +1345,8 @@
 
             const customer = {
                 type: type,
-                x: 120 + Math.random() * 40,
-                y: 1350,
+                x: 800 + Math.random() * 40,
+                y: this.worldHeight - 120,
                 speed: 120 + Math.random() * 25,
                 angle: -Math.PI / 2,
                 stepCycle: 0,
@@ -1465,10 +1483,11 @@
             ctx.clearRect(0, 0, this.viewportWidth, this.viewportHeight);
 
             ctx.save();
-            // Camera transform
-            const cx = this.viewportWidth / 2 - this.camera.x;
-            const cy = this.viewportHeight / 2 - this.camera.y;
-            ctx.translate(cx, cy);
+            // Authentic Poki Close-Up Camera Scaling & Following
+            const zoom = Math.max(1.15, Math.min(1.45, this.viewportWidth / 850));
+            ctx.translate(this.viewportWidth / 2, this.viewportHeight / 2);
+            ctx.scale(zoom, zoom);
+            ctx.translate(-this.camera.x, -this.camera.y);
 
             // 1. Draw Supermarket Floor & Store Borders
             this.drawStoreFloor(ctx);
@@ -1476,9 +1495,11 @@
             // 2. Depth Sorting: Collect all entities (Stands, Characters, Customers, Props)
             const entities = [];
 
-            // Stands
+            // Stands (only unlocked or currently available pads)
             this.stands.forEach(s => {
-                entities.push({ type: 'stand', y: s.y, data: s });
+                if (s.unlocked || this.isStandAvailable(s)) {
+                    entities.push({ type: 'stand', y: s.y, data: s });
+                }
             });
 
             // Workers
@@ -1530,38 +1551,63 @@
                 ctx.fillRect(0, y, this.worldWidth, 3);
             }
 
+            // Supermarket North Wall (Top Store Wall)
+            ctx.fillStyle = '#f2ebe0';
+            ctx.fillRect(40, 40, this.worldWidth - 80, 100);
+            ctx.fillStyle = '#8b5a2b';
+            ctx.fillRect(40, 36, this.worldWidth - 80, 10);
+            ctx.fillRect(40, 134, this.worldWidth - 80, 8);
+
+            // Supermarket Wall Banner
+            ctx.fillStyle = '#e53935';
+            ctx.fillRect(420, 55, 360, 40);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '900 22px Fredoka, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('★ MONKEY MART ★', 600, 82);
+
             // Supermarket Checkerboard Green Floor
-            const margin = 80;
+            const topOffset = 142;
+            const margin = 60;
             const w = this.worldWidth - margin * 2;
-            const h = this.worldHeight - margin * 2;
+            const h = this.worldHeight - topOffset - margin;
             const tileSize = 64;
 
             for (let x = margin; x < margin + w; x += tileSize) {
-                for (let y = margin; y < margin + h; y += tileSize) {
+                for (let y = topOffset; y < topOffset + h; y += tileSize) {
                     const tileX = Math.floor((x - margin) / tileSize);
-                    const tileY = Math.floor((y - margin) / tileSize);
+                    const tileY = Math.floor((y - topOffset) / tileSize);
                     const isEven = (tileX + tileY) % 2 === 0;
                     ctx.fillStyle = isEven ? '#3bb859' : '#33ac50';
                     ctx.fillRect(x, y, tileSize, tileSize);
 
-                    // Tile border seam
+                    // Subtle tile seam
                     ctx.strokeStyle = '#2b9b47';
                     ctx.lineWidth = 1;
                     ctx.strokeRect(x, y, tileSize, tileSize);
                 }
             }
 
-            // Store entrance mat & sliding door graphics at bottom
-            ctx.fillStyle = '#2b5735';
-            ctx.fillRect(80, 1300, 180, 140);
-            ctx.fillStyle = '#ffde59';
-            ctx.fillRect(160, 1310, 20, 120);
+            // Glass Entrance Doors at Bottom Center
+            ctx.fillStyle = '#37474f';
+            ctx.fillRect(720, this.worldHeight - 80, 200, 40);
+            ctx.fillStyle = 'rgba(129, 212, 250, 0.6)';
+            ctx.fillRect(730, this.worldHeight - 80, 85, 36);
+            ctx.fillRect(825, this.worldHeight - 80, 85, 36);
+
+            // Entrance Welcome Rug
+            ctx.fillStyle = '#fbc02d';
+            ctx.fillRect(740, this.worldHeight - 130, 160, 50);
+            ctx.fillStyle = '#4a2810';
+            ctx.font = 'bold 13px Fredoka, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('WELCOME', 820, this.worldHeight - 100);
         }
 
         drawStand(ctx, stand) {
             if (!stand.unlocked) {
-                // Draw Locked Pad on Floor
-                if (stand.unlockPad) {
+                // Only draw unlock pad if its prerequisite is met!
+                if (stand.unlockPad && this.isStandAvailable(stand)) {
                     this.drawUnlockPad(ctx, stand.unlockPad, stand.cost, stand.name);
                 }
                 return;
@@ -1570,6 +1616,20 @@
             // Draw based on stand type
             if (stand.type === 'tree') {
                 this.drawBananaTree(ctx, stand);
+            } else if (stand.type === 'farm') {
+                this.drawCornFarm(ctx, stand);
+            } else if (stand.type === 'shelf') {
+                this.drawProduceShelf(ctx, stand);
+            } else if (stand.type === 'cashbox') {
+                this.drawCashierCounter(ctx, stand);
+            } else if (stand.type === 'coop') {
+                this.drawChickenCoop(ctx, stand);
+            } else if (stand.type === 'pen') {
+                this.drawCowPen(ctx, stand);
+            } else if (stand.type === 'machine') {
+                this.drawPopcornMachine(ctx, stand);
+            }
+        }
             } else if (stand.type === 'farm') {
                 this.drawCornFarm(ctx, stand);
             } else if (stand.type === 'shelf') {
@@ -1989,7 +2049,7 @@
             const stretch = isMoving ? 1 + Math.sin(p.stepCycle * 8) * 0.08 : 1;
 
             ctx.translate(0, bobY);
-            ctx.scale(2 - stretch, stretch);
+            ctx.scale(1.25 * (2 - stretch), 1.25 * stretch);
 
             // Draw Monkey Body Rig
             this.drawMonkeyRig(ctx, p.angle, this.selectedHat);
