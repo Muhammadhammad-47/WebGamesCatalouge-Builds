@@ -34,7 +34,8 @@
   // Settings live in their own key so changing them on the menu never creates a save game.
   const SETTINGS_KEY = 'petMergeHaven.settings';
   function loadSettings() { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch (e) { return {}; } }
-  function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ sound: S.sound })); } catch (e) {} }
+  let seenHelp = !!loadSettings().seenHelp;
+  function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ sound: S.sound, seenHelp })); } catch (e) {} }
   const hasSave = () => { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } };
   { const st = loadSettings(); if (typeof st.sound === 'boolean') S.sound = st.sound; }
   let running = false;   // game loop active (false while on loading / menu screens)
@@ -148,6 +149,7 @@
       im.style.animationDelay = (-Math.random() * 2.4).toFixed(2) + 's';
       c.appendChild(im);
       const b = document.createElement('span'); b.className = 'lv'; b.textContent = L; c.appendChild(b);
+      if (sellMode) { const t = document.createElement('span'); t.className = 'sell-tag'; t.innerHTML = `<i class="coin sm"></i>${fmt(sellValue(L))}`; c.appendChild(t); }
       if (anim) { void c.offsetWidth; c.classList.add('pop'); }
     }
   }
@@ -155,6 +157,8 @@
   function renderAll() { for (let i = 0; i < N; i++) renderCell(i); renderOrders(); renderHUD(); renderXP(); }
 
   let lastAfford = null;
+  let sellMode = false;
+  const anyUpgradeAffordable = () => Object.entries(UPG).some(([k, u]) => S.upg[k] < u.max && S.coins >= u.cost(S.upg[k]));
   function renderHUD() {
     $('#coins').textContent = fmt(S.coins);
     $('#rate').textContent = fmt(totalIncome()) + '/s';
@@ -163,6 +167,8 @@
     $('#buyBtn').classList.toggle('disabled', S.coins < cost || !emptyCells().length);
     $('#buyIcon').src = IMGS[spawnLevel() - 1];
     $('#soundBtn').classList.toggle('muted', !S.sound);
+    $('#shopBtn').classList.toggle('deal', anyUpgradeAffordable());
+    refreshShop();
     const afford = S.coins >= unlockCost();
     if (afford !== lastAfford) {
       lastAfford = afford;
@@ -256,28 +262,43 @@
       <div class="book">${items}</div><div class="actions"><button class="btn go" data-close>Close</button></div>`);
   }
 
+  // Keeps the open shop's price buttons in sync with the coin count (called from renderHUD).
+  function refreshShop() {
+    if (modal.classList.contains('hidden')) return;
+    card.querySelectorAll('[data-up]').forEach((b) => {
+      const k = b.dataset.up, u = UPG[k], l = S.upg[k];
+      if (l >= u.max) return;
+      const c = u.cost(l), poor = S.coins < c;
+      b.classList.toggle('disabled', poor);
+      const need = b.parentElement.querySelector('.need');
+      if (need) need.textContent = poor ? `Need ${fmt(c - S.coins)} more` : 'Tap to buy!';
+    });
+  }
+
   function showShop() {
+    exitSellMode();
     const body = () => Object.entries(UPG).map(([k, u]) => {
-      const l = S.upg[k], maxed = l >= u.max, c = maxed ? 0 : u.cost(l);
+      const l = S.upg[k], maxed = l >= u.max, c = maxed ? 0 : u.cost(l), poor = !maxed && S.coins < c;
       return `<div class="shop-item"><div class="ic" style="background:${u.bg}">${u.icon}</div>
         <div class="txt"><b>${u.name} <small>Lv ${l}</small></b><small>${maxed ? 'Maxed out!' : u.desc(l)}</small></div>
-        <button class="btn ${maxed || S.coins < c ? 'disabled' : ''}" data-up="${k}">${maxed ? 'MAX' : `<i class="coin sm"></i>${fmt(c)}`}</button></div>`;
+        <div class="buy"><button class="btn ${maxed ? 'maxed' : poor ? 'disabled' : ''}" data-up="${k}">${maxed ? 'MAX' : `<i class="coin sm"></i>${fmt(c)}`}</button>
+        ${maxed ? '' : `<small class="need">${poor ? `Need ${fmt(c - S.coins)} more` : 'Tap to buy!'}</small>`}</div></div>`;
     }).join('');
     const bind = (root) => {
       root.querySelectorAll('[data-up]').forEach((b) => b.addEventListener('click', () => {
         const k = b.dataset.up, u = UPG[k], l = S.upg[k];
-        if (l >= u.max) return;
+        if (l >= u.max) { SFX.bad(); toast(`${u.name} is already maxed out!`); return; }
         const c = u.cost(l);
-        if (S.coins < c) { SFX.bad(); shake(b); return; }
+        if (S.coins < c) { SFX.bad(); shake(b); toast(`You need ${fmt(c - S.coins)} more coins for ${u.name}.`); return; }
         S.coins -= c; S.upg[k]++; SFX.buy(); save();
+        const [x, y] = centerOf(b); sparks(x, y, 12);
+        toast(`${u.name} upgraded to Lv ${S.upg[k]}!`);
         root.querySelector('#shopList').innerHTML = body(); bind(root); renderAll();
       }));
       const r = root.querySelector('.reset');
-      if (r) r.onclick = () => {
-        if (confirm('Reset all progress? This cannot be undone.')) {
-          const snd = S.sound; S = fresh(); S.sound = snd; save(); closeModal(); lastAfford = null; renderAll();
-        }
-      };
+      if (r) r.onclick = () => askConfirm('RESET PROGRESS?', 'This permanently erases your pets, coins and level. It cannot be undone.', 'Yes, reset', () => {
+        const snd = S.sound; S = fresh(); S.sound = snd; save(); closeModal(); lastAfford = null; renderAll();
+      });
     };
     openModal(`<h2>Shop</h2><div id="shopList">${body()}</div>
       <div class="actions"><button class="btn go" data-close>Close</button></div>
@@ -442,18 +463,41 @@
       if (o && o.level === L) fulfill(d.i, t.k);
       else { SFX.bad(); shake(t.el); if (o && o.level) toast(`This family wants a ${S.discovered.includes(o.level) ? PETS[o.level - 1].name : 'pet you have not discovered yet'}!`); }
     } else if (t.kind === 'sell') {
-      const v = sellValue(L);
-      S.grid[d.i] = 0; renderCell(d.i); addCoins(v);
-      const [x, y] = centerOf(t.el); floatText(x, y - 30, '+' + fmt(v)); SFX.cash();
-      renderOrders(); renderHUD();
+      sellPet(d.i, t.el);
     }
     save();
   }
   window.addEventListener('pointerup', endDrag);
   window.addEventListener('pointercancel', endDrag);
 
+  function sellPet(i, at) {
+    const L = S.grid[i]; if (!L) return;
+    const v = sellValue(L);
+    const [x, y] = centerOf(at || cells[i]);
+    S.grid[i] = 0; renderCell(i); addCoins(v);
+    floatText(x, y - 30, '+' + fmt(v)); sparks(x, y, 8); SFX.cash();
+    renderOrders(); renderHUD(); save();
+  }
+
+  function enterSellMode() {
+    if (!S.grid.some((L, i) => L && S.open[i])) { SFX.bad(); shake($('#sell')); toast('You have no pets to sell yet.'); return; }
+    sellMode = true; SFX.tap();
+    document.body.classList.add('selling');
+    $('#sell').setAttribute('aria-pressed', 'true'); $('#sellLabel').textContent = 'Done';
+    for (let i = 0; i < N; i++) if (S.grid[i]) renderCell(i);
+    toast('Tap a pet to sell it. Tap Done when you are finished.');
+  }
+  function exitSellMode() {
+    if (!sellMode) return;
+    sellMode = false;
+    document.body.classList.remove('selling');
+    $('#sell').setAttribute('aria-pressed', 'false'); $('#sellLabel').textContent = 'Sell';
+    for (let i = 0; i < N; i++) if (S.grid[i]) renderCell(i);
+  }
+
   function tapPet(i) {
     const L = S.grid[i]; if (!L) return;
+    if (sellMode) { sellPet(i); if (!S.grid.some((l) => l)) exitSellMode(); return; }
     const c = cells[i]; c.classList.remove('tap'); void c.offsetWidth; c.classList.add('tap');
     const v = income(L); addCoins(v);
     const [x, y] = centerOf(c); floatText(x, y - 20, '+' + fmt(v)); SFX.tap(); renderHUD();
@@ -472,8 +516,9 @@
 
   // ---------- buttons ----------
   $('#buyBtn').addEventListener('click', buyEgg);
-  $('#shopBtn').addEventListener('click', showShop);
-  $('#bookBtn').addEventListener('click', showBook);
+  $('#shopBtn').addEventListener('click', () => { SFX.tap(); showShop(); });
+  $('#sell').addEventListener('click', () => (sellMode ? (SFX.tap(), exitSellMode()) : enterSellMode()));
+  $('#bookBtn').addEventListener('click', () => { exitSellMode(); showBook(); });
   $('#fsBtn').addEventListener('click', toggleFullscreen);
   $('#soundBtn').addEventListener('click', () => { S.sound = !S.sound; renderHUD(); save(); saveSettings(); if (S.sound) SFX.pop(); });
 
@@ -485,6 +530,7 @@
   const exitModalPetImg = $('#exitModalPetImg');
 
   function openExitModal() {
+    exitSellMode();
     SFX.pop();
     if (exitModalPetImg) {
       const petIndex = Math.min(Math.max(0, S.maxLevel - 1), IMGS.length - 1);
@@ -500,7 +546,7 @@
 
   function doLeaveTab() {
     SFX.bad();
-    save();
+    if (started) save();
 
     // 1. If inside an iframe (e.g. CIEL games portal modal), notify parent window
     try {
@@ -534,7 +580,7 @@
   }
 
   // ---------- main menu, settings & confirm ----------
-  const mainMenu = $('#mainMenu'), settingsScreen = $('#settingsScreen');
+  const mainMenu = $('#mainMenu'), settingsScreen = $('#settingsScreen'), howToScreen = $('#howToScreen');
   const confirmBox = $('#cielConfirm');
   const isShown = (el) => el.classList.contains('show');
   let confirmYes = null;
@@ -563,8 +609,10 @@
   function showMainMenu() {
     if (started) { running = false; save(); }
     closeModal();
+    exitSellMode();
     renderMenu();
     settingsScreen.classList.remove('show');
+    howToScreen.classList.remove('show');
     mainMenu.classList.add('show');
   }
 
@@ -594,6 +642,7 @@
     }
     renderAll();
     save();
+    if (isNew && !seenHelp) openHowTo(true);
   }
 
   $('#btnContinue').addEventListener('click', () => {
@@ -614,6 +663,34 @@
   function openSettings() { SFX.tap(); syncSettings(); settingsScreen.classList.add('show'); }
   function closeSettings() { SFX.tap(); settingsScreen.classList.remove('show'); renderMenu(); }
   $('#btnSettings').addEventListener('click', openSettings);
+
+  // ---------- how to play ----------
+  howToScreen.querySelectorAll('img[data-pet]').forEach((im) => { im.src = IMGS[+im.dataset.pet - 1]; });
+  let howToPaused = false; // true when the screen paused a running game
+  function openHowTo(silent) {
+    if (!silent) SFX.tap();
+    exitSellMode();
+    howToPaused = running && !isShown(mainMenu);
+    if (howToPaused) running = false;
+    howToScreen.querySelector('.how-card').scrollTop = 0;
+    howToScreen.classList.add('show');
+  }
+  function closeHowTo() {
+    SFX.tap();
+    howToScreen.classList.remove('show');
+    if (!seenHelp) { seenHelp = true; saveSettings(); }
+    if (howToPaused) { howToPaused = false; running = true; lastFrame = performance.now(); }
+  }
+  $('#btnHowTo').addEventListener('click', () => openHowTo());
+  $('#helpBtn').addEventListener('click', () => openHowTo());
+  $('#btnHowToBack').addEventListener('click', closeHowTo);
+  $('#btnHowToDone').addEventListener('click', closeHowTo);
+
+  // ---------- exit from the main menu ----------
+  function askExitGame() {
+    askConfirm('LEAVE GAME?', 'Are you sure you want to leave? Your progress is saved.', 'Yes, leave', doLeaveTab);
+  }
+  $('#btnExitGame').addEventListener('click', () => { SFX.tap(); askExitGame(); });
   $('#btnSettingsBack').addEventListener('click', closeSettings);
   $('#btnSettingsDone').addEventListener('click', closeSettings);
   $('#setSound').addEventListener('click', () => {
@@ -639,7 +716,10 @@
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       if (confirmBox.classList.contains('active')) { closeConfirm(); return; }
+      if (isShown(howToScreen)) { closeHowTo(); return; }
       if (isShown(settingsScreen)) { closeSettings(); return; }
+      if (isShown(mainMenu)) { askExitGame(); return; }
+      if (sellMode) { exitSellMode(); return; }
       if (exitModal && exitModal.classList.contains('active')) {
         closeExitModal();
         return;
@@ -651,7 +731,7 @@
       openExitModal();
       return;
     }
-    if (!running) return;
+    if (!running || isShown(howToScreen)) return;
     if (!modal.classList.contains('hidden') || (exitModal && exitModal.classList.contains('active'))) return;
     if (e.code === 'Space') { e.preventDefault(); buyEgg(); }
     if (e.code === 'KeyF') toggleFullscreen();
