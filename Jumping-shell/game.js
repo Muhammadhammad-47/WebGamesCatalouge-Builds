@@ -1273,7 +1273,7 @@ function runLoader() {
   const loaded = new Promise(r => document.readyState === 'complete' ? r() : window.addEventListener('load', r));
   const fonts = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
   Promise.race([Promise.all([loaded, fonts]), new Promise(r => setTimeout(r, 4000))]).then(() => { ready = true; });
-  const t0 = performance.now(), MIN = 3000, BAR_DELAY = 1700;
+  const t0 = performance.now(), MIN = 3600, BAR_DELAY = 2200;
   let p = 0, tipI = 0, lastTip = t0;
   const tick = now => {
     const el = now - t0;
