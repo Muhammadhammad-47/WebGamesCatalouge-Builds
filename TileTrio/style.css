@@ -548,3 +548,151 @@ body.at-home #tip,
 body.at-home #trayWrap,
 body.at-home #boosters,
 body.at-home #stage { visibility: hidden; }
+
+/* ---------- CIEL Games purple branding ---------- */
+:root {
+  --ciel1: #b78cff;
+  --ciel2: #7c3aed;
+  --ciel3: #4c1d95;
+  --ciel4: #2a0d5e;
+}
+.brand-mark {
+  background: linear-gradient(var(--ciel1), var(--ciel2));
+  text-shadow: 0 2px 0 var(--ciel3);
+}
+.brand-word { color: var(--ciel2); }
+
+/* ---------- Splash / loading screen ---------- */
+#splash {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(120% 75% at 50% 38%, #8b4dff 0%, #6526d9 35%, var(--ciel3) 70%, var(--ciel4) 100%);
+  transition: opacity .55s ease, visibility .55s;
+  padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+}
+#splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+#splash.hide .splash-inner { transform: scale(1.06); }
+body.splashing #home { visibility: hidden; }
+
+.splash-glow {
+  position: absolute; left: 50%; top: 42%;
+  width: min(140vw, 900px); aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(232,200,255,.38) 0%, rgba(183,140,255,.12) 35%, transparent 62%);
+  animation: splashBreathe 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes splashBreathe { 50% { transform: translate(-50%, -50%) scale(1.08); opacity: .8; } }
+
+.splash-sparkles i {
+  position: absolute;
+  width: 10px; height: 10px;
+  background: #fff;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  opacity: 0;
+  animation: splashTwinkle 2.8s ease-in-out infinite;
+}
+.splash-sparkles i:nth-child(1) { left: 16%; top: 22%; animation-delay: .1s; }
+.splash-sparkles i:nth-child(2) { left: 80%; top: 18%; width: 14px; height: 14px; animation-delay: .9s; }
+.splash-sparkles i:nth-child(3) { left: 72%; top: 68%; animation-delay: 1.6s; }
+.splash-sparkles i:nth-child(4) { left: 24%; top: 74%; width: 13px; height: 13px; animation-delay: 2.1s; }
+.splash-sparkles i:nth-child(5) { left: 50%; top: 12%; width: 8px; height: 8px; animation-delay: 1.2s; }
+.splash-sparkles i:nth-child(6) { left: 88%; top: 46%; width: 8px; height: 8px; animation-delay: .5s; }
+@keyframes splashTwinkle {
+  0%, 100% { opacity: 0; transform: scale(.3) rotate(0); }
+  50% { opacity: .95; transform: scale(1) rotate(45deg); }
+}
+
+.splash-inner {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  width: min(320px, 100%);
+  transition: transform .55s ease;
+}
+.splash-logo { text-align: center; animation: splashIn .8s cubic-bezier(.2,.9,.3,1.25) both; }
+@keyframes splashIn { from { opacity: 0; transform: translateY(18px) scale(.85); } }
+.splash-ciel {
+  font-size: clamp(72px, 24vw, 112px);
+  font-weight: 700;
+  line-height: .9;
+  letter-spacing: 6px;
+  padding-left: 6px; /* balance trailing letter-spacing */
+  color: #fff;
+  text-shadow:
+    0 4px 0 #c9a6ff,
+    0 8px 0 var(--ciel3),
+    0 14px 24px rgba(20,0,50,.5),
+    0 0 40px rgba(220,190,255,.55);
+}
+.splash-games {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  margin-top: 16px;
+  font-size: clamp(16px, 5vw, 21px);
+  font-weight: 600;
+  letter-spacing: 9px;
+  padding-left: 9px;
+  color: #e6d6ff;
+}
+.splash-games span {
+  width: 34px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #e6d6ff);
+}
+.splash-games span:last-child { background: linear-gradient(90deg, #e6d6ff, transparent); }
+
+.splash-loader {
+  width: 100%;
+  margin-top: clamp(36px, 9vh, 64px);
+  animation: splashIn .8s .25s cubic-bezier(.2,.9,.3,1.25) both;
+}
+.splash-track {
+  height: 16px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(20,0,55,.45);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.18);
+}
+.splash-fill {
+  height: 100%;
+  border-radius: 7px;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background:
+    repeating-linear-gradient(-45deg, rgba(255,255,255,.28) 0 8px, transparent 8px 16px),
+    linear-gradient(#f5d0fe, #c084fc 60%, #a855f7);
+  background-size: 22.6px 100%, 100% 100%;
+  box-shadow: 0 0 12px rgba(240,200,255,.7), inset 0 1px 0 rgba(255,255,255,.7);
+  animation: splashStripes .6s linear infinite;
+}
+@keyframes splashStripes { to { background-position: 22.6px 0, 0 0; } }
+.splash-status {
+  display: flex; justify-content: space-between;
+  margin-top: 10px;
+  font-size: 15px; font-weight: 600;
+  color: #e6d6ff;
+  letter-spacing: 1px;
+}
+.splash-status b { color: #fff; font-variant-numeric: tabular-nums; }
+
+.splash-foot {
+  position: absolute;
+  bottom: calc(22px + env(safe-area-inset-bottom));
+  margin: 0;
+  font-size: 14px; font-weight: 600;
+  letter-spacing: 2px;
+  color: rgba(230,214,255,.7);
+}
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .splash-ciel { font-size: 64px; }
+  .splash-games { margin-top: 10px; }
+  .splash-loader { margin-top: 28px; }
+  .splash-foot { bottom: calc(10px + env(safe-area-inset-bottom)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-glow, .splash-sparkles i, .splash-fill, .splash-logo, .splash-loader { animation: none; }
+  .splash-sparkles i { opacity: .6; }
+}

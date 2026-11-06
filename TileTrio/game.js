@@ -618,4 +618,50 @@
   });
 
   hud();
+
+  // ---------- CIEL Games splash ----------
+  // The bar follows real loading (page + fonts) and stays up for at least MIN ms.
+  (function splash() {
+    const el = $('#splash');
+    if (!el) return;
+    const bar = $('#splashBar'), pct = $('#splashPct');
+    const MIN = 2200, t0 = performance.now();
+    let ready = false, p = 0, done = false;
+
+    const pageLoaded = new Promise((r) => {
+      if (document.readyState === 'complete') r();
+      else window.addEventListener('load', r, { once: true });
+    });
+    const fonts = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    // Never wait more than 6s on slow fonts or assets.
+    Promise.race([Promise.all([pageLoaded, fonts]), new Promise((r) => setTimeout(r, 6000))])
+      .then(() => { ready = true; });
+
+    function finish() {
+      if (done) return;
+      done = true;
+      bar.style.transform = 'scaleX(1)';
+      pct.textContent = '100%';
+      setTimeout(() => {
+        el.classList.add('hide');
+        document.body.classList.remove('splashing');
+        const tc = document.querySelector('meta[name="theme-color"]');
+        if (tc) tc.setAttribute('content', '#4bb3ad');
+        setTimeout(() => el.remove(), 700);
+      }, 250);
+    }
+
+    function step(now) {
+      if (done) return;
+      const timeP = Math.min(1, (now - t0) / MIN);
+      const target = ready ? timeP : Math.min(timeP, 0.9); // hold at 90% until loaded
+      p += (target - p) * 0.15;
+      if (target >= 1 && p > 0.99) p = 1;
+      bar.style.transform = `scaleX(${p.toFixed(3)})`;
+      pct.textContent = Math.round(p * 100) + '%';
+      if (p >= 1) finish(); else requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+    setTimeout(finish, 9000); // safety net if animation frames are throttled
+  })();
 })();
