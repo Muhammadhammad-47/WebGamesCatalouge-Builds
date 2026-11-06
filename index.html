@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Hermit Hop</title>
+<meta name="description" content="Hermit Hop – a tiny crab, a spare shell and a beach full of puzzles. Pop out of your shell mid-jump and use it as a step, a bridge or a weight.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ================= CIEL Games loading scene ================= -->
+<div id="loader" aria-label="Loading">
+  <div class="ld-glow"></div>
+  <div id="ldBubbles"></div>
+  <div class="ld-center">
+    <svg class="ld-mark" viewBox="0 0 120 120" aria-hidden="true">
+      <defs>
+        <linearGradient id="lgC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd978"/><stop offset="1" stop-color="#ff7062"/></linearGradient>
+      </defs>
+      <circle class="ld-ring" cx="60" cy="60" r="56"/>
+      <circle class="ld-disc" cx="60" cy="60" r="47"/>
+      <path class="ld-c" d="M85.5 34.5 A36 36 0 1 0 85.5 85.5" stroke="url(#lgC)" stroke-width="12" fill="none" stroke-linecap="round"/>
+      <path class="ld-play" d="M54 45 L77 60 L54 75 Z" fill="#fff" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>
+    </svg>
+    <div class="ld-word"><span style="--i:0">C</span><span style="--i:1">I</span><span style="--i:2">E</span><span style="--i:3">L</span></div>
+    <div class="ld-sub">GAMES</div>
+    <div class="ld-bar"><i id="ldFill"></i></div>
+    <div class="ld-meta"><span id="ldTip">Polishing shells…</span><span id="ldPct">0%</span></div>
+  </div>
+</div>
+
+<div id="stage">
+  <canvas id="game" width="960" height="540"></canvas>
+
+  <div id="hud">
+    <div class="pill"><span class="num" id="hudNum">1</span><span id="hudName">First Steps</span></div>
+    <div class="hud-right">
+      <div class="pill" id="timer">0:00.0</div>
+      <button class="ibtn" id="btnSound" aria-label="Toggle sound"></button>
+      <button class="ibtn" id="btnRestart" aria-label="Restart level">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v5h5"/></svg>
+      </button>
+      <button class="ibtn" id="btnPause" aria-label="Pause">
+        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="5.5" y="4.5" width="4.5" height="15" rx="1.5"/><rect x="14" y="4.5" width="4.5" height="15" rx="1.5"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Title / main menu -->
+  <div class="screen" id="scrTitle">
+    <div class="brand-chip">
+      <svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="lgC2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd978"/><stop offset="1" stop-color="#ff7062"/></linearGradient></defs><circle cx="60" cy="60" r="56" fill="rgba(255,255,255,.08)"/><path d="M85.5 34.5 A36 36 0 1 0 85.5 85.5" stroke="url(#lgC2)" stroke-width="13" fill="none" stroke-linecap="round"/><path d="M54 45 L77 60 L54 75 Z" fill="#fff" stroke="#fff" stroke-width="4" stroke-linejoin="round"/></svg>
+      CIEL <b>GAMES</b>
+    </div>
+    <div class="corner">
+      <button class="ibtn" id="btnSoundTitle" aria-label="Toggle sound"></button>
+    </div>
+    <div class="title-wrap">
+      <h1 class="logo" aria-label="Hermit Hop">
+        <span style="--i:0">H</span><span style="--i:1">e</span><span style="--i:2">r</span><span style="--i:3">m</span><span style="--i:4">i</span><span style="--i:5">t</span><span class="gap"></span><span class="hop" style="--i:6">H</span><span class="hop" style="--i:7">o</span><span class="hop" style="--i:8">p</span>
+      </h1>
+      <div class="byline">A CIEL GAMES ORIGINAL</div>
+      <div class="tag">A tiny crab · one spare shell · a beach full of puzzles</div>
+      <div class="menu">
+        <div class="play-wrap">
+          <button class="btn xl" id="btnPlay" data-primary>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.2v13.6a1 1 0 0 0 1.5.86l10.6-6.8a1 1 0 0 0 0-1.72L9.5 4.34A1 1 0 0 0 8 5.2z"/></svg>
+            <span>Play</span><small id="playSub">Level 1</small>
+          </button>
+        </div>
+        <div class="menu-row">
+          <button class="btn teal" id="btnLevels">
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="2"/><rect x="13" y="13" width="7.5" height="7.5" rx="2"/></svg>
+            Levels
+          </button>
+          <button class="btn glass" id="btnHow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 1 1 3.6 2.4c-.7.3-1.1.9-1.1 1.6v.5"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>
+            How to Play
+          </button>
+        </div>
+        <div>
+          <button class="btn glass btn-exit" id="btnExitTitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg>
+            Exit
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="progress-chip"><span id="titleProgress">0 / 11 cleared</span><div class="track"><i id="titleTrack"></i></div></div>
+  </div>
+
+  <!-- Level select -->
+  <div class="screen" id="scrLevels">
+    <div class="panel">
+      <div class="panel-head">
+        <button class="ibtn" id="btnLevelsBack" aria-label="Back" data-primary>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <h2>Choose a Level</h2>
+        <span class="chip" id="lvlProgress">0 / 11</span>
+      </div>
+      <div class="grid" id="levelGrid"></div>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div class="screen" id="scrPause">
+    <div class="panel" style="min-width:340px">
+      <div class="panel-icon teal"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg></div>
+      <h2>Paused</h2>
+      <p class="sub" id="pauseSub">Level 1 · First Steps</p>
+      <div class="col stagger">
+        <button class="btn" id="btnResume" data-primary>Resume</button>
+        <button class="btn teal" id="btnPauseRestart">Restart</button>
+        <button class="btn glass" id="btnPauseLevels">Levels</button>
+        <button class="btn glass" id="btnPauseMenu">Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Level clear -->
+  <div class="screen" id="scrWin">
+    <div class="panel">
+      <div class="panel-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.5l1.3-6.6L2.5 9.3l6.6-.8z"/></svg></div>
+      <h2>Level Clear!</h2>
+      <div class="badge" id="winBadge">NEW BEST</div>
+      <div class="stats">
+        <div class="stat"><div class="k">Time</div><div class="v" id="winTime">0:00.0</div></div>
+        <div class="stat"><div class="k">Best</div><div class="v" id="winBest">0:00.0</div></div>
+        <div class="stat"><div class="k">Bonks</div><div class="v" id="winDeaths">0</div></div>
+      </div>
+      <div class="row stagger">
+        <button class="btn glass" id="btnWinLevels">Levels</button>
+        <button class="btn teal" id="btnWinReplay">Replay</button>
+        <button class="btn" id="btnWinNext" data-primary>Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- All done -->
+  <div class="screen" id="scrEnd">
+    <div class="panel">
+      <div class="panel-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h10v2h3a1 1 0 0 1 1 1v2a5 5 0 0 1-4.6 5A5 5 0 0 1 13 15.9V18h3v3H8v-3h3v-2.1A5 5 0 0 1 7.6 13 5 5 0 0 1 3 8V6a1 1 0 0 1 1-1h3zm0 4H5v1a3 3 0 0 0 2 2.8zm10 0v3.8A3 3 0 0 0 19 8V7z"/></svg></div>
+      <h2>Beach Cleared!</h2>
+      <p class="sub">You finished every level. What a crab!</p>
+      <div class="stats">
+        <div class="stat"><div class="k">Total best</div><div class="v" id="endTotal">0:00.0</div></div>
+      </div>
+      <div class="row stagger">
+        <button class="btn glass" id="btnEndLevels">Levels</button>
+        <button class="btn" id="btnEndMenu" data-primary>Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Goodbye (shown if the browser won't let the tab close itself) -->
+  <div class="screen" id="scrBye">
+    <div class="panel">
+      <div class="panel-icon coral"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.5-9.2C1 8.4 3.2 5 6.6 5c2 0 3.4 1.1 4.4 2.5C12 6.1 13.4 5 15.4 5 18.8 5 21 8.4 19.5 11.8 17.5 16.4 12 21 12 21z"/></svg></div>
+      <h2>Thanks for playing!</h2>
+      <p class="sub">Your progress is saved. You can close this tab now.</p>
+      <div class="row"><button class="btn" id="btnByeMenu" data-primary>Back to Menu</button></div>
+    </div>
+  </div>
+
+  <!-- How to play (modal) -->
+  <div class="screen modal" id="mdlHow">
+    <div class="panel" style="min-width:560px">
+      <div class="panel-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M9.5 9.3a2.6 2.6 0 1 1 3.6 2.4c-.7.3-1.1.9-1.1 1.6v.5"/><circle cx="12" cy="17.2" r=".8" fill="currentColor"/></svg></div>
+      <h2>How to Play</h2>
+      <p class="sub">Reach the glowing pearl to clear each level.</p>
+      <div class="how-grid">
+        <div class="how" style="--i:0"><div class="keys"><span class="k-desk"><kbd>←</kbd><kbd>→</kbd></span><span class="k-touch"><kbd>◀</kbd><kbd>▶</kbd></span></div><div><b>Move</b><span class="d">Scuttle left and right</span></div></div>
+        <div class="how" style="--i:1"><div class="keys"><span class="k-desk"><kbd>↑</kbd><kbd>W</kbd></span><span class="k-touch"><kbd>▲</kbd></span></div><div><b>Jump</b><span class="d">Hold for a higher jump</span></div></div>
+        <div class="how" style="--i:2"><div class="keys"><span class="k-desk"><kbd>↑</kbd><kbd>↑</kbd></span><span class="k-touch"><kbd>▲</kbd><kbd>▲</kbd></span></div><div><b>Pop out</b><span class="d">Jump again mid-air to drop your shell</span></div></div>
+        <div class="how" style="--i:3"><div class="keys"><span class="k-desk"><kbd>↓</kbd><kbd>S</kbd></span><span class="k-touch"><kbd>⤓</kbd></span></div><div><b>Climb in</b><span class="d">Get back into your shell</span></div></div>
+        <div class="how" style="--i:4"><div class="keys"><span class="k-desk"><kbd>R</kbd></span><span class="k-touch"><kbd>↻</kbd></span></div><div><b>Restart</b><span class="d">Try the level again</span></div></div>
+        <div class="how" style="--i:5"><div class="keys"><span class="k-desk"><kbd>Esc</kbd></span><span class="k-touch"><kbd>❚❚</kbd></span></div><div><b>Pause</b><span class="d">Take a breather</span></div></div>
+      </div>
+      <div class="tips">
+        <span class="chip">🐚 Plates need weight</span><span class="chip">🌵 Spikes can't hurt shells</span><span class="chip">🦀 Shell-less = higher jumps</span>
+      </div>
+      <div class="row"><button class="btn" id="btnHowClose" data-primary>Got it!</button></div>
+    </div>
+  </div>
+
+  <!-- Exit confirmation (modal) -->
+  <div class="screen modal" id="mdlExit">
+    <div class="panel">
+      <canvas id="exitArt" width="480" height="260"></canvas>
+      <h2>Leaving already?</h2>
+      <p class="sub">Your progress is saved. The little crab will miss you!</p>
+      <div class="row stagger">
+        <button class="btn glass" id="btnExitYes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg>
+          Exit Game
+        </button>
+        <button class="btn teal" id="btnExitNo" data-primary>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.2v13.6a1 1 0 0 0 1.5.86l10.6-6.8a1 1 0 0 0 0-1.72L9.5 4.34A1 1 0 0 0 8 5.2z"/></svg>
+          Keep Playing
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="touch">
+  <div class="tgroup left">
+    <button class="tbtn" data-k="left" aria-label="Left"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 4.5L7 12l8.5 7.5z"/></svg></button>
+    <button class="tbtn" data-k="right" aria-label="Right"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 4.5L17 12l-8.5 7.5z"/></svg></button>
+  </div>
+  <div class="tgroup right">
+    <button class="tbtn" data-k="down" aria-label="Climb into shell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 4v11M7 10.5l5 5 5-5"/><path d="M5 20h14"/></svg></button>
+    <button class="tbtn big" data-k="jump" aria-label="Jump"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5l8 10H4z"/></svg></button>
+  </div>
+</div>
+
+<div id="rotate">
+  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2" stroke-linecap="round"/></svg>
+  Rotate your device to landscape to play
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
