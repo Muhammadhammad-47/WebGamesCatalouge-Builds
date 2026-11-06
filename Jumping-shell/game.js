@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------------
 const T = 30, COLS = 32, ROWS = 18, W = COLS * T, H = ROWS * T, TAU = Math.PI * 2;
 const PHYS = {
-  g: 2000, jumpShell: 550, jumpBare: 660, shed: 520,
+  g: 2000, jumpShell: 570, jumpBare: 680, shed: 620,
   speedShell: 200, speedBare: 240, pushSpeed: 110,
   accGround: 2400, accAir: 1500, friction: 2600,
   spring: 900, maxFall: 900, coyote: 0.1, buffer: 0.12
@@ -42,8 +42,9 @@ const LEVELS = [
       '###############..###############'] },
   { name: 'Pop Out',
     hint: 'Jump, then jump again in mid-air to pop out of your shell!',
-    map: [F, ...rep(E, 10),
-      ...rep('#.............##...............#', 3),
+    hintTouch: 'Jump with ▲, then tap ▲ (or ⤓) in mid-air to pop out of your shell!',
+    map: [F, ...rep(E, 11),
+      ...rep('#.............##...............#', 2),
       '#.P...........##...........G...#',
       F, F, F] },
   { name: 'Heavy Shell',
@@ -237,9 +238,9 @@ const SAVE_KEY = 'hermit-hop-save-v1';
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (s && typeof s.unlocked === 'number') return { unlocked: s.unlocked, best: s.best || {}, muted: !!s.muted };
+    if (s) return { unlocked: LEVELS.length, best: s.best || {}, muted: !!s.muted };
   } catch (e) {}
-  return { unlocked: 1, best: {}, muted: false };
+  return { unlocked: LEVELS.length, best: {}, muted: false };
 }
 function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
 const save = loadSave();
@@ -436,9 +437,11 @@ function bounceSprings(e, isPlayer) {
 function shed() {
   const p = player;
   p.hasShell = false;
-  shell = { x: p.x + (PW - SW) / 2, y: p.y + PH - SH, w: SW, h: SH, vx: 0, vy: 120,
+  shell = { x: p.x + (PW - SW) / 2, y: p.y + PH - SH, w: SW, h: SH, vx: p.vx * 0.35, vy: 120,
     active: true, ghost: true, onGround: false, facing: p.facing, wobble: 1 };
-  p.vy = -PHYS.shed; p.vx *= 0.3; p.springing = false; p.jumpBuffer = 0; p.squash = 1.25;
+  p.vy = -PHYS.shed;
+  if (Math.abs(p.vx) > 10) p.vx = p.facing * Math.max(Math.abs(p.vx), 200);
+  p.springing = false; p.jumpBuffer = 0; p.squash = 1.25;
   state.shellLost = false;
   Sound.pop();
   burst(p.x + p.w / 2, p.y + p.h / 2, 14, ['#ffffff', '#c3d5ff', '#ffe2a6'], 220, [2, 4.5], 500);
@@ -509,10 +512,14 @@ function stepPlayer(dt) {
   }
   input.jumpPressed = false;
 
-  if (input.downPressed) { tryEnterShell(); input.downPressed = false; }
+  if (input.downPressed) {
+    if (p.hasShell) shed();
+    else tryEnterShell();
+    input.downPressed = false;
+  }
 
   let grav = PHYS.g;
-  if (p.vy < 0 && !input.jump && !p.springing) grav *= 2.2; // short hop when jump is released early
+  if (p.vy < 0 && !input.jump && !p.springing) grav *= (isTouch ? 1.4 : 1.7); // short hop when jump is released early
   p.vy = Math.min(p.vy + grav * dt, PHYS.maxFall);
   if (p.vy >= 0) p.springing = false;
 
@@ -1006,8 +1013,8 @@ function setMode(m) {
 
 function clearedCount() { let n = 0; for (let i = 0; i < LEVELS.length; i++) if (save.best[i] !== undefined) n++; return n; }
 function updateTitle() {
-  const next = Math.min(save.unlocked, LEVELS.length);
-  $('playSub').textContent = save.unlocked > 1 ? `Level ${next}` : 'Start';
+  const cur = (state.levelIndex || 0) + 1;
+  $('playSub').textContent = `Level ${cur}`;
   const c = clearedCount();
   $('titleProgress').textContent = `${c} / ${LEVELS.length} cleared`;
   $('titleTrack').style.width = '0%';
@@ -1064,17 +1071,15 @@ function buildLevelGrid() {
   grid.innerHTML = '';
   LEVELS.forEach((L, i) => {
     const b = document.createElement('button');
-    const unlocked = i < save.unlocked, done = save.best[i] !== undefined;
-    b.className = 'lvl' + (done ? ' done' : '') + (unlocked ? '' : ' locked') + (unlocked && !done ? ' next' : '');
+    const unlocked = true;
+    const done = save.best[i] !== undefined;
+    const isCur = i === state.levelIndex;
+    b.className = 'lvl' + (done ? ' done' : '') + (isCur ? ' next' : '');
     b.style.setProperty('--i', i);
-    b.title = unlocked ? L.name : 'Locked – clear the level before it';
-    b.innerHTML = unlocked
-      ? `${i + 1}${done ? `<small>${fmt(save.best[i])}</small>${ICON_STAR}` : '<small class="new">NEW</small>'}`
-      : ICON_LOCK;
+    b.title = L.name;
+    b.innerHTML = `${i + 1}${done ? `<small>${fmt(save.best[i])}</small>${ICON_STAR}` : ''}`;
     b.addEventListener('click', () => {
-      if (unlocked) { Sound.ui(); startLevel(i); return; }
-      Sound.nope();
-      b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+      Sound.ui(); startLevel(i);
     });
     grid.appendChild(b);
   });
@@ -1091,6 +1096,34 @@ function toggleSound() {
   Sound.muted = !Sound.muted; save.muted = Sound.muted; writeSave(); refreshSoundIcons();
   Sound.init(); Sound.ui();
 }
+
+function isFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+}
+function updateFullscreenIcons() {
+  const fs = isFullscreen();
+  const icon = fs
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+  const b1 = $('btnFullscreen'), b2 = $('btnFullscreenTitle');
+  if (b1) b1.innerHTML = icon;
+  if (b2) b2.innerHTML = icon;
+}
+function toggleFullscreen() {
+  const doc = document, el = document.documentElement;
+  if (!isFullscreen()) {
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen().catch(() => {});
+    else if (el.msRequestFullscreen) el.msRequestFullscreen().catch(() => {});
+  } else {
+    if (doc.exitFullscreen) doc.exitFullscreen().catch(() => {});
+    else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen().catch(() => {});
+    else if (doc.msExitFullscreen) doc.msExitFullscreen().catch(() => {});
+  }
+  Sound.ui();
+}
+document.addEventListener('fullscreenchange', () => { updateFullscreenIcons(); resize(); });
+document.addEventListener('webkitfullscreenchange', () => { updateFullscreenIcons(); resize(); });
 
 // Exit: inside the portal iframe we ask the portal to close us; as a standalone tab we try
 // window.close() (browsers only allow it for script-opened tabs) and otherwise say goodbye.
@@ -1123,14 +1156,16 @@ function drawExitArt() {
 
 function pause() { if (state.mode === 'play') { Sound.ui(); setMode('paused'); } }
 
-const on = (id, fn) => $(id).addEventListener('click', e => { e.stopPropagation(); Sound.init(); fn(); });
-on('btnPlay', () => { Sound.ui(); startLevel(Math.min(save.unlocked, LEVELS.length) - 1); });
+const on = (id, fn) => { const el = $(id); if (el) el.addEventListener('click', e => { e.stopPropagation(); Sound.init(); fn(); }); };
+on('btnPlay', () => { Sound.ui(); startLevel(state.levelIndex || 0); });
 on('btnLevels', () => { Sound.ui(); setMode('levels'); });
 on('btnLevelsBack', () => { Sound.ui(); setMode('title'); });
 on('btnPause', pause);
 on('btnRestart', () => { if (state.mode === 'play') restartLevel(); });
 on('btnSound', toggleSound);
 on('btnSoundTitle', toggleSound);
+on('btnFullscreen', toggleFullscreen);
+on('btnFullscreenTitle', toggleFullscreen);
 on('btnExitTitle', () => openModal('mdlExit'));
 on('btnExitYes', exitGame);
 on('btnExitNo', () => closeModal());
@@ -1138,7 +1173,7 @@ on('btnHow', () => openModal('mdlHow'));
 on('btnHowClose', () => closeModal());
 on('btnByeMenu', () => { Sound.ui(); setMode('title'); });
 // click on the dark backdrop of a popup = keep playing
-for (const id of ['mdlExit', 'mdlHow']) $(id).addEventListener('click', e => { if (e.target.id === id) closeModal(); });
+for (const id of ['mdlExit', 'mdlHow']) { const el = $(id); if (el) el.addEventListener('click', e => { if (e.target.id === id) closeModal(); }); }
 on('btnResume', () => { Sound.ui(); setMode('play'); });
 on('btnPauseRestart', () => { Sound.ui(); restartLevel(); });
 on('btnPauseLevels', () => { Sound.ui(); setMode('levels'); });
@@ -1188,6 +1223,7 @@ window.addEventListener('keydown', e => {
     else if (e.code === 'Enter' || e.code === 'Space') { const b = $(state.modal).querySelector('[data-primary]'); if (b) b.click(); }
     return;
   }
+  if (e.code === 'KeyF') { toggleFullscreen(); return; }
   if (state.mode === 'play') {
     if (k) { if (!e.repeat) press(k); else input[k] = true; return; }
     if (e.code === 'KeyR' && !e.repeat) restartLevel();

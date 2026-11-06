@@ -207,6 +207,9 @@
     <div class="pill"><span class="num" id="hudNum">1</span><span id="hudName">First Steps</span></div>
     <div class="hud-right">
       <div class="pill" id="timer">0:00.0</div>
+      <button class="ibtn" id="btnFullscreen" aria-label="Toggle full screen" title="Full screen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </button>
       <button class="ibtn" id="btnSound" aria-label="Toggle sound"></button>
       <button class="ibtn" id="btnRestart" aria-label="Restart level">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v5h5"/></svg>
@@ -224,6 +227,9 @@
       CIEL <b>GAMES</b>
     </div>
     <div class="corner">
+      <button class="ibtn" id="btnFullscreenTitle" aria-label="Toggle full screen" title="Full screen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </button>
       <button class="ibtn" id="btnSoundTitle" aria-label="Toggle sound"></button>
     </div>
     <div class="title-wrap">
@@ -257,7 +263,7 @@
         </div>
       </div>
     </div>
-    <div class="progress-chip"><span id="titleProgress">0 / 11 cleared</span><div class="track"><i id="titleTrack"></i></div></div>
+    <div class="progress-chip"><span id="titleProgress">0 / 19 cleared</span><div class="track"><i id="titleTrack"></i></div></div>
   </div>
 
   <!-- Level select -->
@@ -268,7 +274,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
         </button>
         <h2>Choose a Level</h2>
-        <span class="chip" id="lvlProgress">0 / 11</span>
+        <span class="chip" id="lvlProgress">0 / 19</span>
       </div>
       <div class="grid" id="levelGrid"></div>
     </div>
