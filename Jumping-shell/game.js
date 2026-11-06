@@ -223,10 +223,10 @@ const LEVELS = [
       '#.................#####.....#..#',
       ...rep('#...........................#..#', 4),
       '#.....s.........S...........#..#',
-      '#....####^^^^##########.....D..#',
+      '#....#####^^^##########.....D..#',
       '#....##################.....D..#',
       '#.P..##################.....D.G#',
-      '#######################^^^^#####',
+      '#######################^^^######',
       F, F] }
 ];
 // LEVELS-END
@@ -764,7 +764,7 @@ const bubbles = Array.from({ length: 20 }, () => ({ x: Math.random() * W, y: Mat
 function drawBackground() {
   const t = state.t;
   if (!bgGrad) {
-    bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    bgGrad = ctx.createLinearGradient(0, -OY, 0, H + OY);
     bgGrad.addColorStop(0, '#ffe1b3'); bgGrad.addColorStop(0.42, '#ffb59a'); bgGrad.addColorStop(0.75, '#8fcfd6'); bgGrad.addColorStop(1, '#5fb1c4');
   }
   ctx.fillStyle = bgGrad; ctx.fillRect(-OX, -OY, VW, VH);
@@ -774,7 +774,7 @@ function drawBackground() {
   ctx.fillStyle = '#fff4d6'; ctx.beginPath(); ctx.arc(740, 150, 44, 0, TAU); ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,.6)';
   for (const c of clouds) {
-    const x = ((c.x + t * c.sp) % (W + 220)) - 110;
+    const x = ((c.x + t * c.sp) % (VW + 220)) - 110 - OX;
     ctx.beginPath();
     ctx.ellipse(x, c.y, 46 * c.s, 15 * c.s, 0, 0, TAU);
     ctx.ellipse(x - 26 * c.s, c.y + 4 * c.s, 26 * c.s, 11 * c.s, 0, 0, TAU);
@@ -791,14 +791,14 @@ function drawBackground() {
     { y: 420, a: 7, l: 100, s: 1.1, c: 'rgba(58,142,180,.6)' }
   ];
   for (const w of waves) {
-    const x0 = Math.floor(-OX / 16) * 16, x1 = W + OX + 16;
+    const x0 = Math.floor(-OX / 16) * 16 - 16, x1 = W + OX + 32;
     ctx.fillStyle = w.c; ctx.beginPath(); ctx.moveTo(x0, H + OY);
     for (let x = x0; x <= x1; x += 16) ctx.lineTo(x, w.y + Math.sin(x / w.l * TAU + t * w.s) * w.a);
     ctx.lineTo(x1, H + OY); ctx.closePath(); ctx.fill();
   }
   ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 1.2;
   for (const b of bubbles) {
-    const y = ((b.y - t * b.sp) % (H + 20) + H + 20) % (H + 20);
+    const y = ((b.y - t * b.sp) % (H + OY + 20) + H + OY + 20) % (H + OY + 20);
     if (y < 330) continue;
     ctx.beginPath(); ctx.arc(b.x + Math.sin(t + b.ph) * 4, y, b.r, 0, TAU); ctx.stroke();
   }
@@ -1009,7 +1009,7 @@ function render(dt) {
 function drawWorld(dt) {
   drawBackground();
   if (!level) return;
-  ctx.drawImage(tileLayer, -tileLayer.padX, -tileLayer.padY, W + tileLayer.padX * 2, H + tileLayer.padY * 2);
+  if (tileLayer) ctx.drawImage(tileLayer, tileLayer.minX, tileLayer.minY, tileLayer.worldW, tileLayer.worldH);
   drawPlates(dt); drawSprings(dt); drawDoors(); drawGoal();
   if (shell.active) drawLooseShell();
   if (player.alive) drawPlayer();
