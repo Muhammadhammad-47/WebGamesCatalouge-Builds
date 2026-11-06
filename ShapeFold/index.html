@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Fold Fit – CIEL Games</title>
+<meta name="description" content="Fold Fit by CIEL Games – a relaxing paper-folding shape puzzle. Fold pinned paper pieces around their hinges until they fill the outline.">
+<meta name="theme-color" content="#6c3fb2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:title" content="Fold Fit – CIEL Games">
+<meta property="og:description" content="Fold the pieces. Fit the picture. A paper-folding puzzle by CIEL Games.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236c3fb2'/%3E%3Cpath d='M14 50V14h36z' fill='%23ffffff'/%3E%3Cpath d='M14 50L50 14v36z' fill='%23b99cff'/%3E%3Ccircle cx='14' cy='50' r='5' fill='%23ffc94d'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="cielGrad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="200" y2="40">
+      <stop offset="0" stop-color="#4fa8ea"/><stop offset=".42" stop-color="#4a7fd6"/>
+      <stop offset=".55" stop-color="#6a4cc2"/><stop offset="1" stop-color="#6c3fb2"/>
+    </linearGradient>
+    <symbol id="cielBrain" viewBox="0 0 200 122">
+      <g class="brain-static" stroke="#fff" stroke-width="2.2" stroke-linecap="round" fill="#fff">
+        <g><polygon points="12,48 38,26 60,54" fill="url(#cielGrad)"/><polygon points="12,48 38,26 60,54" fill="rgba(255,255,255,.16)"/></g>
+        <g><polygon points="12,48 60,54 28,78" fill="url(#cielGrad)"/><polygon points="12,48 60,54 28,78" fill="rgba(20,0,60,.12)"/></g>
+        <g><polygon points="2,78 12,48 28,78" fill="url(#cielGrad)"/><polygon points="2,78 12,48 28,78" fill="rgba(20,0,60,.05)"/></g>
+        <g><polygon points="8,105 2,78 28,78" fill="url(#cielGrad)"/><polygon points="8,105 2,78 28,78" fill="rgba(255,255,255,0)"/></g>
+        <g><polygon points="8,105 28,78 24,109" fill="url(#cielGrad)"/><polygon points="8,105 28,78 24,109" fill="rgba(255,255,255,.08)"/></g>
+        <g><polygon points="24,109 28,78 48,107" fill="url(#cielGrad)"/><polygon points="24,109 28,78 48,107" fill="rgba(255,255,255,.16)"/></g>
+        <g><polygon points="28,78 60,54 48,107" fill="url(#cielGrad)"/><polygon points="28,78 60,54 48,107" fill="rgba(20,0,60,.12)"/></g>
+        <g><polygon points="60,54 92,90 48,107" fill="url(#cielGrad)"/><polygon points="60,54 92,90 48,107" fill="rgba(20,0,60,.05)"/></g>
+        <g><polygon points="48,107 92,90 68,116" fill="url(#cielGrad)"/><polygon points="48,107 92,90 68,116" fill="rgba(255,255,255,0)"/></g>
+        <g><polygon points="68,116 92,90 92,117" fill="url(#cielGrad)"/><polygon points="68,116 92,90 92,117" fill="rgba(255,255,255,.08)"/></g>
+        <g><polygon points="60,54 96,38 92,90" fill="url(#cielGrad)"/><polygon points="60,54 96,38 92,90" fill="rgba(255,255,255,.16)"/></g>
+        <g><polygon points="38,26 60,11 60,54" fill="url(#cielGrad)"/><polygon points="38,26 60,11 60,54" fill="rgba(20,0,60,.12)"/></g>
+        <g><polygon points="60,11 96,38 60,54" fill="url(#cielGrad)"/><polygon points="60,11 96,38 60,54" fill="rgba(20,0,60,.05)"/></g>
+        <g><polygon points="60,11 102,3 96,38" fill="url(#cielGrad)"/><polygon points="60,11 102,3 96,38" fill="rgba(255,255,255,0)"/></g>
+        <g><polygon points="102,3 132,36 96,38" fill="url(#cielGrad)"/><polygon points="102,3 132,36 96,38" fill="rgba(255,255,255,.08)"/></g>
+        <g><polygon points="102,3 145,13 132,36" fill="url(#cielGrad)"/><polygon points="102,3 145,13 132,36" fill="rgba(255,255,255,.16)"/></g>
+        <g><polygon points="96,38 132,36 126,82" fill="url(#cielGrad)"/><polygon points="96,38 132,36 126,82" fill="rgba(20,0,60,.12)"/></g>
+        <g><polygon points="96,38 126,82 92,90" fill="url(#cielGrad)"/><polygon points="96,38 126,82 92,90" fill="rgba(20,0,60,.05)"/></g>
+        <g><polygon points="92,90 126,82 122,108" fill="url(#cielGrad)"/><polygon points="92,90 126,82 122,108" fill="rgba(255,255,255,0)"/></g>
+        <g><polygon points="92,90 122,108 92,117" fill="url(#cielGrad)"/><polygon points="92,90 122,108 92,117" fill="rgba(255,255,255,.08)"/></g>
+        <g><polygon points="132,36 152,58 126,82" fill="url(#cielGrad)"/><polygon points="132,36 152,58 126,82" fill="rgba(255,255,255,.16)"/></g>
+        <g><polygon points="145,13 152,58 132,36" fill="url(#cielGrad)"/><polygon points="145,13 152,58 132,36" fill="rgba(20,0,60,.12)"/></g>
+        <g><polygon points="145,13 172,31 152,58" fill="url(#cielGrad)"/><polygon points="145,13 172,31 152,58" fill="rgba(20,0,60,.05)"/></g>
+        <g><polygon points="172,31 192,52 152,58" fill="url(#cielGrad)"/><polygon points="172,31 192,52 152,58" fill="rgba(255,255,255,0)"/></g>
+        <g><polygon points="152,58 192,52 166,88" fill="url(#cielGrad)"/><polygon points="152,58 192,52 166,88" fill="rgba(255,255,255,.08)"/></g>
+        <g><polygon points="152,58 166,88 126,82" fill="url(#cielGrad)"/><polygon points="152,58 166,88 126,82" fill="rgba(255,255,255,.16)"/></g>
+        <g><polygon points="192,52 198,78 166,88" fill="url(#cielGrad)"/><polygon points="192,52 198,78 166,88" fill="rgba(20,0,60,.12)"/></g>
+        <g><polygon points="198,78 194,98 166,88" fill="url(#cielGrad)"/><polygon points="198,78 194,98 166,88" fill="rgba(20,0,60,.05)"/></g>
+        <g><polygon points="194,98 172,107 166,88" fill="url(#cielGrad)"/><polygon points="194,98 172,107 166,88" fill="rgba(255,255,255,0)"/></g>
+        <g><polygon points="172,107 150,116 166,88" fill="url(#cielGrad)"/><polygon points="172,107 150,116 166,88" fill="rgba(255,255,255,.08)"/></g>
+        <g><polygon points="166,88 150,116 126,82" fill="url(#cielGrad)"/><polygon points="166,88 150,116 126,82" fill="rgba(255,255,255,.16)"/></g>
+        <g><polygon points="126,82 150,116 122,108" fill="url(#cielGrad)"/><polygon points="126,82 150,116 122,108" fill="rgba(20,0,60,.12)"/></g>
+        <path d="M8,105L28,78" pathLength="1"/>
+        <path d="M2,78L28,78" pathLength="1"/>
+        <path d="M12,48L28,78" pathLength="1"/>
+        <path d="M12,48L60,54" pathLength="1"/>
+        <path d="M38,26L60,54" pathLength="1"/>
+        <path d="M60,11L60,54" pathLength="1"/>
+        <path d="M60,11L96,38" pathLength="1"/>
+        <path d="M102,3L96,38" pathLength="1"/>
+        <path d="M102,3L132,36" pathLength="1"/>
+        <path d="M145,13L132,36" pathLength="1"/>
+        <path d="M145,13L152,58" pathLength="1"/>
+        <path d="M172,31L152,58" pathLength="1"/>
+        <path d="M192,52L166,88" pathLength="1"/>
+        <path d="M192,52L152,58" pathLength="1"/>
+        <path d="M198,78L166,88" pathLength="1"/>
+        <path d="M194,98L166,88" pathLength="1"/>
+        <path d="M172,107L166,88" pathLength="1"/>
+        <path d="M150,116L126,82" pathLength="1"/>
+        <path d="M150,116L166,88" pathLength="1"/>
+        <path d="M122,108L126,82" pathLength="1"/>
+        <path d="M122,108L92,90" pathLength="1"/>
+        <path d="M92,117L92,90" pathLength="1"/>
+        <path d="M68,116L92,90" pathLength="1"/>
+        <path d="M48,107L28,78" pathLength="1"/>
+        <path d="M48,107L60,54" pathLength="1"/>
+        <path d="M48,107L92,90" pathLength="1"/>
+        <path d="M24,109L28,78" pathLength="1"/>
+        <path d="M28,78L60,54" pathLength="1"/>
+        <path d="M60,54L96,38" pathLength="1"/>
+        <path d="M60,54L92,90" pathLength="1"/>
+        <path d="M96,38L132,36" pathLength="1"/>
+        <path d="M96,38L126,82" pathLength="1"/>
+        <path d="M96,38L92,90" pathLength="1"/>
+        <path d="M132,36L126,82" pathLength="1"/>
+        <path d="M132,36L152,58" pathLength="1"/>
+        <path d="M126,82L166,88" pathLength="1"/>
+        <path d="M126,82L92,90" pathLength="1"/>
+        <path d="M126,82L152,58" pathLength="1"/>
+        <path d="M166,88L152,58" pathLength="1"/>
+        <circle cx="28" cy="78" r="3.2"/>
+        <circle cx="60" cy="54" r="3.2"/>
+        <circle cx="96" cy="38" r="3.2"/>
+        <circle cx="132" cy="36" r="3.2"/>
+        <circle cx="126" cy="82" r="3.2"/>
+        <circle cx="166" cy="88" r="3.2"/>
+        <circle cx="92" cy="90" r="3.2"/>
+        <circle cx="152" cy="58" r="3.2"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ================= CIEL Games loading scene ================= -->
+<div id="loader" aria-label="Loading">
+  <div class="ld-mesh"></div>
+  <div id="ldBubbles"></div>
+  <div class="ld-center">
+    <svg class="ld-brain" viewBox="-6 -6 212 134" aria-hidden="true">
+      <g stroke="#fff" stroke-width="1.8" stroke-linecap="round" fill="#fff">
+        <g class="f" style="--i:0"><polygon points="12,48 38,26 60,54" fill="url(#cielGrad)"/><polygon points="12,48 38,26 60,54" fill="rgba(255,255,255,.16)"/></g>
+        <g class="f" style="--i:1"><polygon points="12,48 60,54 28,78" fill="url(#cielGrad)"/><polygon points="12,48 60,54 28,78" fill="rgba(20,0,60,.12)"/></g>
+        <g class="f" style="--i:2"><polygon points="2,78 12,48 28,78" fill="url(#cielGrad)"/><polygon points="2,78 12,48 28,78" fill="rgba(20,0,60,.05)"/></g>
+        <g class="f" style="--i:3"><polygon points="8,105 2,78 28,78" fill="url(#cielGrad)"/><polygon points="8,105 2,78 28,78" fill="rgba(255,255,255,0)"/></g>
+        <g class="f" style="--i:4"><polygon points="8,105 28,78 24,109" fill="url(#cielGrad)"/><polygon points="8,105 28,78 24,109" fill="rgba(255,255,255,.08)"/></g>
+        <g class="f" style="--i:5"><polygon points="24,109 28,78 48,107" fill="url(#cielGrad)"/><polygon points="24,109 28,78 48,107" fill="rgba(255,255,255,.16)"/></g>
+        <g class="f" style="--i:6"><polygon points="28,78 60,54 48,107" fill="url(#cielGrad)"/><polygon points="28,78 60,54 48,107" fill="rgba(20,0,60,.12)"/></g>
+        <g class="f" style="--i:7"><polygon points="60,54 92,90 48,107" fill="url(#cielGrad)"/><polygon points="60,54 92,90 48,107" fill="rgba(20,0,60,.05)"/></g>
+        <g class="f" style="--i:8"><polygon points="48,107 92,90 68,116" fill="url(#cielGrad)"/><polygon points="48,107 92,90 68,116" fill="rgba(255,255,255,0)"/></g>
+        <g class="f" style="--i:9"><polygon points="68,116 92,90 92,117" fill="url(#cielGrad)"/><polygon points="68,116 92,90 92,117" fill="rgba(255,255,255,.08)"/></g>
+        <g class="f" style="--i:10"><polygon points="60,54 96,38 92,90" fill="url(#cielGrad)"/><polygon points="60,54 96,38 92,90" fill="rgba(255,255,255,.16)"/></g>
+        <g class="f" style="--i:11"><polygon points="38,26 60,11 60,54" fill="url(#cielGrad)"/><polygon points="38,26 60,11 60,54" fill="rgba(20,0,60,.12)"/></g>
+        <g class="f" style="--i:12"><polygon points="60,11 96,38 60,54" fill="url(#cielGrad)"/><polygon points="60,11 96,38 60,54" fill="rgba(20,0,60,.05)"/></g>
+        <g class="f" style="--i:13"><polygon points="60,11 102,3 96,38" fill="url(#cielGrad)"/><polygon points="60,11 102,3 96,38" fill="rgba(255,255,255,0)"/></g>
+        <g class="f" style="--i:14"><polygon points="102,3 132,36 96,38" fill="url(#cielGrad)"/><polygon points="102,3 132,36 96,38" fill="rgba(255,255,255,.08)"/></g>
+        <g class="f" style="--i:15"><polygon points="102,3 145,13 132,36" fill="url(#cielGrad)"/><polygon points="102,3 145,13 132,36" fill="rgba(255,255,255,.16)"/></g>
+        <g class="f" style="--i:16"><polygon points="96,38 132,36 126,82" fill="url(#cielGrad)"/><polygon points="96,38 132,36 126,82" fill="rgba(20,0,60,.12)"/></g>
+        <g class="f" style="--i:17"><polygon points="96,38 126,82 92,90" fill="url(#cielGrad)"/><polygon points="96,38 126,82 92,90" fill="rgba(20,0,60,.05)"/></g>
+        <g class="f" style="--i:18"><polygon points="92,90 126,82 122,108" fill="url(#cielGrad)"/><polygon points="92,90 126,82 122,108" fill="rgba(255,255,255,0)"/></g>
+        <g class="f" style="--i:19"><polygon points="92,90 122,108 92,117" fill="url(#cielGrad)"/><polygon points="92,90 122,108 92,117" fill="rgba(255,255,255,.08)"/></g>
+        <g class="f" style="--i:20"><polygon points="132,36 152,58 126,82" fill="url(#cielGrad)"/><polygon points="132,36 152,58 126,82" fill="rgba(255,255,255,.16)"/></g>
+        <g class="f" style="--i:21"><polygon points="145,13 152,58 132,36" fill="url(#cielGrad)"/><polygon points="145,13 152,58 132,36" fill="rgba(20,0,60,.12)"/></g>
+        <g class="f" style="--i:22"><polygon points="145,13 172,31 152,58" fill="url(#cielGrad)"/><polygon points="145,13 172,31 152,58" fill="rgba(20,0,60,.05)"/></g>
+        <g class="f" style="--i:23"><polygon points="172,31 192,52 152,58" fill="url(#cielGrad)"/><polygon points="172,31 192,52 152,58" fill="rgba(255,255,255,0)"/></g>
+        <g class="f" style="--i:24"><polygon points="152,58 192,52 166,88" fill="url(#cielGrad)"/><polygon points="152,58 192,52 166,88" fill="rgba(255,255,255,.08)"/></g>
+        <g class="f" style="--i:25"><polygon points="152,58 166,88 126,82" fill="url(#cielGrad)"/><polygon points="152,58 166,88 126,82" fill="rgba(255,255,255,.16)"/></g>
+        <g class="f" style="--i:26"><polygon points="192,52 198,78 166,88" fill="url(#cielGrad)"/><polygon points="192,52 198,78 166,88" fill="rgba(20,0,60,.12)"/></g>
+        <g class="f" style="--i:27"><polygon points="198,78 194,98 166,88" fill="url(#cielGrad)"/><polygon points="198,78 194,98 166,88" fill="rgba(20,0,60,.05)"/></g>
+        <g class="f" style="--i:28"><polygon points="194,98 172,107 166,88" fill="url(#cielGrad)"/><polygon points="194,98 172,107 166,88" fill="rgba(255,255,255,0)"/></g>
+        <g class="f" style="--i:29"><polygon points="172,107 150,116 166,88" fill="url(#cielGrad)"/><polygon points="172,107 150,116 166,88" fill="rgba(255,255,255,.08)"/></g>
+        <g class="f" style="--i:30"><polygon points="166,88 150,116 126,82" fill="url(#cielGrad)"/><polygon points="166,88 150,116 126,82" fill="rgba(255,255,255,.16)"/></g>
+        <g class="f" style="--i:31"><polygon points="126,82 150,116 122,108" fill="url(#cielGrad)"/><polygon points="126,82 150,116 122,108" fill="rgba(20,0,60,.12)"/></g>
+        <path class="ln" style="--i:0" d="M8,105L28,78" pathLength="1"/>
+        <path class="ln" style="--i:1" d="M2,78L28,78" pathLength="1"/>
+        <path class="ln" style="--i:2" d="M12,48L28,78" pathLength="1"/>
+        <path class="ln" style="--i:3" d="M12,48L60,54" pathLength="1"/>
+        <path class="ln" style="--i:4" d="M38,26L60,54" pathLength="1"/>
+        <path class="ln" style="--i:5" d="M60,11L60,54" pathLength="1"/>
+        <path class="ln" style="--i:6" d="M60,11L96,38" pathLength="1"/>
+        <path class="ln" style="--i:7" d="M102,3L96,38" pathLength="1"/>
+        <path class="ln" style="--i:8" d="M102,3L132,36" pathLength="1"/>
+        <path class="ln" style="--i:9" d="M145,13L132,36" pathLength="1"/>
+        <path class="ln" style="--i:10" d="M145,13L152,58" pathLength="1"/>
+        <path class="ln" style="--i:11" d="M172,31L152,58" pathLength="1"/>
+        <path class="ln" style="--i:12" d="M192,52L166,88" pathLength="1"/>
+        <path class="ln" style="--i:13" d="M192,52L152,58" pathLength="1"/>
+        <path class="ln" style="--i:14" d="M198,78L166,88" pathLength="1"/>
+        <path class="ln" style="--i:15" d="M194,98L166,88" pathLength="1"/>
+        <path class="ln" style="--i:16" d="M172,107L166,88" pathLength="1"/>
+        <path class="ln" style="--i:17" d="M150,116L126,82" pathLength="1"/>
+        <path class="ln" style="--i:18" d="M150,116L166,88" pathLength="1"/>
+        <path class="ln" style="--i:19" d="M122,108L126,82" pathLength="1"/>
+        <path class="ln" style="--i:20" d="M122,108L92,90" pathLength="1"/>
+        <path class="ln" style="--i:21" d="M92,117L92,90" pathLength="1"/>
+        <path class="ln" style="--i:22" d="M68,116L92,90" pathLength="1"/>
+        <path class="ln" style="--i:23" d="M48,107L28,78" pathLength="1"/>
+        <path class="ln" style="--i:24" d="M48,107L60,54" pathLength="1"/>
+        <path class="ln" style="--i:25" d="M48,107L92,90" pathLength="1"/>
+        <path class="ln" style="--i:26" d="M24,109L28,78" pathLength="1"/>
+        <path class="ln" style="--i:27" d="M28,78L60,54" pathLength="1"/>
+        <path class="ln" style="--i:28" d="M60,54L96,38" pathLength="1"/>
+        <path class="ln" style="--i:29" d="M60,54L92,90" pathLength="1"/>
+        <path class="ln" style="--i:30" d="M96,38L132,36" pathLength="1"/>
+        <path class="ln" style="--i:31" d="M96,38L126,82" pathLength="1"/>
+        <path class="ln" style="--i:32" d="M96,38L92,90" pathLength="1"/>
+        <path class="ln" style="--i:33" d="M132,36L126,82" pathLength="1"/>
+        <path class="ln" style="--i:34" d="M132,36L152,58" pathLength="1"/>
+        <path class="ln" style="--i:35" d="M126,82L166,88" pathLength="1"/>
+        <path class="ln" style="--i:36" d="M126,82L92,90" pathLength="1"/>
+        <path class="ln" style="--i:37" d="M126,82L152,58" pathLength="1"/>
+        <path class="ln" style="--i:38" d="M166,88L152,58" pathLength="1"/>
+        <circle class="nd" style="--i:0" cx="28" cy="78" r="3.2"/>
+        <circle class="nd" style="--i:1" cx="60" cy="54" r="3.2"/>
+        <circle class="nd" style="--i:2" cx="96" cy="38" r="3.2"/>
+        <circle class="nd" style="--i:3" cx="132" cy="36" r="3.2"/>
+        <circle class="nd" style="--i:4" cx="126" cy="82" r="3.2"/>
+        <circle class="nd" style="--i:5" cx="166" cy="88" r="3.2"/>
+        <circle class="nd" style="--i:6" cx="92" cy="90" r="3.2"/>
+        <circle class="nd" style="--i:7" cx="152" cy="58" r="3.2"/>
+      </g>
+    </svg>
+    <div class="ld-word"><span style="--i:0">C</span><span style="--i:1">I</span><span style="--i:2">E</span><span style="--i:3">L</span></div>
+    <div class="ld-sub">GAMES</div>
+    <div class="ld-tagline">Serving humanity with technology</div>
+    <div class="ld-bar"><i id="ldFill"></i></div>
+    <div class="ld-meta"><span id="ldTip">Polishing shells…</span><span id="ldPct">0%</span></div>
+  </div>
+</div>
+
+
+<!-- Decorative paper shapes behind the menus -->
+<div class="bg-shapes" aria-hidden="true">
+  <i style="--x:8%;--y:18%;--s:64px;--c:#ff7a6b;--d:0s;--r:20deg" class="tri"></i>
+  <i style="--x:86%;--y:14%;--s:52px;--c:#4a90e0;--d:-3s;--r:-15deg" class="sq"></i>
+  <i style="--x:78%;--y:72%;--s:74px;--c:#8a5cf6;--d:-6s;--r:40deg" class="tri"></i>
+  <i style="--x:12%;--y:78%;--s:46px;--c:#ffc94d;--d:-2s;--r:10deg" class="sq"></i>
+  <i style="--x:48%;--y:8%;--s:34px;--c:#5bc0a8;--d:-8s;--r:-30deg" class="tri"></i>
+  <i style="--x:92%;--y:44%;--s:30px;--c:#ff8fa8;--d:-5s;--r:25deg" class="sq"></i>
+  <i style="--x:3%;--y:48%;--s:36px;--c:#b99cff;--d:-9s;--r:-10deg" class="tri"></i>
+</div>
+
+<canvas id="game" aria-label="Puzzle board"></canvas>
+
+<!-- In-game HUD -->
+<header id="hud">
+  <button class="ibtn" id="btnMenu" aria-label="Menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"/></svg>
+  </button>
+  <div class="hud-title">
+    <span class="lvl-num" id="hudNum">1</span>
+    <div class="hud-text"><b id="hudName">Little House</b><small id="hudStep">90° folds</small></div>
+  </div>
+  <div class="hud-actions">
+    <button class="ibtn" id="btnUndo" aria-label="Undo (Z)" title="Undo (Z)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+    </button>
+    <button class="ibtn" id="btnRestart" aria-label="Restart (R)" title="Restart (R)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v5h5"/></svg>
+    </button>
+    <button class="ibtn hint" id="btnHint" aria-label="Hint (H)" title="Hint (H)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>
+      <span class="badge" id="hintCount">3</span>
+    </button>
+  </div>
+</header>
+<div id="status" class="status"></div>
+<div id="bottomBar">
+  <div id="tip" class="tip"></div>
+  <div class="moves-pill">Moves <b id="moves">0</b><span class="sep"></span>Par <b id="par">1</b></div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- Title / main menu -->
+<section class="screen" id="scrTitle">
+  <div class="brand-chip">
+    <svg viewBox="0 0 200 122" aria-hidden="true"><use href="#cielBrain"/></svg>
+    CIEL <b>GAMES</b>
+  </div>
+  <div class="corner"><button class="ibtn sound-btn" aria-label="Toggle sound"></button></div>
+  <div class="title-wrap">
+    <h1 class="logo" aria-label="Fold Fit">
+      <span class="tile" style="--i:0;--c:#6c3fb2">F</span><span class="tile" style="--i:1;--c:#8a5cf6">o</span><span class="tile" style="--i:2;--c:#4a90e0">l</span><span class="tile" style="--i:3;--c:#5bc0a8">d</span>
+      <span class="gap"></span>
+      <span class="tile" style="--i:4;--c:#ff7a6b">F</span><span class="tile" style="--i:5;--c:#ffb43c">i</span><span class="tile" style="--i:6;--c:#e8574f">t</span>
+    </h1>
+    <p class="tag">Fold the pieces. Fit the picture.</p>
+    <div class="menu">
+      <div class="play-wrap">
+        <button class="btn xl" id="btnPlay" data-primary>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.2v13.6a1 1 0 0 0 1.5.86l10.6-6.8a1 1 0 0 0 0-1.72L9.5 4.34A1 1 0 0 0 8 5.2z"/></svg>
+          <span>Play</span><small id="playSub">Start</small>
+        </button>
+      </div>
+      <div class="menu-row">
+        <button class="btn light" id="btnLevels">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="2"/><rect x="13" y="13" width="7.5" height="7.5" rx="2"/></svg>
+          Levels
+        </button>
+        <button class="btn light" id="btnHow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 1 1 3.6 2.4c-.7.3-1.1.9-1.1 1.6v.5"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>
+          How to Play
+        </button>
+      </div>
+      <button class="btn ghost small" id="btnExitTitle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg>
+        Exit
+      </button>
+    </div>
+  </div>
+  <div class="progress-chip"><span class="star-ic">★</span><span id="titleProgress">0 / 45</span><div class="track"><i id="titleTrack"></i></div></div>
+</section>
+
+<!-- Level select -->
+<section class="screen" id="scrLevels">
+  <div class="panel wide">
+    <div class="panel-head">
+      <button class="ibtn" id="btnLevelsBack" aria-label="Back" data-primary>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <h2>Choose a Puzzle</h2>
+      <span class="chip" id="lvlProgress">★ 0 / 45</span>
+    </div>
+    <div class="grid" id="levelGrid"></div>
+  </div>
+</section>
+
+<!-- Level complete -->
+<section class="screen" id="scrWin">
+  <div class="panel">
+    <div class="win-stars" id="winStars"></div>
+    <h2 id="winName">Little House!</h2>
+    <p class="sub">Puzzle complete</p>
+    <div class="stats">
+      <div class="stat"><div class="k">Moves</div><div class="v" id="winMoves">0</div></div>
+      <div class="stat"><div class="k">Par</div><div class="v" id="winPar">0</div></div>
+      <div class="stat"><div class="k">Hints</div><div class="v" id="winHints">0</div></div>
+    </div>
+    <div class="bonus" id="winBonus">+1 hint for a perfect fold!</div>
+    <div class="row stagger">
+      <button class="btn ghost" id="btnWinLevels">Levels</button>
+      <button class="btn light" id="btnWinReplay">Replay</button>
+      <button class="btn" id="btnWinNext" data-primary><span>Next</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- All done -->
+<section class="screen" id="scrEnd">
+  <div class="panel">
+    <div class="panel-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h10v2h3a1 1 0 0 1 1 1v2a5 5 0 0 1-4.6 5A5 5 0 0 1 13 15.9V18h3v3H8v-3h3v-2.1A5 5 0 0 1 7.6 13 5 5 0 0 1 3 8V6a1 1 0 0 1 1-1h3zm0 4H5v1a3 3 0 0 0 2 2.8zm10 0v3.8A3 3 0 0 0 19 8V7z"/></svg></div>
+    <h2>Every Fold Fits!</h2>
+    <p class="sub">You solved every puzzle. Go back for 3 stars on each one!</p>
+    <div class="stats"><div class="stat"><div class="k">Stars</div><div class="v" id="endStars">0 / 45</div></div></div>
+    <div class="row stagger">
+      <button class="btn ghost" id="btnEndLevels">Levels</button>
+      <button class="btn" id="btnEndHome" data-primary>Main Menu</button>
+    </div>
+  </div>
+</section>
+
+<!-- Goodbye (shown when the browser won't let the tab close itself) -->
+<section class="screen" id="scrBye">
+  <div class="panel">
+    <div class="panel-icon coral"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.5-9.2C1 8.4 3.2 5 6.6 5c2 0 3.4 1.1 4.4 2.5C12 6.1 13.4 5 15.4 5 18.8 5 21 8.4 19.5 11.8 17.5 16.4 12 21 12 21z"/></svg></div>
+    <h2>Thanks for playing!</h2>
+    <p class="sub">Your progress is saved. You can close this tab now.</p>
+    <div class="row"><button class="btn" id="btnByeHome" data-primary>Back to Menu</button></div>
+  </div>
+</section>
+
+<!-- Pause (modal) -->
+<section class="screen modal" id="mdlPause">
+  <div class="panel narrow">
+    <div class="panel-icon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg></div>
+    <h2>Paused</h2>
+    <div class="col stagger">
+      <button class="btn" id="btnResume" data-primary>Resume</button>
+      <button class="btn light" id="btnPauseRestart">Restart Puzzle</button>
+      <button class="btn ghost" id="btnPauseLevels">Levels</button>
+      <button class="btn ghost" id="btnPauseHome">Main Menu</button>
+    </div>
+    <div class="pause-sound"><button class="ibtn sound-btn" aria-label="Toggle sound"></button><span>Sound</span></div>
+  </div>
+</section>
+
+<!-- How to play (modal) -->
+<section class="screen modal" id="mdlHow">
+  <div class="panel how-panel">
+    <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M9.5 9.3a2.6 2.6 0 1 1 3.6 2.4c-.7.3-1.1.9-1.1 1.6v.5"/><circle cx="12" cy="17.2" r=".8" fill="currentColor"/></svg></div>
+    <h2>How to Play</h2>
+    <div class="how-grid">
+      <div class="how" style="--i:0">
+        <svg viewBox="0 0 80 60"><path d="M10 50h30V20H10z" fill="#f6cf94" stroke="#8a5a2b" stroke-width="2"/><path d="M40 50h28V22z" fill="#e8574f" stroke="#8c2a25" stroke-width="2" class="how-fold"/><circle cx="40" cy="50" r="4" fill="#fff" stroke="#6c3fb2" stroke-width="2"/><path d="M62 12a26 26 0 0 1 12 22" fill="none" stroke="#6c3fb2" stroke-width="2.5" stroke-dasharray="4 3"/><path d="M74 34l-5-3m5 3l3-5" stroke="#6c3fb2" stroke-width="2.5" stroke-linecap="round"/></svg>
+        <b>Drag to fold</b><span>Swing a piece around its white pin.</span>
+      </div>
+      <div class="how" style="--i:1">
+        <svg viewBox="0 0 80 60"><rect x="18" y="14" width="34" height="34" rx="2" fill="#8a5cf6" stroke="#4c2a86" stroke-width="2"/><circle cx="18" cy="48" r="4" fill="#fff" stroke="#6c3fb2" stroke-width="2"/><circle cx="44" cy="26" r="7" fill="rgba(255,255,255,.55)" stroke="#fff" stroke-width="2"/><path d="M58 18l6-6M60 28h8M58 38l6 6" stroke="#ffc94d" stroke-width="2.5" stroke-linecap="round"/></svg>
+        <b>Tap to turn</b><span>Each tap folds a piece one step.</span>
+      </div>
+      <div class="how" style="--i:2">
+        <svg viewBox="0 0 80 60"><rect x="6" y="30" width="22" height="22" fill="#5bc0a8" stroke="#2c7a68" stroke-width="2"/><rect x="28" y="30" width="22" height="22" fill="#4a90e0" stroke="#28599a" stroke-width="2"/><rect x="50" y="30" width="22" height="22" fill="#ff7a6b" stroke="#a5443a" stroke-width="2"/><circle cx="28" cy="30" r="3.5" fill="#fff" stroke="#6c3fb2" stroke-width="2"/><circle cx="50" cy="30" r="3.5" fill="#fff" stroke="#6c3fb2" stroke-width="2"/><path d="M40 20c8-10 22-10 28 0" fill="none" stroke="#6c3fb2" stroke-width="2.5" stroke-dasharray="4 3"/></svg>
+        <b>Chains swing</b><span>Pieces pinned to a piece move with it.</span>
+      </div>
+      <div class="how" style="--i:3">
+        <svg viewBox="0 0 80 60"><path d="M14 50V18h26l26 32z" fill="rgba(108,63,178,.1)" stroke="#6c3fb2" stroke-width="2.5" stroke-dasharray="6 4"/><path d="M14 50V18h26v32z" fill="#ffc94d" stroke="#9a6b12" stroke-width="2"/><path d="M56 12l4 4 8-9" fill="none" stroke="#2fb3a3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <b>Fill the outline</b><span>Match the dashed shape to win.</span>
+      </div>
+    </div>
+    <p class="keys k-desk"><kbd>Z</kbd> undo · <kbd>R</kbd> restart · <kbd>H</kbd> hint · <kbd>Esc</kbd> pause</p>
+    <p class="keys k-touch">Fewer moves = more stars. Perfect solves earn hints!</p>
+    <div class="row"><button class="btn" id="btnHowClose" data-primary>Got it!</button></div>
+  </div>
+</section>
+
+<!-- Exit confirmation (modal) -->
+<section class="screen modal" id="mdlExit">
+  <div class="panel narrow">
+    <div class="exit-art" aria-hidden="true">
+      <span class="ea a"></span><span class="ea b"></span><span class="ea c"></span>
+    </div>
+    <h2>Leaving already?</h2>
+    <p class="sub">Your progress is saved. One more fold?</p>
+    <div class="row stagger">
+      <button class="btn ghost" id="btnExitYes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg>
+        Exit Game
+      </button>
+      <button class="btn" id="btnExitNo" data-primary>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.2v13.6a1 1 0 0 0 1.5.86l10.6-6.8a1 1 0 0 0 0-1.72L9.5 4.34A1 1 0 0 0 8 5.2z"/></svg>
+        Keep Playing
+      </button>
+    </div>
+  </div>
+</section>
+
+<noscript><div class="noscript">Fold Fit needs JavaScript enabled to play.</div></noscript>
+
+<script src="game.js"></script>
+</body>
+</html>
