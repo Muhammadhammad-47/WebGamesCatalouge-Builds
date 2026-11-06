@@ -681,17 +681,20 @@ function buildTileLayer() {
   const c = document.createElement('canvas');
   // Covers the whole stage (level + side/top margins). Tiles outside the 32x18 level copy
   // the nearest edge tile, so the border rock (and any bottom pit) runs to the screen edge.
-  // Whole-unit padding keeps every tile edge on an exact pixel (no hairline seams).
-  const px = Math.ceil(OX), py = Math.ceil(OY);
-  c.width = (W + px * 2) * 2; c.height = (H + py * 2) * 2;
-  c.padX = px; c.padY = py;
+  const c0 = Math.floor(-OX / T) - 1, c1 = Math.ceil((W + OX) / T) + 1;
+  const r0 = Math.floor(-OY / T) - 1, r1 = Math.ceil((H + OY) / T) + 1;
+  const minX = c0 * T, maxX = c1 * T;
+  const minY = r0 * T, maxY = r1 * T;
+  const worldW = maxX - minX, worldH = maxY - minY;
+  c.width = Math.max(1, Math.round(worldW * 2));
+  c.height = Math.max(1, Math.round(worldH * 2));
+  c.minX = minX; c.minY = minY;
+  c.worldW = worldW; c.worldH = worldH;
   const g = c.getContext('2d');
-  g.setTransform(2, 0, 0, 2, px * 2, py * 2);
+  g.setTransform(2, 0, 0, 2, -minX * 2, -minY * 2);
   const grid = level.grid;
   const at = (cc, r) => grid[Math.max(0, Math.min(ROWS - 1, r))][Math.max(0, Math.min(COLS - 1, cc))];
   const rock = (cc, r) => at(cc, r) === '#';
-  const c0 = Math.floor(-OX / T), c1 = Math.ceil((W + OX) / T);
-  const r0 = Math.floor(-OY / T), r1 = Math.ceil((H + OY) / T);
   for (let r = r0; r < r1; r++) for (let cc = c0; cc < c1; cc++) {
     const inside = r >= 0 && r < ROWS && cc >= 0 && cc < COLS;
     let ch = at(cc, r);
