@@ -3,56 +3,136 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Pet Merge Haven</title>
+  <title>Pet Adoption: Merge Haven | CIEL Games</title>
   <meta name="description" content="Merge adorable pets, fill adoption orders and grow your pet haven.">
-  <meta name="theme-color" content="#9be0a0">
+  <meta name="theme-color" content="#3b1677">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
-  <!-- 1. CIEL GAMES LOADING SCREEN -->
-  <div id="ciel-loading-screen" class="ciel-loading-overlay">
-    <div class="ciel-loading-clouds">
-      <div class="l-cloud lc-1"></div>
-      <div class="l-cloud lc-2"></div>
-      <div class="l-cloud lc-3"></div>
-    </div>
+  <!-- ============ 1. CIEL GAMES LOADING SCREEN (purple brand splash) ============ -->
+  <div id="ciel-loading-screen" class="ciel-loading-overlay ciel-purple">
+    <div class="ciel-glow g1"></div><div class="ciel-glow g2"></div><div class="ciel-glow g3"></div>
+    <div class="ciel-stars" aria-hidden="true"></div>
+
     <div class="ciel-loading-content">
-      <!-- CIEL Games Brand Badge -->
-      <div class="ciel-brand-badge">
-        <span class="ciel-brand-logo-box">C</span>
-        <span class="ciel-brand-text">CIEL GAMES</span>
+      <div class="ciel-presented">presented by</div>
+      <div class="ciel-logo big">
+        <span class="ciel-logo-mark" aria-hidden="true">
+          <svg viewBox="0 0 64 64"><defs><linearGradient id="cmA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b98cff"/><stop offset="1" stop-color="#6a2fd1"/></linearGradient></defs><rect x="3" y="3" width="58" height="58" rx="16" fill="url(#cmA)"/><rect x="3" y="3" width="58" height="29" rx="16" fill="#fff" opacity=".14"/><path d="M42 21.5a14 14 0 1 0 0 21" fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round"/><path d="M48 10l2.3 5.2L55.5 17.5l-5.2 2.3L48 25l-2.3-5.2L40.5 17.5l5.2-2.3z" fill="#ffd34d"/></svg>
+        </span>
+        <span class="ciel-logo-text"><b>CIEL</b><em>GAMES</em></span>
       </div>
 
-      <!-- Game Title -->
-      <div class="ciel-game-brand">
+      <div class="ciel-divider"></div>
+
+      <div class="ciel-game-card">
+        <canvas id="loading-hero-canvas" width="300" height="190"></canvas>
         <h1 class="ciel-game-title">Pet Adoption</h1>
         <div class="ciel-game-subtitle">🐾 Merge Haven 🐾</div>
+        <div class="loading-pets-row" id="loading-pets-row"></div>
       </div>
 
-      <!-- Procedural Art Generation Showcase -->
-      <div class="loading-art-showcase">
-        <canvas id="loading-hero-canvas" width="300" height="190"></canvas>
-        <div class="loading-pets-row" id="loading-pets-row">
-          <!-- Dynamically populated with procedurally generated pets -->
-        </div>
-      </div>
-
-      <!-- Loading Progress -->
       <div class="loading-bar-wrapper">
         <div class="loading-bar-track">
-          <div id="ciel-progress-bar" class="loading-bar-fill">
-            <span class="loading-bar-spark"></span>
-          </div>
+          <div id="ciel-progress-bar" class="loading-bar-fill"><span class="loading-bar-spark"></span></div>
         </div>
         <div class="loading-meta">
           <span id="ciel-loading-status" class="loading-status-text">Waking up baby pets...</span>
           <span id="ciel-loading-percent" class="loading-percent-text">0%</span>
         </div>
+      </div>
+    </div>
+    <div class="ciel-copyright">© 2026 CIEL Games · All rights reserved</div>
+  </div>
+
+  <!-- ============ 2. MAIN MENU ============ -->
+  <section id="mainMenu" class="ciel-screen ciel-purple" aria-label="Main menu">
+    <div class="ciel-glow g1"></div><div class="ciel-glow g2"></div><div class="ciel-glow g3"></div>
+    <div class="ciel-stars" aria-hidden="true"></div>
+
+    <div class="menu-card">
+      <div class="menu-brand">
+        <span class="ciel-logo small">
+          <span class="ciel-logo-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="3" y="3" width="58" height="58" rx="16" fill="#7b3fe4"/><path d="M42 21.5a14 14 0 1 0 0 21" fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round"/><path d="M48 10l2.3 5.2L55.5 17.5l-5.2 2.3L48 25l-2.3-5.2L40.5 17.5l5.2-2.3z" fill="#ffd34d"/></svg></span>
+          <span class="ciel-logo-text"><b>CIEL</b><em>GAMES</em></span>
+        </span>
+        <span class="menu-presents">presents</span>
+      </div>
+
+      <div class="menu-hero">
+        <canvas id="menu-hero-canvas" width="300" height="190"></canvas>
+        <h1 class="menu-title">Pet Adoption</h1>
+        <div class="menu-subtitle">🐾 Merge Haven 🐾</div>
+      </div>
+
+      <div class="menu-actions">
+        <div class="menu-save" id="menuSave"></div>
+        <button class="menu-btn btn-continue" id="btnContinue">
+          <svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>Continue
+        </button>
+        <button class="menu-btn btn-new" id="btnNewGame">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg>New Game
+        </button>
+        <button class="menu-btn btn-settings" id="btnSettings">
+          <svg viewBox="0 0 24 24"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.6-2-3.4-2.4.9a7.4 7.4 0 0 0-2.6-1.5L14 2.4h-4l-.4 2.5A7.4 7.4 0 0 0 7 6.4l-2.4-.9-2 3.4 2 1.6a7.6 7.6 0 0 0 0 3l-2 1.6 2 3.4 2.4-.9a7.4 7.4 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 2.6-1.5l2.4.9 2-3.4Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>Settings
+        </button>
+      </div>
+    </div>
+    <div class="ciel-copyright">© 2026 CIEL Games · v1.0</div>
+  </section>
+
+  <!-- ============ 3. SETTINGS SCREEN ============ -->
+  <section id="settingsScreen" class="ciel-screen ciel-purple" aria-label="Settings">
+    <div class="ciel-glow g1"></div><div class="ciel-glow g2"></div><div class="ciel-glow g3"></div>
+    <div class="menu-card settings-card">
+      <div class="settings-head">
+        <button class="settings-back" id="btnSettingsBack" aria-label="Back to menu">
+          <svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <h2>Settings</h2>
+      </div>
+
+      <div class="set-row">
+        <div class="set-ic" style="background:#ffe1ec">🔊</div>
+        <div class="set-txt"><b>Sound Effects</b><small>Merges, coins and pops</small></div>
+        <button class="switch" id="setSound" role="switch" aria-checked="true" aria-label="Sound effects"><i></i></button>
+      </div>
+      <div class="set-row">
+        <div class="set-ic" style="background:#e3f2ff">⛶</div>
+        <div class="set-txt"><b>Full Screen</b><small>Hide the browser bars</small></div>
+        <button class="switch" id="setFull" role="switch" aria-checked="false" aria-label="Full screen"><i></i></button>
+      </div>
+      <div class="set-row">
+        <div class="set-ic" style="background:#ffe9d6">🗑️</div>
+        <div class="set-txt"><b>Reset Progress</b><small>Erase pets, coins and level</small></div>
+        <button class="set-danger" id="setReset">Reset</button>
+      </div>
+
+      <div class="set-about">
+        <span class="ciel-logo small">
+          <span class="ciel-logo-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="3" y="3" width="58" height="58" rx="16" fill="#7b3fe4"/><path d="M42 21.5a14 14 0 1 0 0 21" fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round"/><path d="M48 10l2.3 5.2L55.5 17.5l-5.2 2.3L48 25l-2.3-5.2L40.5 17.5l5.2-2.3z" fill="#ffd34d"/></svg></span>
+          <span class="ciel-logo-text"><b>CIEL</b><em>GAMES</em></span>
+        </span>
+        <small>Pet Adoption: Merge Haven · v1.0</small>
+      </div>
+
+      <button class="menu-btn btn-continue" id="btnSettingsDone">Done</button>
+    </div>
+  </section>
+
+  <!-- ============ CONFIRM DIALOG (New Game / Reset) ============ -->
+  <div id="cielConfirm" class="exit-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="cielConfirmTitle">
+    <div class="exit-modal-card">
+      <div class="exit-modal-badge ciel-badge-purple" id="cielConfirmTitle">START OVER?</div>
+      <p class="exit-modal-desc" id="cielConfirmText">Your current pets, coins and level will be lost.</p>
+      <div class="exit-modal-actions">
+        <button id="cielConfirmNo" class="exit-action-btn btn-keep-playing">Cancel</button>
+        <button id="cielConfirmYes" class="exit-action-btn btn-leave-tab">Yes, start new</button>
       </div>
     </div>
   </div>
@@ -135,6 +215,10 @@
           </svg>
           Leave the Tab
         </button>
+        <button id="btnExitToMenu" class="exit-action-btn btn-to-menu" title="Main Menu">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          Main Menu
+        </button>
         <button id="btnCancelExit" class="exit-action-btn btn-keep-playing" title="Keep Playing">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
             <polygon points="6 4 20 12 6 20 6 4"/>
@@ -145,7 +229,7 @@
     </div>
   </div>
 
-  <script src="art.js"></script>
-  <script src="game.js"></script>
+  <script src="art.js?v=2"></script>
+  <script src="game.js?v=2"></script>
 </body>
 </html>

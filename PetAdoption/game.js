@@ -31,6 +31,15 @@
   // ---------- state ----------
   let S = load() || fresh();
 
+  // Settings live in their own key so changing them on the menu never creates a save game.
+  const SETTINGS_KEY = 'petMergeHaven.settings';
+  function loadSettings() { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch (e) { return {}; } }
+  function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ sound: S.sound })); } catch (e) {} }
+  const hasSave = () => { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } };
+  { const st = loadSettings(); if (typeof st.sound === 'boolean') S.sound = st.sound; }
+  let running = false;   // game loop active (false while on loading / menu screens)
+  let started = false;   // a game session has begun this visit
+
   function fresh() {
     const grid = Array(N).fill(0), open = Array(N).fill(0);
     START_OPEN.forEach((i) => (open[i] = 1));
@@ -266,7 +275,7 @@
       const r = root.querySelector('.reset');
       if (r) r.onclick = () => {
         if (confirm('Reset all progress? This cannot be undone.')) {
-          S = fresh(); save(); closeModal(); lastAfford = null; renderAll();
+          const snd = S.sound; S = fresh(); S.sound = snd; save(); closeModal(); lastAfford = null; renderAll();
         }
       };
     };
@@ -466,7 +475,7 @@
   $('#shopBtn').addEventListener('click', showShop);
   $('#bookBtn').addEventListener('click', showBook);
   $('#fsBtn').addEventListener('click', toggleFullscreen);
-  $('#soundBtn').addEventListener('click', () => { S.sound = !S.sound; renderHUD(); save(); if (S.sound) SFX.pop(); });
+  $('#soundBtn').addEventListener('click', () => { S.sound = !S.sound; renderHUD(); save(); saveSettings(); if (S.sound) SFX.pop(); });
 
   // ---------- exit confirmation modal ("Leave the Tab" & "Keep Playing") ----------
   const backBtn = $('#gameBackBtn');
@@ -517,14 +526,120 @@
   if (backBtn) backBtn.addEventListener('click', openExitModal);
   if (cancelExitBtn) cancelExitBtn.addEventListener('click', closeExitModal);
   if (confirmExitBtn) confirmExitBtn.addEventListener('click', doLeaveTab);
+  $('#btnExitToMenu').addEventListener('click', () => { closeExitModal(); showMainMenu(); });
   if (exitModal) {
     exitModal.addEventListener('click', (e) => {
       if (e.target === exitModal) closeExitModal();
     });
   }
 
+  // ---------- main menu, settings & confirm ----------
+  const mainMenu = $('#mainMenu'), settingsScreen = $('#settingsScreen');
+  const confirmBox = $('#cielConfirm');
+  const isShown = (el) => el.classList.contains('show');
+  let confirmYes = null;
+
+  function askConfirm(title, text, yesLabel, onYes) {
+    $('#cielConfirmTitle').textContent = title;
+    $('#cielConfirmText').textContent = text;
+    $('#cielConfirmYes').textContent = yesLabel;
+    confirmYes = onYes;
+    confirmBox.classList.add('active');
+    SFX.pop();
+  }
+  function closeConfirm() { confirmBox.classList.remove('active'); confirmYes = null; }
+  $('#cielConfirmNo').addEventListener('click', () => { SFX.tap(); closeConfirm(); });
+  $('#cielConfirmYes').addEventListener('click', () => { const fn = confirmYes; closeConfirm(); if (fn) fn(); });
+  confirmBox.addEventListener('click', (e) => { if (e.target === confirmBox) closeConfirm(); });
+
+  function renderMenu() {
+    const saved = hasSave();
+    $('#btnContinue').classList.toggle('is-disabled', !saved);
+    $('#menuSave').innerHTML = saved
+      ? `<span>Level ${S.level}</span><span>🪙 ${fmt(S.coins)}</span><span>🐾 ${S.discovered.length}/${MAX} pets</span>`
+      : '<span>No saved game yet. Start a new one!</span>';
+  }
+
+  function showMainMenu() {
+    if (started) { running = false; save(); }
+    closeModal();
+    renderMenu();
+    settingsScreen.classList.remove('show');
+    mainMenu.classList.add('show');
+  }
+
+  function startGame(isNew) {
+    if (isNew) {
+      const snd = S.sound;
+      S = fresh(); S.sound = snd;
+      lastAfford = null;
+      renderAll();
+    }
+    mainMenu.classList.remove('show');
+    settingsScreen.classList.remove('show');
+    const firstStart = !started;
+    started = true;
+    running = true;
+    lastFrame = performance.now(); acc = 0;
+    // Offline earnings only when resuming a saved game on first entry this visit
+    if (!isNew && firstStart) {
+      const away = Math.min(7200, (Date.now() - S.last) / 1000);
+      if (away > 60 && totalIncome() > 0) {
+        const earned = Math.floor(totalIncome() * away * 0.5);
+        addCoins(earned);
+        openModal(`<h2>Welcome back!</h2><img class="hero" src="${IMGS[S.maxLevel - 1]}" alt="">
+          <p>Your pets earned <b style="color:var(--ink)">${fmt(earned)}</b> coins while you were away.</p>
+          <div class="actions"><button class="btn go" data-close>Collect</button></div>`);
+      }
+    }
+    renderAll();
+    save();
+  }
+
+  $('#btnContinue').addEventListener('click', () => {
+    if (!hasSave()) { SFX.bad(); shake($('#btnContinue')); return; }
+    SFX.buy(); startGame(false);
+  });
+  $('#btnNewGame').addEventListener('click', () => {
+    SFX.tap();
+    if (hasSave()) {
+      askConfirm('START OVER?', 'Starting a new game erases your current pets, coins and level.', 'Yes, start new', () => { SFX.buy(); startGame(true); });
+    } else { SFX.buy(); startGame(true); }
+  });
+
+  function syncSettings() {
+    $('#setSound').setAttribute('aria-checked', String(!!S.sound));
+    $('#setFull').setAttribute('aria-checked', String(!!isFull()));
+  }
+  function openSettings() { SFX.tap(); syncSettings(); settingsScreen.classList.add('show'); }
+  function closeSettings() { SFX.tap(); settingsScreen.classList.remove('show'); renderMenu(); }
+  $('#btnSettings').addEventListener('click', openSettings);
+  $('#btnSettingsBack').addEventListener('click', closeSettings);
+  $('#btnSettingsDone').addEventListener('click', closeSettings);
+  $('#setSound').addEventListener('click', () => {
+    S.sound = !S.sound; saveSettings();
+    if (hasSave()) save();
+    syncSettings(); renderHUD();
+    if (S.sound) SFX.pop();
+  });
+  $('#setFull').addEventListener('click', () => { SFX.tap(); toggleFullscreen(); });
+  document.addEventListener('fullscreenchange', syncSettings);
+  document.addEventListener('webkitfullscreenchange', syncSettings);
+  $('#setReset').addEventListener('click', () => {
+    if (!hasSave()) { toast('There is no progress to reset yet.'); return; }
+    askConfirm('RESET PROGRESS?', 'This permanently erases your pets, coins and level. It cannot be undone.', 'Yes, reset', () => {
+      try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+      const snd = S.sound; S = fresh(); S.sound = snd;
+      started = false; running = false; lastAfford = null;
+      renderAll(); renderMenu(); SFX.bad();
+      toast('Progress reset. Start a new game from the menu!');
+    });
+  });
+
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      if (confirmBox.classList.contains('active')) { closeConfirm(); return; }
+      if (isShown(settingsScreen)) { closeSettings(); return; }
       if (exitModal && exitModal.classList.contains('active')) {
         closeExitModal();
         return;
@@ -536,13 +651,14 @@
       openExitModal();
       return;
     }
+    if (!running) return;
     if (!modal.classList.contains('hidden') || (exitModal && exitModal.classList.contains('active'))) return;
     if (e.code === 'Space') { e.preventDefault(); buyEgg(); }
     if (e.code === 'KeyF') toggleFullscreen();
   });
 
   // ---------- ciel games loading screen & art generation ----------
-  function initLoadingScreen() {
+  function initLoadingScreen(onDone) {
     const loadingScreen = $('#ciel-loading-screen');
     const heroCanvas = $('#loading-hero-canvas');
     const petsRow = $('#loading-pets-row');
@@ -573,7 +689,13 @@
       });
     }
 
-    // 3. Smooth animated loading sequence
+    // Same art on the main menu
+    const menuCanvas = $('#menu-hero-canvas');
+    if (typeof renderLoadingHero === 'function' && menuCanvas) {
+      try { renderLoadingHero(menuCanvas); } catch (err) { /* ignore */ }
+    }
+
+    // 3. Smooth animated loading sequence (~2.5s so the CIEL Games splash is readable)
     let currentPct = 0;
     const stages = [
       { at: 20, text: 'Waking up baby pets...' },
@@ -583,9 +705,11 @@
       { at: 100, text: 'Welcome to Pet Haven!' }
     ];
 
+    let waited = 0;
     const timer = setInterval(() => {
+      if ((waited += 70) < 1100) return; // let the logo intro play first
       // Advance progress smoothly
-      const inc = Math.floor(Math.random() * 8) + 4;
+      const inc = Math.floor(Math.random() * 5) + 3;
       currentPct = Math.min(100, currentPct + inc);
 
       if (progressBar) progressBar.style.width = `${currentPct}%`;
@@ -597,15 +721,16 @@
       if (currentPct >= 100) {
         clearInterval(timer);
         setTimeout(() => {
+          if (onDone) onDone(); // main menu appears underneath, then the splash fades away
           if (loadingScreen) {
             loadingScreen.classList.add('fade-out');
             setTimeout(() => {
               loadingScreen.style.display = 'none';
-            }, 450);
+            }, 520);
           }
-        }, 300);
+        }, 450);
       }
-    }, 45);
+    }, 70);
   }
 
   // ---------- loop ----------
@@ -632,6 +757,7 @@
 
   function frame(t) {
     const dt = Math.min(0.25, (t - lastFrame) / 1000); lastFrame = t;
+    if (!running) { requestAnimationFrame(frame); return; } // paused on loading / menu screens
     acc += dt;
     if (acc >= 1) { acc -= 1; secondTick(); }
     const iv = hatchInterval();
@@ -643,21 +769,12 @@
     requestAnimationFrame(frame);
   }
 
-  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); else lastFrame = performance.now(); });
-  window.addEventListener('pagehide', save);
+  // Only persist once a game has actually been started, so the menu never creates an empty save.
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { if (started) save(); } else lastFrame = performance.now(); });
+  window.addEventListener('pagehide', () => { if (started) save(); });
 
-  // ---------- boot ----------
-  initLoadingScreen();
+  // ---------- boot: CIEL Games splash -> main menu -> game ----------
   renderAll();
-  const away = Math.min(7200, (Date.now() - S.last) / 1000);
-  if (away > 60 && totalIncome() > 0) {
-    const earned = Math.floor(totalIncome() * away * 0.5);
-    addCoins(earned);
-    openModal(`<h2>Welcome back!</h2><img class="hero" src="${IMGS[S.maxLevel - 1]}" alt="">
-      <p>Your pets earned <b style="color:var(--ink)">${fmt(earned)}</b> coins while you were away.</p>
-      <div class="actions"><button class="btn go" data-close>Collect</button></div>`);
-    renderHUD();
-  }
-  save();
+  initLoadingScreen(showMainMenu);
   requestAnimationFrame(frame);
 })();
