@@ -393,13 +393,17 @@ svg { display: block; }
   .round-btn { width: 40px; height: 40px; }
 }
 
-/* ---------- Home back button + CIEL Games branding ---------- */
-.home-back {
+/* ---------- Home close (exit) button + CIEL Games branding ---------- */
+.home-close {
   position: absolute;
   top: calc(12px + env(safe-area-inset-top));
-  left: 12px;
+  right: calc(12px + env(safe-area-inset-right));
   z-index: 2;
+  background: linear-gradient(#ff7a7a, #e23b3b);
+  box-shadow: 0 4px 0 #a51f1f, 0 7px 10px rgba(0,0,0,.2), inset 0 2px 0 rgba(255,255,255,.5);
 }
+.home-close svg { filter: drop-shadow(0 2px 0 rgba(120,10,10,.45)); }
+.home-close:active { box-shadow: 0 1px 0 #a51f1f, inset 0 2px 0 rgba(255,255,255,.5); }
 .brand {
   display: inline-flex;
   align-items: stretch;
