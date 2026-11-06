@@ -11,10 +11,10 @@
   --ease-out:cubic-bezier(.16,1,.3,1);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
-html,body{width:100%;height:100%;overflow:hidden;background:#1a3150;font-family:'Fredoka',system-ui,-apple-system,'Segoe UI',sans-serif;color:#fff;touch-action:none;overscroll-behavior:none;}
+html,body{width:100%;height:100%;overflow:hidden;background:#c98c5a;font-family:'Fredoka',system-ui,-apple-system,'Segoe UI',sans-serif;color:#fff;touch-action:none;overscroll-behavior:none;}
 button{font:inherit;color:inherit;}
 #stage{position:absolute;left:50%;top:50%;width:960px;height:540px;transform-origin:center center;transform:translate(-50%,-50%);overflow:hidden;border:none;border-radius:0;box-shadow:none;}
-#game{display:block;width:960px;height:540px;}
+#game{display:block;width:100%;height:100%;}
 
 /* ================= Loader (CIEL Games – company purple theme) ================= */
 #loader{position:fixed;inset:0;z-index:50;display:grid;place-items:center;overflow:hidden;
@@ -101,7 +101,7 @@ button{font:inherit;color:inherit;}
 .ibtn svg{width:20px;height:20px;}
 
 /* ================= HUD ================= */
-#hud{position:absolute;left:0;right:0;top:0;display:none;align-items:center;justify-content:space-between;padding:10px 12px;pointer-events:none;z-index:1;}
+#hud{position:absolute;left:0;right:0;top:0;display:none;align-items:center;justify-content:space-between;padding:10px 14px;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right));pointer-events:none;z-index:1;}
 #hud.show{display:flex;animation:slideDown .5s var(--ease-out);}
 @keyframes slideDown{from{opacity:0;transform:translateY(-20px)}}
 .pill{background:rgba(16,28,56,.66);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.16);border-radius:999px;

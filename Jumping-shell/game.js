@@ -289,17 +289,29 @@ const isTouch = (window.matchMedia && matchMedia('(pointer: coarse)').matches) |
 const inFrame = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
 let bgGrad = null;
 
+// The level is always 960x540 world units drawn at one uniform scale (no stretching).
+// The stage grows to match the screen's aspect ratio (VW x VH) and the extra room around
+// the level (OX / OY on each side) is filled with the level's own rock, so every screen
+// is covered edge to edge.
+let VW = W, VH = H, OX = 0, OY = 0;
 function resize() {
-  const vw = window.innerWidth, vh = window.innerHeight;
+  const vw = Math.max(1, window.innerWidth), vh = Math.max(1, window.innerHeight);
   const scale = Math.min(vw / W, vh / H);
+  VW = Math.max(W, vw / scale); VH = Math.max(H, vh / scale);
+  OX = (VW - W) / 2; OY = (VH - H) / 2;
+  stage.style.width = VW + 'px';
+  stage.style.height = VH + 'px';
   stage.style.transform = `translate(-50%,-50%) scale(${scale})`;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = Math.max(1, Math.round(W * scale * dpr));
-  canvas.height = Math.max(1, Math.round(H * scale * dpr));
-  ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
+  canvas.width = Math.max(1, Math.round(VW * scale * dpr));
+  canvas.height = Math.max(1, Math.round(VH * scale * dpr));
+  ctx.setTransform(canvas.width / VW, 0, 0, canvas.height / VH, 0, 0);
   bgGrad = null;
+  if (level) tileLayer = buildTileLayer();
 }
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 120));
+if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
 
 // ---------------------------------------------------------------------------
 // Game state
@@ -667,13 +679,24 @@ function rr(g, x, y, w, h, r) {
 
 function buildTileLayer() {
   const c = document.createElement('canvas');
-  c.width = W * 2; c.height = H * 2;
+  // Covers the whole stage (level + side/top margins). Tiles outside the 32x18 level copy
+  // the nearest edge tile, so the border rock (and any bottom pit) runs to the screen edge.
+  // Whole-unit padding keeps every tile edge on an exact pixel (no hairline seams).
+  const px = Math.ceil(OX), py = Math.ceil(OY);
+  c.width = (W + px * 2) * 2; c.height = (H + py * 2) * 2;
+  c.padX = px; c.padY = py;
   const g = c.getContext('2d');
-  g.scale(2, 2);
+  g.setTransform(2, 0, 0, 2, px * 2, py * 2);
   const grid = level.grid;
-  const rock = (cc, r) => cc < 0 || cc >= COLS || r < 0 || r >= ROWS || grid[r][cc] === '#';
-  for (let r = 0; r < ROWS; r++) for (let cc = 0; cc < COLS; cc++) {
-    const ch = grid[r][cc], x = cc * T, y = r * T, h = hash(cc, r);
+  const at = (cc, r) => grid[Math.max(0, Math.min(ROWS - 1, r))][Math.max(0, Math.min(COLS - 1, cc))];
+  const rock = (cc, r) => at(cc, r) === '#';
+  const c0 = Math.floor(-OX / T), c1 = Math.ceil((W + OX) / T);
+  const r0 = Math.floor(-OY / T), r1 = Math.ceil((H + OY) / T);
+  for (let r = r0; r < r1; r++) for (let cc = c0; cc < c1; cc++) {
+    const inside = r >= 0 && r < ROWS && cc >= 0 && cc < COLS;
+    let ch = at(cc, r);
+    if (!inside && ch !== '#') ch = '.'; // never copy spikes/planks into the margins
+    const x = cc * T, y = r * T, h = hash(cc, r);
     if (ch === '#') {
       g.fillStyle = '#c98c5a'; g.fillRect(x, y, T, T);
       for (let k = 0; k < 3; k++) {
@@ -687,7 +710,7 @@ function buildTileLayer() {
       if (!rock(cc + 1, r)) g.fillRect(x + T - 3, y, 3, T);
       if (!rock(cc, r + 1)) g.fillRect(x, y + T - 3, T, 3);
       if (!rock(cc, r - 1)) {
-        const deco = r === 0 || (grid[r - 1][cc] !== '^' && grid[r - 1][cc] !== '=');
+        const deco = inside && (r === 0 || (at(cc, r - 1) !== '^' && at(cc, r - 1) !== '='));
         g.fillStyle = '#e3b56f';
         g.beginPath(); g.moveTo(x, y);
         g.lineTo(x + T, y); g.lineTo(x + T, y + 9);
@@ -741,7 +764,7 @@ function drawBackground() {
     bgGrad = ctx.createLinearGradient(0, 0, 0, H);
     bgGrad.addColorStop(0, '#ffe1b3'); bgGrad.addColorStop(0.42, '#ffb59a'); bgGrad.addColorStop(0.75, '#8fcfd6'); bgGrad.addColorStop(1, '#5fb1c4');
   }
-  ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = bgGrad; ctx.fillRect(-OX, -OY, VW, VH);
   const sg = ctx.createRadialGradient(740, 150, 20, 740, 150, 150);
   sg.addColorStop(0, 'rgba(255,250,228,.9)'); sg.addColorStop(0.4, 'rgba(255,238,200,.35)'); sg.addColorStop(1, 'rgba(255,230,190,0)');
   ctx.fillStyle = sg; ctx.fillRect(590, 0, 300, 300);
@@ -765,9 +788,10 @@ function drawBackground() {
     { y: 420, a: 7, l: 100, s: 1.1, c: 'rgba(58,142,180,.6)' }
   ];
   for (const w of waves) {
-    ctx.fillStyle = w.c; ctx.beginPath(); ctx.moveTo(0, H);
-    for (let x = 0; x <= W; x += 16) ctx.lineTo(x, w.y + Math.sin(x / w.l * TAU + t * w.s) * w.a);
-    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+    const x0 = Math.floor(-OX / 16) * 16, x1 = W + OX + 16;
+    ctx.fillStyle = w.c; ctx.beginPath(); ctx.moveTo(x0, H + OY);
+    for (let x = x0; x <= x1; x += 16) ctx.lineTo(x, w.y + Math.sin(x / w.l * TAU + t * w.s) * w.a);
+    ctx.lineTo(x1, H + OY); ctx.closePath(); ctx.fill();
   }
   ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 1.2;
   for (const b of bubbles) {
@@ -973,9 +997,16 @@ function drawBanner(text, y) {
 }
 
 function render(dt) {
+  ctx.save();
+  ctx.translate(OX, OY); // world origin = top-left of the 960x540 level, centred on the stage
+  drawWorld(dt);
+  ctx.restore();
+}
+
+function drawWorld(dt) {
   drawBackground();
   if (!level) return;
-  ctx.drawImage(tileLayer, 0, 0, W, H);
+  ctx.drawImage(tileLayer, -tileLayer.padX, -tileLayer.padY, W + tileLayer.padX * 2, H + tileLayer.padY * 2);
   drawPlates(dt); drawSprings(dt); drawDoors(); drawGoal();
   if (shell.active) drawLooseShell();
   if (player.alive) drawPlayer();
@@ -1189,13 +1220,14 @@ document.body.classList.toggle('touch', isTouch);
 document.addEventListener('pointerdown', e => {
   const el = e.target.closest('.btn, .ibtn, .lvl');
   if (!el) return;
-  const r = el.getBoundingClientRect(), k = el.offsetWidth / r.width;
+  const r = el.getBoundingClientRect();
+  const kx = el.offsetWidth / (r.width || 1), ky = el.offsetHeight / (r.height || 1);
   const size = Math.max(el.offsetWidth, el.offsetHeight) * 2.2;
   const s = document.createElement('span');
   s.className = 'ripple';
   s.style.width = s.style.height = size + 'px';
-  s.style.left = ((e.clientX - r.left) * k - size / 2) + 'px';
-  s.style.top = ((e.clientY - r.top) * k - size / 2) + 'px';
+  s.style.left = ((e.clientX - r.left) * kx - size / 2) + 'px';
+  s.style.top = ((e.clientY - r.top) * ky - size / 2) + 'px';
   el.appendChild(s);
   s.addEventListener('animationend', () => s.remove());
 });
@@ -1339,7 +1371,8 @@ function runLoader() {
 
 resize();
 refreshSoundIcons();
-loadLevel(Math.min(save.unlocked, LEVELS.length) - 1);
+// All levels are open; "Play" resumes at the first level not cleared yet.
+{ let first = 0; while (first < LEVELS.length - 1 && save.best[first] !== undefined) first++; loadLevel(first); }
 state.mode = 'loading';
 state.modal = null;
 runLoader();
