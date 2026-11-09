@@ -737,80 +737,12 @@
     if (e.code === 'KeyF') toggleFullscreen();
   });
 
-  // ---------- ciel games loading screen & art generation ----------
-  function initLoadingScreen(onDone) {
-    const loadingScreen = $('#ciel-loading-screen');
-    const heroCanvas = $('#loading-hero-canvas');
-    const petsRow = $('#loading-pets-row');
-    const progressBar = $('#ciel-progress-bar');
-    const statusText = $('#ciel-loading-status');
-    const percentText = $('#ciel-loading-percent');
-
-    // 1. Procedural art generation for loading hero banner
-    if (typeof renderLoadingHero === 'function' && heroCanvas) {
-      try {
-        renderLoadingHero(heroCanvas);
-      } catch (err) {
-        console.warn('Hero canvas render:', err);
-      }
-    }
-
-    // 2. Procedural mini pets row generation
-    if (petsRow && typeof renderPet === 'function') {
-      petsRow.innerHTML = '';
-      [1, 2, 3, 4, 5].forEach((lv, idx) => {
-        try {
-          const miniCv = renderPet(lv, 76);
-          miniCv.className = 'mini-loader-pet';
-          miniCv.style.animationDelay = `${idx * 0.16}s`;
-          miniCv.title = PETS[lv - 1]?.name || 'Cute Pet';
-          petsRow.appendChild(miniCv);
-        } catch (e) {}
-      });
-    }
-
-    // Same art on the main menu
+  // ---------- main menu art (the CIEL Games loading screen comes from ciel-loader.js) ----------
+  function initMenuArt() {
     const menuCanvas = $('#menu-hero-canvas');
     if (typeof renderLoadingHero === 'function' && menuCanvas) {
       try { renderLoadingHero(menuCanvas); } catch (err) { /* ignore */ }
     }
-
-    // 3. Smooth animated loading sequence (~2.5s so the CIEL Games splash is readable)
-    let currentPct = 0;
-    const stages = [
-      { at: 20, text: 'Waking up baby pets...' },
-      { at: 50, text: 'Gathering pet treats & cushions...' },
-      { at: 75, text: 'Preparing Adoption Haven...' },
-      { at: 95, text: 'Finalizing cuddles & toys...' },
-      { at: 100, text: 'Welcome to Pet Haven!' }
-    ];
-
-    let waited = 0;
-    const timer = setInterval(() => {
-      if ((waited += 70) < 1100) return; // let the logo intro play first
-      // Advance progress smoothly
-      const inc = Math.floor(Math.random() * 5) + 3;
-      currentPct = Math.min(100, currentPct + inc);
-
-      if (progressBar) progressBar.style.width = `${currentPct}%`;
-      if (percentText) percentText.textContent = `${currentPct}%`;
-
-      const curStage = stages.find((s) => currentPct <= s.at) || stages[stages.length - 1];
-      if (statusText) statusText.textContent = curStage.text;
-
-      if (currentPct >= 100) {
-        clearInterval(timer);
-        setTimeout(() => {
-          if (onDone) onDone(); // main menu appears underneath, then the splash fades away
-          if (loadingScreen) {
-            loadingScreen.classList.add('fade-out');
-            setTimeout(() => {
-              loadingScreen.style.display = 'none';
-            }, 520);
-          }
-        }, 450);
-      }
-    }, 70);
   }
 
   // ---------- loop ----------
@@ -853,8 +785,9 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden) { if (started) save(); } else lastFrame = performance.now(); });
   window.addEventListener('pagehide', () => { if (started) save(); });
 
-  // ---------- boot: CIEL Games splash -> main menu -> game ----------
+  // ---------- boot: CIEL loading screen -> main menu -> game ----------
   renderAll();
-  initLoadingScreen(showMainMenu);
+  initMenuArt();
+  showMainMenu(); // shown underneath the CIEL loading screen, revealed when it fades out
   requestAnimationFrame(frame);
 })();
