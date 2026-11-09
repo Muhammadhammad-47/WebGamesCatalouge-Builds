@@ -14,42 +14,8 @@
   <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
-  <!-- ============ 1. CIEL GAMES LOADING SCREEN (purple brand splash) ============ -->
-  <div id="ciel-loading-screen" class="ciel-loading-overlay ciel-purple">
-    <div class="ciel-glow g1"></div><div class="ciel-glow g2"></div><div class="ciel-glow g3"></div>
-    <div class="ciel-stars" aria-hidden="true"></div>
-
-    <div class="ciel-loading-content">
-      <div class="ciel-presented">presented by</div>
-      <div class="ciel-logo big">
-        <span class="ciel-logo-mark" aria-hidden="true">
-          <svg viewBox="0 0 64 64"><defs><linearGradient id="cmA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b98cff"/><stop offset="1" stop-color="#6a2fd1"/></linearGradient></defs><rect x="3" y="3" width="58" height="58" rx="16" fill="url(#cmA)"/><rect x="3" y="3" width="58" height="29" rx="16" fill="#fff" opacity=".14"/><path d="M42 21.5a14 14 0 1 0 0 21" fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round"/><path d="M48 10l2.3 5.2L55.5 17.5l-5.2 2.3L48 25l-2.3-5.2L40.5 17.5l5.2-2.3z" fill="#ffd34d"/></svg>
-        </span>
-        <span class="ciel-logo-text"><b>CIEL</b><em>GAMES</em></span>
-      </div>
-
-      <div class="ciel-divider"></div>
-
-      <div class="ciel-game-card">
-        <canvas id="loading-hero-canvas" width="300" height="190"></canvas>
-        <h1 class="ciel-game-title">Pet Adoption</h1>
-        <div class="ciel-game-subtitle">🐾 Merge Haven 🐾</div>
-        <div class="loading-pets-row" id="loading-pets-row"></div>
-      </div>
-
-      <div class="loading-bar-wrapper">
-        <div class="loading-bar-track">
-          <div id="ciel-progress-bar" class="loading-bar-fill"><span class="loading-bar-spark"></span></div>
-        </div>
-        <div class="loading-meta">
-          <span id="ciel-loading-status" class="loading-status-text">Waking up baby pets...</span>
-          <span id="ciel-loading-percent" class="loading-percent-text">0%</span>
-        </div>
-      </div>
-    </div>
-    <div class="ciel-copyright">© 2026 CIEL Games · All rights reserved</div>
-  </div>
-
+  <!-- CIEL Games loading screen -->
+  <script src="ciel-loader.js?v=1"></script>
   <!-- ============ 2. MAIN MENU ============ -->
   <section id="mainMenu" class="ciel-screen ciel-purple" aria-label="Main menu">
     <div class="ciel-glow g1"></div><div class="ciel-glow g2"></div><div class="ciel-glow g3"></div>
