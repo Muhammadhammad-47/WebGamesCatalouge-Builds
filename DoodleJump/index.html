@@ -21,6 +21,8 @@
 </head>
 
 <body>
+  <!-- CIEL Games loading screen -->
+  <script src="ciel-loader.js?v=1" data-mode="manual"></script>
   <!-- Unity Container -->
   <div id="unity-container" class="unity-desktop">
     <canvas id="unity-canvas" width="600" height="960" tabindex="-1"></canvas>
@@ -229,7 +231,7 @@
     var script = document.createElement("script");
     script.src = loaderUrl;
     script.onload = function () {
-      createUnityInstance(canvas, config, function (progress) {
+      CielLoader.unity(canvas, config, function (progress) {
         document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
       }).then(function (unityInstance) {
         window.unityInstance = unityInstance;
