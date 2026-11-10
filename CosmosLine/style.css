@@ -480,6 +480,18 @@
       font-size: 14px;
     }
 
+    .menu-btn-exit {
+      background: rgba(255, 60, 80, 0.1);
+      border: 1.5px solid rgba(255, 60, 80, 0.4);
+      color: #ff5c70;
+    }
+    .menu-btn-exit:hover {
+      background: rgba(255, 60, 80, 0.2);
+      border-color: rgba(255, 60, 80, 0.7);
+      box-shadow: 0 0 20px rgba(255, 60, 80, 0.3);
+      transform: translateY(-2px);
+    }
+
     .menu-progress {
       display: flex;
       align-items: center;
