@@ -618,18 +618,91 @@
       min-height: 0;
     }
 
-    /* Category Navigation Tabs */
-    .category-tabs {
+    /* Category Slider Container */
+    .category-slider-wrap {
+      position: relative;
       flex: none;
       display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 10px 4px;
+      background: rgba(255, 255, 255, 0.85);
+      border-bottom: 1px solid #f1e9f7;
+      z-index: 2;
+    }
+
+    .tab-slider-arrow {
+      width: 32px;
+      height: 32px;
+      flex: none;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #ffffff 0%, #fbf5ff 100%);
+      border: 2px solid #e9d5ff;
+      color: #7c3aed;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.2, 1.4, 0.4, 1);
+      box-shadow: 0 3px 0 #d8b4fe, 0 4px 10px rgba(124, 58, 237, 0.1);
+      z-index: 2;
+    }
+    .tab-slider-arrow:hover {
+      background: #faf5ff;
+      border-color: #c084fc;
+      transform: translateY(-1px) scale(1.08);
+      box-shadow: 0 4px 0 #d8b4fe, 0 6px 14px rgba(168, 85, 247, 0.2);
+    }
+    .tab-slider-arrow:active {
+      transform: translateY(2px) scale(0.94);
+      box-shadow: 0 1px 0 #d8b4fe;
+    }
+    .tab-slider-arrow.disabled {
+      opacity: 0.3;
+      pointer-events: none;
+      box-shadow: none;
+      transform: none;
+    }
+
+    /* Category Navigation Tabs Scroll Area */
+    .category-tabs {
+      flex: 1;
+      display: flex;
       gap: 8px;
-      padding: 10px 14px;
-      background: rgba(255, 255, 255, 0.75);
-      border-bottom: 2px solid #f1e9f7;
+      padding: 4px 2px;
       overflow-x: auto;
+      scroll-behavior: smooth;
       scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .category-tabs.is-dragging {
+      cursor: grabbing;
+      scroll-behavior: auto;
     }
     .category-tabs::-webkit-scrollbar { display: none; }
+
+    /* Slider Progress Track & Thumb */
+    .category-slider-track {
+      width: calc(100% - 28px);
+      height: 4px;
+      margin: 2px 14px 6px;
+      background: rgba(233, 213, 255, 0.4);
+      border-radius: 999px;
+      position: relative;
+      overflow: hidden;
+      flex: none;
+    }
+    .category-slider-thumb {
+      height: 100%;
+      width: 28%;
+      background: linear-gradient(90deg, #ff7eb3, #a855f7);
+      border-radius: 999px;
+      transition: transform 0.12s ease-out, width 0.2s ease;
+      transform: translateX(0);
+      box-shadow: 0 0 6px rgba(168, 85, 247, 0.4);
+    }
 
     .tab-btn {
       flex: none;
@@ -1268,16 +1341,34 @@
 
       <!-- Wardrobe Closet (Right on desktop) -->
       <section class="closet-card">
-        <!-- Category Navigation Tabs -->
-        <nav class="category-tabs" id="categoryTabs">
-          <button class="tab-btn active" data-cat="clothes">👕 Clothes</button>
-          <button class="tab-btn" data-cat="hats">👒 Hats</button>
-          <button class="tab-btn" data-cat="glasses">👓 Glasses</button>
-          <button class="tab-btn" data-cat="props">🪄 Props</button>
-          <button class="tab-btn" data-cat="shoes">👟 Shoes</button>
-          <button class="tab-btn" data-cat="colors">🎨 Colors</button>
-          <button class="tab-btn" data-cat="backgrounds">🖼️ Backgrounds</button>
-        </nav>
+        <!-- Category Navigation Tabs Slider -->
+        <div class="category-slider-wrap">
+          <button class="tab-slider-arrow tab-slider-prev disabled" id="btnTabPrev" title="Scroll left" aria-label="Previous categories">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+
+          <nav class="category-tabs" id="categoryTabs">
+            <button class="tab-btn active" data-cat="clothes">👕 Clothes</button>
+            <button class="tab-btn" data-cat="hats">👒 Hats</button>
+            <button class="tab-btn" data-cat="glasses">👓 Glasses</button>
+            <button class="tab-btn" data-cat="props">🪄 Props</button>
+            <button class="tab-btn" data-cat="shoes">👟 Shoes</button>
+            <button class="tab-btn" data-cat="colors">🎨 Colors</button>
+            <button class="tab-btn" data-cat="backgrounds">🖼️ Backgrounds</button>
+          </nav>
+
+          <button class="tab-slider-arrow tab-slider-next" id="btnTabNext" title="Scroll right" aria-label="Next categories">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <div class="category-slider-track">
+          <div class="category-slider-thumb" id="tabSliderThumb"></div>
+        </div>
 
         <!-- Drawer Content Container -->
         <div class="drawer-content" id="drawerContent">
@@ -2963,6 +3054,79 @@ class DressUpGame {
   }
 
   bindEvents() {
+    // Setup Category Tabs Slider
+    const tabs = this.dom.categoryTabs;
+    const btnPrev = document.getElementById('btnTabPrev');
+    const btnNext = document.getElementById('btnTabNext');
+    const thumb = document.getElementById('tabSliderThumb');
+
+    const updateSlider = () => {
+      if (!tabs) return;
+      const maxScroll = tabs.scrollWidth - tabs.clientWidth;
+      if (btnPrev) btnPrev.classList.toggle('disabled', tabs.scrollLeft <= 4);
+      if (btnNext) btnNext.classList.toggle('disabled', tabs.scrollLeft >= maxScroll - 4);
+
+      if (thumb && maxScroll > 0) {
+        const ratio = Math.max(0, Math.min(1, tabs.scrollLeft / maxScroll));
+        const track = thumb.parentElement;
+        if (track) {
+          const trackWidth = track.clientWidth;
+          const thumbWidth = Math.max(30, (tabs.clientWidth / tabs.scrollWidth) * trackWidth);
+          thumb.style.width = thumbWidth + 'px';
+          thumb.style.transform = `translateX(${ratio * (trackWidth - thumbWidth)}px)`;
+        }
+      }
+    };
+
+    if (btnPrev) {
+      btnPrev.onclick = () => {
+        sound.pop();
+        tabs.scrollBy({ left: -160, behavior: 'smooth' });
+      };
+    }
+    if (btnNext) {
+      btnNext.onclick = () => {
+        sound.pop();
+        tabs.scrollBy({ left: 160, behavior: 'smooth' });
+      };
+    }
+
+    tabs.addEventListener('scroll', updateSlider, { passive: true });
+    window.addEventListener('resize', updateSlider);
+    setTimeout(updateSlider, 50);
+
+    // Mouse wheel horizontal scroll on tabs
+    tabs.addEventListener('wheel', (e) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        tabs.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+
+    // Drag-to-slide on desktop
+    let isDown = false;
+    let startX = 0;
+    let scrollStart = 0;
+    tabs.addEventListener('mousedown', (e) => {
+      isDown = true;
+      tabs.classList.add('is-dragging');
+      startX = e.pageX - tabs.offsetLeft;
+      scrollStart = tabs.scrollLeft;
+    });
+    window.addEventListener('mouseup', () => {
+      if (isDown) {
+        isDown = false;
+        tabs.classList.remove('is-dragging');
+      }
+    });
+    tabs.addEventListener('mousemove', (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - tabs.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      tabs.scrollLeft = scrollStart - walk;
+    });
+
     // Category Tabs click
     this.dom.categoryTabs.querySelectorAll('.tab-btn').forEach(btn => {
       btn.onclick = () => {
@@ -2971,6 +3135,8 @@ class DressUpGame {
         btn.classList.add('active');
         this.activeTab = btn.dataset.cat;
         this.renderDrawer();
+        btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        setTimeout(updateSlider, 200);
       };
     });
 
