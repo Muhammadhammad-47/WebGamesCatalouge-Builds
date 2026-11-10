@@ -625,15 +625,15 @@
       top: 0;
       flex: none;
       display: flex;
+      flex-wrap: nowrap;         /* keep arrows + tabs on ONE row */
       align-items: center;
       gap: 6px;
-      padding: 10px 10px 14px;
+      padding: 10px 10px 15px;   /* bottom padding leaves room for the absolute track */
       background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
       z-index: 10;
-      /* downward shadow to create "floating above" depth */
-      box-shadow: 0 8px 28px rgba(110, 70, 140, 0.15), 0 2px 0 rgba(233, 213, 255, 0.5);
+      box-shadow: 0 8px 28px rgba(110, 70, 140, 0.15), 0 1px 0 rgba(233, 213, 255, 0.6);
       border-radius: 28px 28px 0 0;
     }
 
@@ -689,15 +689,16 @@
     }
     .category-tabs::-webkit-scrollbar { display: none; }
 
-    /* Slider Progress Track & Thumb — lives at bottom of the floating tab bar */
+    /* Slider Progress Track & Thumb — absolute at bottom of sticky tab bar */
     .category-slider-track {
-      flex: 0 0 100%;
+      position: absolute;
+      bottom: 5px;
+      left: 14px;
+      right: 14px;
       height: 3px;
-      margin: 2px 4px 0;
       background: rgba(233, 213, 255, 0.4);
       border-radius: 999px;
       overflow: hidden;
-      position: relative;
     }
     .category-slider-thumb {
       height: 100%;
