@@ -48,7 +48,7 @@
       touch-action: none;
     }
 
-    /* Ambient animated starry background */
+    /* Animated cosmic starry background */
     #bgCanvas {
       position: fixed;
       inset: 0;
@@ -68,12 +68,13 @@
       justify-content: space-between;
       align-items: center;
       padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+      transition: opacity 0.3s ease;
     }
 
     /* ================= HEADER ================= */
     header {
       width: 100%;
-      max-width: 840px;
+      max-width: 860px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -92,11 +93,16 @@
       align-items: center;
       gap: 10px;
       cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .brand:hover {
+      transform: translateY(-1px);
     }
 
     .brand-icon {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       display: grid;
       place-items: center;
       border-radius: 10px;
@@ -234,7 +240,7 @@
     /* ================= FOOTER / CONTROLS ================= */
     footer {
       width: 100%;
-      max-width: 840px;
+      max-width: 860px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -323,16 +329,291 @@
       transform: scale(0.95);
     }
 
+    .btn-danger {
+      background: rgba(255, 71, 87, 0.15);
+      border-color: rgba(255, 71, 87, 0.4);
+      color: #ff6b81;
+    }
+
+    .btn-danger:hover {
+      background: rgba(255, 71, 87, 0.25);
+      border-color: #ff4757;
+      color: #fff;
+      box-shadow: 0 0 16px rgba(255, 71, 87, 0.35);
+    }
+
     .btn svg {
       width: 17px;
       height: 17px;
+    }
+
+    /* ================= MAIN MENU SCREEN ================= */
+    #screenMainMenu {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 40%, rgba(16, 26, 62, 0.85) 0%, rgba(6, 8, 20, 0.96) 80%);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      padding: 24px;
+    }
+
+    #screenMainMenu.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(1.05);
+    }
+
+    .menu-box {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 24px;
+    }
+
+    .menu-logo-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .menu-logo-badge {
+      width: 88px;
+      height: 88px;
+      border-radius: 26px;
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.22), rgba(255, 0, 160, 0.22));
+      border: 2px solid var(--cyan);
+      box-shadow: 0 0 35px var(--cyan-glow), inset 0 0 20px var(--cyan-glow);
+      display: grid;
+      place-items: center;
+      margin-bottom: 18px;
+      animation: floatLogo 3s ease-in-out infinite;
+    }
+
+    @keyframes floatLogo {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-8px) rotate(4deg); }
+    }
+
+    .menu-logo-badge svg {
+      width: 52px;
+      height: 52px;
+    }
+
+    .menu-title {
+      font-size: 38px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #ffffff 0%, var(--cyan) 50%, var(--magenta) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+      text-shadow: 0 0 40px rgba(0, 240, 255, 0.35);
+    }
+
+    .menu-tagline {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .menu-actions {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .menu-btn {
+      width: 100%;
+      padding: 15px 24px;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      font-family: inherit;
+    }
+
+    .menu-btn-primary {
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.35), rgba(0, 160, 255, 0.5));
+      border: 2px solid var(--cyan);
+      color: #fff;
+      box-shadow: 0 0 24px var(--cyan-glow);
+    }
+
+    .menu-btn-primary:hover {
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.5), rgba(0, 160, 255, 0.65));
+      box-shadow: 0 0 35px var(--cyan-glow);
+      transform: translateY(-2px) scale(1.02);
+    }
+
+    .menu-btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: var(--text);
+    }
+
+    .menu-btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(0, 240, 255, 0.35);
+      transform: translateY(-2px);
+    }
+
+    .menu-btn-row {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .menu-btn-row .menu-btn {
+      flex: 1;
+      padding: 13px 18px;
+      font-size: 14px;
+    }
+
+    .menu-progress {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    .menu-progress-bar {
+      width: 90px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .menu-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--cyan), var(--magenta));
+      border-radius: 999px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    /* ================= SETTINGS SCREEN ================= */
+    .settings-group {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: background 0.2s;
+    }
+
+    .settings-row:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .settings-label-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .settings-label {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .settings-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    /* Modern Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 34px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    input:checked + .toggle-slider {
+      background-color: var(--cyan);
+      border-color: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan-glow);
+    }
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(22px);
+      background-color: #060814;
     }
 
     /* ================= MODALS ================= */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(4, 6, 16, 0.82);
+      background: rgba(4, 6, 16, 0.84);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       display: flex;
@@ -634,6 +915,31 @@
       line-height: 1.45;
     }
 
+    /* Notification toast */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      padding: 10px 22px;
+      border-radius: 999px;
+      background: rgba(14, 22, 48, 0.95);
+      border: 1px solid var(--cyan);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 4px 20px var(--cyan-glow);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 200;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
     /* Responsive scaling for mobile devices */
     @media (max-width: 600px) {
       header {
@@ -661,26 +967,99 @@
         padding: 8px 14px;
         font-size: 13px;
       }
+      .menu-title {
+        font-size: 30px;
+      }
+      .menu-logo-badge {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+      }
+      .menu-logo-badge svg {
+        width: 42px;
+        height: 42px;
+      }
     }
   </style>
 </head>
 <body>
-  <!-- Twinkling Starfield & Cosmic Dust Canvas -->
+  <!-- Starfield Canvas -->
   <canvas id="bgCanvas"></canvas>
 
-  <div id="app">
-    <!-- Top Header -->
-    <header>
-      <div class="brand" id="btnHome" title="Cosmos Lines">
-        <div class="brand-icon">
+  <!-- ================= MAIN MENU SCREEN ================= -->
+  <div id="screenMainMenu">
+    <div class="menu-box">
+      <div class="menu-logo-container">
+        <div class="menu-logo-badge">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3" fill="#00f0ff"/>
             <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" stroke="#00f0ff"/>
           </svg>
         </div>
+        <h1 class="menu-title">Cosmos Lines</h1>
+        <p class="menu-tagline">Align the Stars &bull; Fill the Cosmos</p>
+      </div>
+
+      <div class="menu-actions">
+        <button class="menu-btn menu-btn-primary" id="btnMenuPlay">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span id="txtMenuPlayBtn">Play Journey</span>
+        </button>
+
+        <button class="menu-btn menu-btn-secondary" id="btnMenuLevels">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <rect x="3" y="3" width="7" height="7" rx="2"/>
+            <rect x="14" y="3" width="7" height="7" rx="2"/>
+            <rect x="3" y="14" width="7" height="7" rx="2"/>
+            <rect x="14" y="14" width="7" height="7" rx="2"/>
+          </svg>
+          Select Constellation
+        </button>
+
+        <div class="menu-btn-row">
+          <button class="menu-btn menu-btn-secondary" id="btnMenuSettings">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            Settings
+          </button>
+          <button class="menu-btn menu-btn-secondary" id="btnMenuHelp">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            How to Play
+          </button>
+        </div>
+      </div>
+
+      <div class="menu-progress">
+        <span id="txtMenuProgress">0 / 30 Aligned</span>
+        <div class="menu-progress-bar">
+          <div class="menu-progress-fill" id="menuProgressFill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= IN-GAME APP VIEW ================= -->
+  <div id="app">
+    <!-- Header -->
+    <header>
+      <div class="brand" id="btnHeaderHome" title="Main Menu">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
         <div class="brand-text">
           <span class="brand-title">Cosmos Lines</span>
-          <span class="brand-sub">Neon Path Puzzle</span>
+          <span class="brand-sub">Main Menu</span>
         </div>
       </div>
 
@@ -693,7 +1072,7 @@
         <span class="level-name" id="txtLevelName">Polaris</span>
       </div>
 
-      <!-- Controls -->
+      <!-- Header Action Controls -->
       <div class="actions">
         <button class="btn-icon" id="btnLevels" title="Level Selector (L)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
@@ -703,15 +1082,10 @@
             <rect x="14" y="14" width="7" height="7" rx="2"/>
           </svg>
         </button>
-        <button class="btn-icon" id="btnSound" title="Toggle Sound (M)">
-          <svg id="iconSoundOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/>
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
-          </svg>
-          <svg id="iconSoundOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/>
-            <line x1="23" y1="9" x2="17" y2="15"/>
-            <line x1="17" y1="9" x2="23" y2="15"/>
+        <button class="btn-icon" id="btnSettings" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
         </button>
         <button class="btn-icon" id="btnHelp" title="How to Play">
@@ -761,7 +1135,82 @@
     </footer>
   </div>
 
-  <!-- Level Select Modal -->
+  <!-- ================= SETTINGS MODAL ================= -->
+  <div class="modal-overlay" id="modalSettings">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2.4" stroke-linecap="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          Cosmic Settings
+        </div>
+        <button class="modal-close" id="btnCloseSettings">&times;</button>
+      </div>
+
+      <div class="settings-group">
+        <!-- Sound FX -->
+        <div class="settings-row">
+          <div class="settings-label-wrap">
+            <span class="settings-label">Sound Effects (SFX)</span>
+            <span class="settings-sub">Drawing step tones, node lock chimes & win fanfare</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="chkSoundFx" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <!-- Ambient Music Drone -->
+        <div class="settings-row">
+          <div class="settings-label-wrap">
+            <span class="settings-label">Cosmic Ambient Music</span>
+            <span class="settings-sub">Procedural calming celestial drone pad</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="chkAmbientMusic" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <!-- Haptics / Vibration -->
+        <div class="settings-row">
+          <div class="settings-label-wrap">
+            <span class="settings-label">Haptic Feedback</span>
+            <span class="settings-sub">Vibrate gently on path connection (mobile)</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="chkHaptics" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <!-- High Performance Mode -->
+        <div class="settings-row">
+          <div class="settings-label-wrap">
+            <span class="settings-label">Starfield Density</span>
+            <span class="settings-sub">Twinkling stars & nebula glow particles</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="chkStarfield" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Reset Progress -->
+      <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px; display: flex; justify-content: space-between; align-items: center;">
+        <div class="settings-label-wrap">
+          <span class="settings-label" style="color: #ff6b81;">Reset Constellations</span>
+          <span class="settings-sub">Clear all saved level completions</span>
+        </div>
+        <button class="btn btn-danger" id="btnResetProgress">Clear Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= LEVEL SELECT MODAL ================= -->
   <div class="modal-overlay" id="modalLevels">
     <div class="modal-content">
       <div class="modal-header">
@@ -788,7 +1237,7 @@
     </div>
   </div>
 
-  <!-- Win Modal -->
+  <!-- ================= WIN MODAL ================= -->
   <div class="modal-overlay" id="modalWin">
     <div class="modal-content" style="max-width: 440px;">
       <div class="win-modal-body">
@@ -821,7 +1270,7 @@
     </div>
   </div>
 
-  <!-- Help / How to Play Modal -->
+  <!-- ================= HELP MODAL ================= -->
   <div class="modal-overlay" id="modalHelp">
     <div class="modal-content">
       <div class="modal-header">
@@ -866,17 +1315,29 @@
     </div>
   </div>
 
+  <!-- Toast Message -->
+  <div class="toast" id="toast">Data reset successfully</div>
+
   <script>
     // =========================================================================
-    // COSMOS LINES - AUDIO SYNTHESIZER (WEB AUDIO API)
+    // COSMOS LINES - AUDIO SYNTHESIZER & AMBIENT DRONE ENGINE
     // =========================================================================
     class SoundEngine {
       constructor() {
         this.ctx = null;
-        this.muted = localStorage.getItem('cosmos_muted') === 'true';
-        // Pentatonic C major frequencies for musical drawing:
-        // C4, D4, E4, G4, A4, C5, D5, E5, G5, A5, C6
+        this.sfxEnabled = localStorage.getItem('cosmos_sfx') !== 'false';
+        this.musicEnabled = localStorage.getItem('cosmos_music') !== 'false';
+        this.hapticsEnabled = localStorage.getItem('cosmos_haptics') !== 'false';
+
+        // Scale frequencies
         this.scale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50];
+
+        // Ambient Drone Nodes
+        this.droneOsc1 = null;
+        this.droneOsc2 = null;
+        this.droneFilter = null;
+        this.droneGain = null;
+        this.droneIsPlaying = false;
       }
 
       init() {
@@ -889,16 +1350,94 @@
         if (this.ctx && this.ctx.state === 'suspended') {
           this.ctx.resume();
         }
+        if (this.musicEnabled && !this.droneIsPlaying) {
+          this.startAmbientMusic();
+        }
       }
 
-      toggleMute() {
-        this.muted = !this.muted;
-        localStorage.setItem('cosmos_muted', this.muted);
-        return this.muted;
+      startAmbientMusic() {
+        if (!this.ctx || this.droneIsPlaying || !this.musicEnabled) return;
+        try {
+          const now = this.ctx.currentTime;
+          this.droneGain = this.ctx.createGain();
+          this.droneGain.gain.setValueAtTime(0.001, now);
+          this.droneGain.gain.exponentialRampToValueAtTime(0.08, now + 3);
+
+          this.droneFilter = this.ctx.createBiquadFilter();
+          this.droneFilter.type = 'lowpass';
+          this.droneFilter.frequency.setValueAtTime(320, now);
+
+          // Deep root oscillator (C2 = 65.41 Hz)
+          this.droneOsc1 = this.ctx.createOscillator();
+          this.droneOsc1.type = 'triangle';
+          this.droneOsc1.frequency.setValueAtTime(65.41, now);
+
+          // Fifth harmonic (G2 = 98.00 Hz) with gentle slow detune
+          this.droneOsc2 = this.ctx.createOscillator();
+          this.droneOsc2.type = 'sine';
+          this.droneOsc2.frequency.setValueAtTime(98.00, now);
+
+          this.droneOsc1.connect(this.droneFilter);
+          this.droneOsc2.connect(this.droneFilter);
+          this.droneFilter.connect(this.droneGain);
+          this.droneGain.connect(this.ctx.destination);
+
+          this.droneOsc1.start(now);
+          this.droneOsc2.start(now);
+          this.droneIsPlaying = true;
+        } catch (_) {}
+      }
+
+      stopAmbientMusic() {
+        if (!this.ctx || !this.droneIsPlaying) return;
+        try {
+          const now = this.ctx.currentTime;
+          if (this.droneGain) {
+            this.droneGain.gain.setValueAtTime(this.droneGain.gain.value, now);
+            this.droneGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+          }
+          setTimeout(() => {
+            if (this.droneOsc1) { try { this.droneOsc1.stop(); this.droneOsc1.disconnect(); } catch (_) {} }
+            if (this.droneOsc2) { try { this.droneOsc2.stop(); this.droneOsc2.disconnect(); } catch (_) {} }
+            this.droneIsPlaying = false;
+          }, 1300);
+        } catch (_) {
+          this.droneIsPlaying = false;
+        }
+      }
+
+      setSfx(enabled) {
+        this.sfxEnabled = enabled;
+        localStorage.setItem('cosmos_sfx', enabled);
+        if (enabled) this.playStep(2, 4);
+      }
+
+      setMusic(enabled) {
+        this.musicEnabled = enabled;
+        localStorage.setItem('cosmos_music', enabled);
+        if (enabled) {
+          this.init();
+          this.startAmbientMusic();
+        } else {
+          this.stopAmbientMusic();
+        }
+      }
+
+      setHaptics(enabled) {
+        this.hapticsEnabled = enabled;
+        localStorage.setItem('cosmos_haptics', enabled);
+        if (enabled) this.vibrate(25);
+      }
+
+      vibrate(ms = 15) {
+        if (!this.hapticsEnabled) return;
+        if (navigator.vibrate) {
+          try { navigator.vibrate(ms); } catch (_) {}
+        }
       }
 
       playStep(stepIndex, totalSteps) {
-        if (this.muted) return;
+        if (!this.sfxEnabled) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -914,7 +1453,6 @@
         gain.gain.exponentialRampToValueAtTime(0.24, now + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
 
-        // High shimmer harmonic
         const harmonic = this.ctx.createOscillator();
         const hGain = this.ctx.createGain();
         harmonic.type = 'triangle';
@@ -932,10 +1470,12 @@
         harmonic.start(now);
         osc.stop(now + 0.3);
         harmonic.stop(now + 0.22);
+
+        this.vibrate(12);
       }
 
       playRetract() {
-        if (this.muted) return;
+        if (!this.sfxEnabled) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -952,10 +1492,11 @@
         gain.connect(this.ctx.destination);
         osc.start(now);
         osc.stop(now + 0.15);
+        this.vibrate(8);
       }
 
       playNodeLock() {
-        if (this.muted) return;
+        if (!this.sfxEnabled) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -973,10 +1514,11 @@
           osc.start(now + idx * 0.04);
           osc.stop(now + idx * 0.04 + 0.4);
         });
+        this.vibrate(30);
       }
 
       playUndo() {
-        if (this.muted) return;
+        if (!this.sfxEnabled) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -994,7 +1536,7 @@
       }
 
       playReset() {
-        if (this.muted) return;
+        if (!this.sfxEnabled) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -1013,11 +1555,10 @@
       }
 
       playWin() {
-        if (this.muted) return;
+        if (!this.sfxEnabled) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
-        // Majestic cosmic chord progression arpeggio: C4, G4, C5, E5, G5, B5, C6
         const chord = [261.63, 392.00, 523.25, 659.25, 783.99, 987.77, 1046.50];
         chord.forEach((freq, idx) => {
           const t = now + idx * 0.07;
@@ -1047,6 +1588,7 @@
           osc.stop(t + 0.9);
           shimmer.stop(t + 0.65);
         });
+        this.vibrate([40, 60, 80]);
       }
     }
 
@@ -1059,6 +1601,7 @@
     const bgCtx = bgCanvas.getContext('2d');
     let stars = [];
     let shootingStar = null;
+    let starfieldHighDensity = localStorage.getItem('cosmos_starfield') !== 'false';
 
     function resizeBg() {
       bgCanvas.width = window.innerWidth;
@@ -1067,7 +1610,8 @@
     }
 
     function initStars() {
-      const count = Math.floor((bgCanvas.width * bgCanvas.height) / 7500);
+      const divisor = starfieldHighDensity ? 7500 : 18000;
+      const count = Math.floor((bgCanvas.width * bgCanvas.height) / divisor);
       stars = [];
       for (let i = 0; i < count; i++) {
         stars.push({
@@ -2499,7 +3043,7 @@
         // Interaction state
         this.activeNodeIdx = null;
         this.isDragging = false;
-        this.dragPointer = null; // {x, y} in canvas coordinates for smooth follow
+        this.dragPointer = null;
 
         // Grid layout metrics
         this.cellSize = 64;
@@ -2542,6 +3086,16 @@
         try {
           localStorage.setItem('cosmos_lines_save', JSON.stringify(this.savedData));
         } catch (_) {}
+        updateMainMenuUI();
+      }
+
+      resetAllProgress() {
+        this.savedData = { completed: [], highestLevel: 0 };
+        try {
+          localStorage.setItem('cosmos_lines_save', JSON.stringify(this.savedData));
+        } catch (_) {}
+        this.loadLevel(0);
+        updateMainMenuUI();
       }
 
       loadLevel(idx) {
@@ -2575,6 +3129,7 @@
 
         this.updateHeader();
         this.resize();
+        updateMainMenuUI();
       }
 
       updateHeader() {
@@ -2586,7 +3141,6 @@
       }
 
       resize() {
-        const container = document.getElementById('gameContainer');
         const main = document.querySelector('main');
         const availW = Math.max(280, Math.min(window.innerWidth - 32, 600));
         const availH = Math.max(280, Math.min(main.clientHeight - 24, 600));
@@ -2594,7 +3148,6 @@
         const cols = this.level.cols;
         const rows = this.level.rows;
 
-        // Calculate max cell size that fits
         const maxCellW = Math.floor(availW / (cols + 0.5));
         const maxCellH = Math.floor(availH / (rows + 0.5));
         this.cellSize = Math.max(38, Math.min(maxCellW, maxCellH, 84));
@@ -2618,7 +3171,6 @@
         this.gridY = pad;
       }
 
-      // Check if a cell is occupied by any node or path
       getCellOccupant(col, row) {
         for (let i = 0; i < this.nodes.length; i++) {
           const n = this.nodes[i];
@@ -2631,7 +3183,6 @@
         return null;
       }
 
-      // Push current state to undo stack
       saveSnapshot() {
         const snapshot = this.nodes.map(n => n.path.map(pt => [pt[0], pt[1]]));
         this.history.push(snapshot);
@@ -2658,9 +3209,6 @@
         sound.playReset();
       }
 
-      // =======================================================================
-      // INTERACTION & DRAG-TO-DRAW
-      // =======================================================================
       initEvents() {
         window.addEventListener('resize', () => this.resize());
         window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 100));
@@ -2698,7 +3246,6 @@
             this.isDragging = true;
             this.dragPointer = pos;
 
-            // If clicked on an intermediate cell of the path, retract back to that cell!
             if (occ.pathIndex < n.path.length - 1) {
               this.saveSnapshot();
               n.path = n.path.slice(0, occ.pathIndex + 1);
@@ -2718,7 +3265,6 @@
           const n = this.nodes[this.activeNodeIdx];
           const head = n.path[n.path.length - 1];
 
-          // Check if hovering over the previous cell -> RETRACT
           if (n.path.length > 1) {
             const prev = n.path[n.path.length - 2];
             if (prev[0] === cell.c && prev[1] === cell.r) {
@@ -2730,10 +3276,8 @@
             }
           }
 
-          // Check if moving to an adjacent orthogonal cell -> EXTEND
           const dist = Math.abs(cell.c - head[0]) + Math.abs(cell.r - head[1]);
           if (dist === 1) {
-            // Check if cell is blocked or occupied
             if (this.blocked.has(`${cell.c},${cell.r}`)) return;
 
             const occ = this.getCellOccupant(cell.c, cell.r);
@@ -2742,10 +3286,8 @@
               n.path.push([cell.c, cell.r]);
               this.moves++;
 
-              // Spawn sparkle particle
               this.emitSparkles(cell.c, cell.r, n.color.hex);
 
-              // Sound
               if (n.path.length === n.len) {
                 sound.playNodeLock();
               } else {
@@ -2773,8 +3315,6 @@
             this.undo();
           } else if (e.code === 'KeyR') {
             this.reset();
-          } else if (e.code === 'KeyM') {
-            toggleSound();
           } else if (e.code === 'KeyF') {
             toggleFullscreen();
           } else if (e.code === 'KeyL') {
@@ -2804,15 +3344,12 @@
         }
       }
 
-      // Check if all lines are satisfied and full grid is covered
       checkWinCondition() {
         if (this.isWon) return;
 
-        // Check if every node reached target length
         const allNodesFull = this.nodes.every(n => n.path.length === n.len);
         if (!allNodesFull) return;
 
-        // Check total cells covered
         let totalPathCells = 0;
         this.nodes.forEach(n => totalPathCells += n.path.length);
         const playableCells = this.level.cols * this.level.rows - (this.level.blocked || []).length;
@@ -2828,7 +3365,6 @@
         sound.playWin();
         this.saveProgress(this.currentLevelIndex);
 
-        // Massive constellation starburst
         for (const n of this.nodes) {
           this.emitSparkles(n.x, n.y, n.color.hex);
         }
@@ -2838,9 +3374,6 @@
         }, 650);
       }
 
-      // =======================================================================
-      // RENDERING ENGINE
-      // =======================================================================
       animate() {
         this.render();
         requestAnimationFrame(() => this.animate());
@@ -2850,7 +3383,6 @@
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Outer ambient glow box for the constellation board
         const bx = this.gridX - 8;
         const by = this.gridY - 8;
         const bw = this.gridWidth + 16;
@@ -2865,14 +3397,14 @@
         ctx.stroke();
         ctx.restore();
 
-        // 1. Draw Grid Slots
+        // 1. Grid Slots
         const cols = this.level.cols;
         const rows = this.level.rows;
         const cs = this.cellSize;
 
         for (let r = 0; r < rows; r++) {
           for (let c = 0; c < cols; c++) {
-            if (this.blocked.has(`${c},${r}`)) continue; // Void
+            if (this.blocked.has(`${c},${r}`)) continue;
 
             const x = this.gridX + c * cs;
             const y = this.gridY + r * cs;
@@ -2889,7 +3421,7 @@
           }
         }
 
-        // 2. Draw Connected Paths (underneath nodes)
+        // 2. Paths
         this.nodes.forEach(node => {
           if (node.path.length < 2) return;
           const col = node.color;
@@ -2898,8 +3430,6 @@
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
 
-          // Multi-layer neon bloom stroke
-          // Outer Glow
           ctx.strokeStyle = col.glow;
           ctx.lineWidth = cs * 0.46;
           ctx.shadowColor = col.hex;
@@ -2907,14 +3437,12 @@
           this.tracePath(ctx, node.path);
           ctx.stroke();
 
-          // Main Vibrant Body
           ctx.shadowBlur = 0;
           ctx.strokeStyle = col.hex;
           ctx.lineWidth = cs * 0.32;
           this.tracePath(ctx, node.path);
           ctx.stroke();
 
-          // Inner Bright Core
           ctx.strokeStyle = col.light;
           ctx.lineWidth = cs * 0.14;
           this.tracePath(ctx, node.path);
@@ -2923,8 +3451,8 @@
           ctx.restore();
         });
 
-        // 3. Draw Path Head Indicator / Drag Pointer
-        this.nodes.forEach((node, idx) => {
+        // 3. Path Head Indicator
+        this.nodes.forEach((node) => {
           if (node.path.length > 0) {
             const head = node.path[node.path.length - 1];
             const hx = this.gridX + (head[0] + 0.5) * cs;
@@ -2941,7 +3469,7 @@
           }
         });
 
-        // 4. Draw Numbered Star Nodes
+        // 4. Numbered Star Nodes
         this.nodes.forEach(node => {
           const nx = this.gridX + (node.x + 0.5) * cs;
           const ny = this.gridY + (node.y + 0.5) * cs;
@@ -2949,18 +3477,15 @@
           const isComplete = node.path.length === node.len;
 
           ctx.save();
-          // Halo glow
           ctx.shadowColor = node.color.hex;
           ctx.shadowBlur = isComplete ? 24 : 14;
 
-          // Outer halo ring
           ctx.strokeStyle = isComplete ? '#ffffff' : node.color.hex;
           ctx.lineWidth = isComplete ? 3.5 : 2.5;
           ctx.beginPath();
           ctx.arc(nx, ny, r, 0, Math.PI * 2);
           ctx.stroke();
 
-          // Node background fill
           const grad = ctx.createRadialGradient(nx, ny, 2, nx, ny, r);
           if (isComplete) {
             grad.addColorStop(0, '#ffffff');
@@ -2976,7 +3501,6 @@
           ctx.arc(nx, ny, r - 1.5, 0, Math.PI * 2);
           ctx.fill();
 
-          // Number text
           ctx.shadowBlur = 0;
           ctx.fillStyle = isComplete ? '#060814' : '#ffffff';
           ctx.font = `800 ${Math.floor(cs * 0.36)}px ${getComputedStyle(document.body).fontFamily}`;
@@ -2984,7 +3508,6 @@
           ctx.textBaseline = 'middle';
           ctx.fillText(node.len, nx, ny + 1);
 
-          // Star dots on outer ring
           if (isComplete) {
             ctx.fillStyle = '#ffffff';
             for (let i = 0; i < 4; i++) {
@@ -3061,6 +3584,13 @@
       document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
     }
 
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
     function showWinModal(moves, timeMs) {
       const sec = Math.floor(timeMs / 1000);
       const m = Math.floor(sec / 60);
@@ -3072,12 +3602,6 @@
       openModal('modalWin');
     }
 
-    function toggleSound() {
-      const isMuted = sound.toggleMute();
-      document.getElementById('iconSoundOn').style.display = isMuted ? 'none' : 'block';
-      document.getElementById('iconSoundOff').style.display = isMuted ? 'block' : 'none';
-    }
-
     function toggleFullscreen() {
       sound.init();
       if (!document.fullscreenElement) {
@@ -3085,6 +3609,32 @@
       } else {
         document.exitFullscreen().catch(() => {});
       }
+    }
+
+    // Main Menu State Management
+    function openMainMenu() {
+      updateMainMenuUI();
+      document.getElementById('screenMainMenu').classList.remove('hidden');
+    }
+
+    function closeMainMenu() {
+      document.getElementById('screenMainMenu').classList.add('hidden');
+      sound.init();
+    }
+
+    function updateMainMenuUI() {
+      if (!game) return;
+      const saved = game.loadSave();
+      const completedCount = (saved.completed || []).length;
+      const totalLevels = LEVELS.length;
+      const pct = Math.round((completedCount / totalLevels) * 100);
+
+      document.getElementById('txtMenuProgress').textContent = `${completedCount} / ${totalLevels} Aligned`;
+      document.getElementById('menuProgressFill').style.width = `${pct}%`;
+
+      const curLvl = LEVELS[game.currentLevelIndex] || LEVELS[0];
+      const playBtnText = completedCount > 0 ? `Continue (${curLvl.name})` : 'Play Journey';
+      document.getElementById('txtMenuPlayBtn').textContent = playBtnText;
     }
 
     function renderLevelSelector(sectorFilter = 'ALL') {
@@ -3114,6 +3664,7 @@
             sound.playStep(2, 4);
             game.loadLevel(idx);
             closeModal('modalLevels');
+            closeMainMenu();
           };
         }
 
@@ -3125,14 +3676,48 @@
     window.addEventListener('DOMContentLoaded', () => {
       game = new CosmosGame();
 
-      // Sound initial UI sync
-      if (sound.muted) {
-        document.getElementById('iconSoundOn').style.display = 'none';
-        document.getElementById('iconSoundOff').style.display = 'block';
-      }
+      // Sync settings checkboxes
+      const chkSoundFx = document.getElementById('chkSoundFx');
+      const chkAmbientMusic = document.getElementById('chkAmbientMusic');
+      const chkHaptics = document.getElementById('chkHaptics');
+      const chkStarfield = document.getElementById('chkStarfield');
+
+      chkSoundFx.checked = sound.sfxEnabled;
+      chkAmbientMusic.checked = sound.musicEnabled;
+      chkHaptics.checked = sound.hapticsEnabled;
+      chkStarfield.checked = starfieldHighDensity;
+
+      chkSoundFx.onchange = (e) => sound.setSfx(e.target.checked);
+      chkAmbientMusic.onchange = (e) => sound.setMusic(e.target.checked);
+      chkHaptics.onchange = (e) => sound.setHaptics(e.target.checked);
+      chkStarfield.onchange = (e) => {
+        starfieldHighDensity = e.target.checked;
+        localStorage.setItem('cosmos_starfield', starfieldHighDensity);
+        initStars();
+      };
+
+      // Main Menu buttons
+      document.getElementById('btnMenuPlay').onclick = () => closeMainMenu();
+      document.getElementById('btnMenuLevels').onclick = () => {
+        sound.init();
+        renderLevelSelector('ALL');
+        openModal('modalLevels');
+      };
+      document.getElementById('btnMenuSettings').onclick = () => {
+        sound.init();
+        openModal('modalSettings');
+      };
+      document.getElementById('btnMenuHelp').onclick = () => {
+        sound.init();
+        openModal('modalHelp');
+      };
 
       // Header buttons
-      document.getElementById('btnSound').onclick = toggleSound;
+      document.getElementById('btnHeaderHome').onclick = openMainMenu;
+      document.getElementById('btnSettings').onclick = () => {
+        sound.init();
+        openModal('modalSettings');
+      };
       document.getElementById('btnFullscreen').onclick = toggleFullscreen;
       document.getElementById('btnHelp').onclick = () => { sound.init(); openModal('modalHelp'); };
       document.getElementById('btnLevels').onclick = () => {
@@ -3140,20 +3725,25 @@
         renderLevelSelector('ALL');
         openModal('modalLevels');
       };
-      document.getElementById('btnHome').onclick = () => {
-        sound.init();
-        renderLevelSelector('ALL');
-        openModal('modalLevels');
-      };
 
       // Modal close buttons
       document.getElementById('btnCloseLevels').onclick = () => closeModal('modalLevels');
+      document.getElementById('btnCloseSettings').onclick = () => closeModal('modalSettings');
       document.getElementById('btnCloseHelp').onclick = () => closeModal('modalHelp');
       document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', (e) => {
           if (e.target === modal) closeModal(modal.id);
         });
       });
+
+      // Reset progress button in Settings
+      document.getElementById('btnResetProgress').onclick = () => {
+        if (confirm("Reset all 30 constellations and saved stars back to Level 1?")) {
+          game.resetAllProgress();
+          showToast("All progress reset to Level 1");
+          closeModal('modalSettings');
+        }
+      };
 
       // Sector tabs filter
       document.querySelectorAll('.sector-tab').forEach(tab => {
@@ -3179,6 +3769,8 @@
         const nextIdx = (game.currentLevelIndex + 1) % LEVELS.length;
         game.loadLevel(nextIdx);
       };
+
+      updateMainMenuUI();
     });
   </script>
 </body>
