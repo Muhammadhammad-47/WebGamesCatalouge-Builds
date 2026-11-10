@@ -879,6 +879,50 @@
       gap: 10px;
       margin-bottom: 14px;
     }
+
+    /* Eye Expression Buttons — inline in the scroll area */
+    .eye-expr-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .eye-expr-btn {
+      flex: 1 1 auto;
+      min-width: 110px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      border: 2px solid #e9d5ff;
+      background: #ffffff;
+      color: #6b21a8;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: all 0.2s cubic-bezier(0.2, 1.4, 0.4, 1);
+      box-shadow: 0 3px 0 #e9d5ff;
+      white-space: nowrap;
+    }
+    .eye-expr-btn:hover {
+      border-color: #c084fc;
+      background: #faf5ff;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 0 #d8b4fe;
+    }
+    .eye-expr-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #e9d5ff;
+    }
+    .eye-expr-btn.active {
+      background: linear-gradient(135deg, #b794f6 0%, #8b5cf6 100%);
+      border-color: transparent;
+      color: #ffffff;
+      box-shadow: 0 4px 0 #6d28d9, 0 6px 14px rgba(139, 92, 246, 0.3);
+    }
     .swatch-btn {
       width: 46px;
       height: 46px;
@@ -2888,12 +2932,11 @@ class DressUpGame {
     container.appendChild(titleEyes);
 
     const eyesRow = document.createElement('div');
-    eyesRow.style.cssText = 'display:flex; gap:10px; margin-bottom:12px;';
+    eyesRow.className = 'eye-expr-row';
     PALETTES.eyes.forEach(exp => {
       const btn = document.createElement('button');
-      btn.className = 'btn-action ' + (this.state.eyes === exp.id ? 'btn-random' : 'btn-reset');
-      btn.style.flex = '1';
-      btn.innerHTML = '<span>' + exp.icon + '</span> <span>' + exp.name + '</span>';
+      btn.className = 'eye-expr-btn' + (this.state.eyes === exp.id ? ' active' : '');
+      btn.innerHTML = '<span>' + exp.icon + '</span><span>' + exp.name + '</span>';
       btn.onclick = () => {
         this.state.eyes = exp.id;
         this.applyEyes();
