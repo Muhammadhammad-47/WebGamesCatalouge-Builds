@@ -2846,10 +2846,14 @@ class DressUpGame {
     grid.innerHTML = '';
 
     if (cat === 'colors') {
+      // Switch grid to block so the color drawer controls its own layout
+      grid.style.display = 'block';
       this.renderColorDrawer(grid);
       return;
     }
 
+    // Restore normal grid for all other categories
+    grid.style.display = '';
     const items = ITEMS[cat] || [];
     items.forEach(item => {
       const card = document.createElement('div');
@@ -2881,12 +2885,16 @@ class DressUpGame {
   }
 
   renderColorDrawer(container) {
-    // Duck Body Swatches
+    // Two-column layout: Body Color | Beak & Feet Color
+    const colsWrap = document.createElement('div');
+    colsWrap.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:4px;';
+
+    // ---- Body column ----
+    const colBody = document.createElement('div');
     const titleBody = document.createElement('div');
     titleBody.className = 'color-section-title';
-    titleBody.textContent = 'Duck Feather Color:';
-    container.appendChild(titleBody);
-
+    titleBody.textContent = 'Body Color:';
+    colBody.appendChild(titleBody);
     const swatchesBody = document.createElement('div');
     swatchesBody.className = 'color-swatches';
     PALETTES.body.forEach(pal => {
@@ -2903,14 +2911,15 @@ class DressUpGame {
       };
       swatchesBody.appendChild(btn);
     });
-    container.appendChild(swatchesBody);
+    colBody.appendChild(swatchesBody);
+    colsWrap.appendChild(colBody);
 
-    // Beak & Feet Swatches
+    // ---- Beak column ----
+    const colBeak = document.createElement('div');
     const titleBeak = document.createElement('div');
     titleBeak.className = 'color-section-title';
-    titleBeak.textContent = 'Beak & Feet Color:';
-    container.appendChild(titleBeak);
-
+    titleBeak.textContent = 'Beak & Feet:';
+    colBeak.appendChild(titleBeak);
     const swatchesBeak = document.createElement('div');
     swatchesBeak.className = 'color-swatches';
     PALETTES.beak.forEach(pal => {
@@ -2927,9 +2936,12 @@ class DressUpGame {
       };
       swatchesBeak.appendChild(btn);
     });
-    container.appendChild(swatchesBeak);
+    colBeak.appendChild(swatchesBeak);
+    colsWrap.appendChild(colBeak);
 
-    // Eye Expression Switcher
+    container.appendChild(colsWrap);
+
+    // ---- Eye Expression row (horizontal scroll) ----
     const titleEyes = document.createElement('div');
     titleEyes.className = 'color-section-title';
     titleEyes.textContent = 'Eye Expression:';
