@@ -317,12 +317,14 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      white-space: nowrap;
     }
 
     .header-actions {
       display: flex;
       align-items: center;
       gap: 6px;
+      flex-wrap: nowrap;
     }
 
     .btn-action {
@@ -336,12 +338,26 @@
       cursor: pointer;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 5px;
       transition: all 0.16s ease;
       box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12);
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     .btn-action:hover { transform: translateY(-1px); }
     .btn-action:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12); }
+    .btn-action .btn-emoji {
+      font-size: 14px;
+      line-height: 1;
+      display: inline-block;
+    }
+    .btn-action .btn-text {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+      display: inline-block;
+    }
 
     .btn-photo {
       background: linear-gradient(180deg, #ff7eb3 0%, #f43f5e 100%);
@@ -812,16 +828,14 @@
       header {
         padding: 6px 10px;
       }
-      .brand-title span {
-        display: none;
-      }
-      .btn-action span {
+      .brand-name {
         display: none;
       }
       .btn-action {
-        width: 38px;
-        padding: 0;
-        justify-content: center;
+        height: 36px;
+        padding: 0 9px;
+        font-size: 12.5px;
+        gap: 4px;
       }
       .items-grid {
         grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -830,6 +844,26 @@
       .item-preview {
         width: 48px;
         height: 48px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .brand-title {
+        display: none;
+      }
+      .btn-text-extra {
+        display: none;
+      }
+      .btn-action {
+        padding: 0 7px;
+        font-size: 12px;
+      }
+      .header-actions {
+        gap: 4px;
+      }
+      .btn-icon {
+        width: 36px;
+        height: 36px;
       }
     }
   </style>
@@ -934,19 +968,23 @@
         </button>
 
         <div class="brand-title">
-          <span>🐥 Dress Up Duck</span>
+          <span class="brand-logo">🐥</span>
+          <span class="brand-name">Dress Up Duck</span>
         </div>
       </div>
 
       <div class="header-actions">
-        <button class="btn-action btn-random" id="btnRandomize" title="Surprise Me! (Space)">
-          <span>🎲</span> <span>Surprise Me</span>
+        <button class="btn-action btn-random" id="btnRandomize" title="Randomize Outfit (Space)">
+          <span class="btn-emoji">🎲</span>
+          <span class="btn-text">Random</span>
         </button>
         <button class="btn-action btn-reset" id="btnReset" title="Reset Outfit (Z)">
-          <span>🔄</span> <span>Reset</span>
+          <span class="btn-emoji">🔄</span>
+          <span class="btn-text">Reset</span>
         </button>
         <button class="btn-action btn-photo" id="btnPhoto" title="Save Photo (S)">
-          <span>📸</span> <span>Save Photo</span>
+          <span class="btn-emoji">📸</span>
+          <span class="btn-text">Save<span class="btn-text-extra"> Photo</span></span>
         </button>
         <button class="btn-icon" id="btnSound" title="Toggle Sound" aria-label="Sound">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
