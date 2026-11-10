@@ -1,0 +1,3185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Cosmos Lines - Dark Neon Puzzle</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%23080b18'/><circle cx='16' cy='16' r='8' fill='%2300f0ff'/><path d='M8 16h16M16 8v16' stroke='%23ffffff' stroke-width='2'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #060814;
+      --bg-panel: rgba(14, 20, 42, 0.78);
+      --bg-card: rgba(22, 30, 62, 0.7);
+      --border-panel: rgba(0, 240, 255, 0.22);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --cyan: #00f0ff;
+      --cyan-glow: rgba(0, 240, 255, 0.55);
+      --magenta: #ff00a0;
+      --magenta-glow: rgba(255, 0, 160, 0.55);
+      --gold: #ffc800;
+      --gold-glow: rgba(255, 200, 0, 0.55);
+      --lime: #00ff88;
+      --violet: #aa44ff;
+      --coral: #ff4757;
+      --text: #f0f4ff;
+      --text-dim: #7d8bb3;
+      --font: 'Outfit', system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      font-family: var(--font);
+      color: var(--text);
+      touch-action: none;
+    }
+
+    /* Ambient animated starry background */
+    #bgCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    }
+
+    /* ================= HEADER ================= */
+    header {
+      width: 100%;
+      max-width: 840px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 16px;
+      background: var(--bg-panel);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border-panel);
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 240, 255, 0.08);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(255, 0, 160, 0.25));
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      box-shadow: 0 0 12px var(--cyan-glow);
+    }
+
+    .brand-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #fff 0%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    /* Level info badge */
+    .level-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .level-num {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .level-badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(0, 240, 255, 0.15);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      color: var(--cyan);
+    }
+
+    .level-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    /* Actions toolbar */
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-icon:hover {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: rgba(0, 240, 255, 0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 0 14px rgba(0, 240, 255, 0.25);
+    }
+
+    .btn-icon:active {
+      transform: scale(0.92);
+    }
+
+    .btn-icon svg {
+      width: 19px;
+      height: 19px;
+    }
+
+    /* ================= MAIN PLAY AREA ================= */
+    main {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      margin: 8px 0;
+    }
+
+    #gameContainer {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #gameCanvas {
+      display: block;
+      touch-action: none;
+      cursor: pointer;
+      filter: drop-shadow(0 0 35px rgba(0, 240, 255, 0.12));
+    }
+
+    /* ================= FOOTER / CONTROLS ================= */
+    footer {
+      width: 100%;
+      max-width: 840px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 16px;
+      background: var(--bg-panel);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border-panel);
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .hint-text {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hint-text .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: scale(0.85); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    .footer-btns {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      font-family: inherit;
+    }
+
+    .btn-glass {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.12);
+      color: var(--text);
+    }
+
+    .btn-glass:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.24);
+      transform: translateY(-1px);
+    }
+
+    .btn-glass:active {
+      transform: scale(0.95);
+    }
+
+    .btn-neon {
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.22), rgba(0, 160, 255, 0.3));
+      border-color: var(--cyan);
+      color: #fff;
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.3);
+    }
+
+    .btn-neon:hover {
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.35), rgba(0, 160, 255, 0.45));
+      box-shadow: 0 0 24px rgba(0, 240, 255, 0.55);
+      transform: translateY(-1px);
+    }
+
+    .btn-neon:active {
+      transform: scale(0.95);
+    }
+
+    .btn svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    /* ================= MODALS ================= */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 6, 16, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.28s ease;
+      padding: 16px;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      width: 100%;
+      max-width: 520px;
+      max-height: 85vh;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-panel);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 240, 255, 0.12);
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.92) translateY(12px);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .modal-title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-dim);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+    }
+
+    /* Level Selector Grid */
+    .sector-tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+      scrollbar-width: none;
+    }
+
+    .sector-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .sector-tab {
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-dim);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .sector-tab.active {
+      background: rgba(0, 240, 255, 0.2);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+    }
+
+    .level-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+      gap: 10px;
+      overflow-y: auto;
+      padding: 4px;
+      max-height: 50vh;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 240, 255, 0.3) transparent;
+    }
+
+    .level-card {
+      aspect-ratio: 1;
+      border-radius: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .level-card:hover:not(.locked) {
+      transform: translateY(-2px);
+      border-color: var(--cyan);
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.3);
+    }
+
+    .level-card.current {
+      border-color: var(--cyan);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.45);
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.18), rgba(18, 25, 54, 0.8));
+    }
+
+    .level-card.completed {
+      border-color: rgba(0, 255, 136, 0.35);
+    }
+
+    .level-card.locked {
+      opacity: 0.4;
+      cursor: not-allowed;
+      filter: grayscale(0.8);
+    }
+
+    .level-card-num {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .level-card-name {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-align: center;
+      max-width: 90%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .level-card-status {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      font-size: 10px;
+    }
+
+    /* Win Modal */
+    .win-modal-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+      padding: 10px 0 6px;
+    }
+
+    .win-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.35), transparent 70%);
+      border: 2px solid var(--cyan);
+      box-shadow: 0 0 35px var(--cyan-glow), inset 0 0 20px var(--cyan-glow);
+      display: grid;
+      place-items: center;
+      animation: float 2.5s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .win-title {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #fff, var(--cyan), var(--magenta));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .win-desc {
+      font-size: 14px;
+      color: var(--text-dim);
+      max-width: 320px;
+      line-height: 1.5;
+    }
+
+    .win-stats {
+      display: flex;
+      gap: 20px;
+      padding: 12px 24px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .win-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .win-stat-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--cyan);
+    }
+
+    .win-stat-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .win-actions {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .win-actions .btn {
+      flex: 1;
+      justify-content: center;
+      padding: 12px 20px;
+      font-size: 15px;
+    }
+
+    /* Help Modal */
+    .help-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .help-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(0, 240, 255, 0.15);
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .help-text h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+
+    .help-text p {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.45;
+    }
+
+    /* Responsive scaling for mobile devices */
+    @media (max-width: 600px) {
+      header {
+        padding: 6px 12px;
+        border-radius: 14px;
+      }
+      .brand-title {
+        font-size: 15px;
+      }
+      .brand-sub {
+        font-size: 9px;
+      }
+      .btn-icon {
+        width: 34px;
+        height: 34px;
+      }
+      footer {
+        padding: 6px 12px;
+        border-radius: 14px;
+      }
+      .hint-text {
+        font-size: 11px;
+      }
+      .btn {
+        padding: 8px 14px;
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Twinkling Starfield & Cosmic Dust Canvas -->
+  <canvas id="bgCanvas"></canvas>
+
+  <div id="app">
+    <!-- Top Header -->
+    <header>
+      <div class="brand" id="btnHome" title="Cosmos Lines">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3" fill="#00f0ff"/>
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" stroke="#00f0ff"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">Cosmos Lines</span>
+          <span class="brand-sub">Neon Path Puzzle</span>
+        </div>
+      </div>
+
+      <!-- Current Level Info -->
+      <div class="level-info" id="levelInfo">
+        <div class="level-num">
+          <span id="txtLevelNum">Level 1</span>
+          <span class="level-badge" id="txtSector">Nebula</span>
+        </div>
+        <span class="level-name" id="txtLevelName">Polaris</span>
+      </div>
+
+      <!-- Controls -->
+      <div class="actions">
+        <button class="btn-icon" id="btnLevels" title="Level Selector (L)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <rect x="3" y="3" width="7" height="7" rx="2"/>
+            <rect x="14" y="3" width="7" height="7" rx="2"/>
+            <rect x="3" y="14" width="7" height="7" rx="2"/>
+            <rect x="14" y="14" width="7" height="7" rx="2"/>
+          </svg>
+        </button>
+        <button class="btn-icon" id="btnSound" title="Toggle Sound (M)">
+          <svg id="iconSoundOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          </svg>
+          <svg id="iconSoundOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/>
+            <line x1="23" y1="9" x2="17" y2="15"/>
+            <line x1="17" y1="9" x2="23" y2="15"/>
+          </svg>
+        </button>
+        <button class="btn-icon" id="btnHelp" title="How to Play">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </button>
+        <button class="btn-icon" id="btnFullscreen" title="Fullscreen (F)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Game Canvas Area -->
+    <main>
+      <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+      </div>
+    </main>
+
+    <!-- Footer Toolbar -->
+    <footer>
+      <div class="hint-text">
+        <span class="dot"></span>
+        <span id="hintMessage">Drag from numbered nodes to draw paths &bull; Fill the cosmos</span>
+      </div>
+      <div class="footer-btns">
+        <button class="btn btn-glass" id="btnUndo" title="Undo Step (Z)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7v6h6"/>
+            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+          </svg>
+          Undo
+        </button>
+        <button class="btn btn-glass" id="btnReset" title="Reset Level (R)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          Reset
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Level Select Modal -->
+  <div class="modal-overlay" id="modalLevels">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2.4" stroke-linecap="round">
+            <rect x="3" y="3" width="7" height="7" rx="2"/>
+            <rect x="14" y="3" width="7" height="7" rx="2"/>
+            <rect x="3" y="14" width="7" height="7" rx="2"/>
+            <rect x="14" y="14" width="7" height="7" rx="2"/>
+          </svg>
+          Select Constellation
+        </div>
+        <button class="modal-close" id="btnCloseLevels">&times;</button>
+      </div>
+      <div class="sector-tabs" id="sectorTabs">
+        <button class="sector-tab active" data-sector="ALL">All</button>
+        <button class="sector-tab" data-sector="Nebula">Nebula</button>
+        <button class="sector-tab" data-sector="Aurora">Aurora</button>
+        <button class="sector-tab" data-sector="Pulsar">Pulsar</button>
+        <button class="sector-tab" data-sector="Quasar">Quasar</button>
+        <button class="sector-tab" data-sector="Supernova">Supernova</button>
+      </div>
+      <div class="level-grid" id="levelGrid"></div>
+    </div>
+  </div>
+
+  <!-- Win Modal -->
+  <div class="modal-overlay" id="modalWin">
+    <div class="modal-content" style="max-width: 440px;">
+      <div class="win-modal-body">
+        <div class="win-icon">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="var(--cyan)"/>
+          </svg>
+        </div>
+        <h2 class="win-title">Constellation Aligned!</h2>
+        <p class="win-desc" id="winDesc">You perfectly linked all cosmic lines and filled the star grid.</p>
+        <div class="win-stats">
+          <div class="win-stat">
+            <span class="win-stat-val" id="winMoves">0</span>
+            <span class="win-stat-lbl">Moves</span>
+          </div>
+          <div class="win-stat">
+            <span class="win-stat-val" id="winTime">0:00</span>
+            <span class="win-stat-lbl">Time</span>
+          </div>
+          <div class="win-stat">
+            <span class="win-stat-val" id="winCovered">100%</span>
+            <span class="win-stat-lbl">Cosmos</span>
+          </div>
+        </div>
+        <div class="win-actions">
+          <button class="btn btn-glass" id="btnWinReplay">Replay</button>
+          <button class="btn btn-neon" id="btnWinNext">Next Star &rarr;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help / How to Play Modal -->
+  <div class="modal-overlay" id="modalHelp">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2.4" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          How to Play
+        </div>
+        <button class="modal-close" id="btnCloseHelp">&times;</button>
+      </div>
+      <div class="help-item">
+        <div class="help-num">1</div>
+        <div class="help-text">
+          <h4>Numbered Star Nodes</h4>
+          <p>Each starting node displays a number. This number is the <b>exact total length</b> in grid cells that its line must cover (including the starting node).</p>
+        </div>
+      </div>
+      <div class="help-item">
+        <div class="help-num">2</div>
+        <div class="help-text">
+          <h4>Drag to Draw Paths</h4>
+          <p>Click/touch a numbered node and drag horizontally or vertically across adjacent cells to extend its glowing path.</p>
+        </div>
+      </div>
+      <div class="help-item">
+        <div class="help-num">3</div>
+        <div class="help-text">
+          <h4>Retract or Undo</h4>
+          <p>Drag backwards to retract a path, click an intermediate point on a path to trim it, or tap <b>Undo</b> to step back.</p>
+        </div>
+      </div>
+      <div class="help-item">
+        <div class="help-num">4</div>
+        <div class="help-text">
+          <h4>Complete Coverage</h4>
+          <p>Paths cannot overlap or intersect. To complete a constellation, every line must reach its exact length and <b>100% of all playable tiles</b> must be covered!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // COSMOS LINES - AUDIO SYNTHESIZER (WEB AUDIO API)
+    // =========================================================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = localStorage.getItem('cosmos_muted') === 'true';
+        // Pentatonic C major frequencies for musical drawing:
+        // C4, D4, E4, G4, A4, C5, D5, E5, G5, A5, C6
+        this.scale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50];
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      toggleMute() {
+        this.muted = !this.muted;
+        localStorage.setItem('cosmos_muted', this.muted);
+        return this.muted;
+      }
+
+      playStep(stepIndex, totalSteps) {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const noteIdx = Math.min(stepIndex, this.scale.length - 1);
+        const freq = this.scale[noteIdx];
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(0.24, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+
+        // High shimmer harmonic
+        const harmonic = this.ctx.createOscillator();
+        const hGain = this.ctx.createGain();
+        harmonic.type = 'triangle';
+        harmonic.frequency.setValueAtTime(freq * 2, now);
+        hGain.gain.setValueAtTime(0.001, now);
+        hGain.gain.exponentialRampToValueAtTime(0.08, now + 0.015);
+        hGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        harmonic.connect(hGain);
+        hGain.connect(this.ctx.destination);
+
+        osc.start(now);
+        harmonic.start(now);
+        osc.stop(now + 0.3);
+        harmonic.stop(now + 0.22);
+      }
+
+      playRetract() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(360, now);
+        osc.frequency.exponentialRampToValueAtTime(180, now + 0.12);
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+
+      playNodeLock() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.04);
+          gain.gain.setValueAtTime(0.001, now + idx * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.18, now + idx * 0.04 + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.04 + 0.38);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.04);
+          osc.stop(now + idx * 0.04 + 0.4);
+        });
+      }
+
+      playUndo() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(480, now);
+        osc.frequency.exponentialRampToValueAtTime(240, now + 0.15);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      }
+
+      playReset() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        [392.00, 329.63, 261.63].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now + i * 0.05);
+          gain.gain.setValueAtTime(0.12, now + i * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.05);
+          osc.stop(now + i * 0.05 + 0.22);
+        });
+      }
+
+      playWin() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Majestic cosmic chord progression arpeggio: C4, G4, C5, E5, G5, B5, C6
+        const chord = [261.63, 392.00, 523.25, 659.25, 783.99, 987.77, 1046.50];
+        chord.forEach((freq, idx) => {
+          const t = now + idx * 0.07;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.001, t);
+          gain.gain.exponentialRampToValueAtTime(0.22, t + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.85);
+
+          const shimmer = this.ctx.createOscillator();
+          const sGain = this.ctx.createGain();
+          shimmer.type = 'triangle';
+          shimmer.frequency.setValueAtTime(freq * 1.5, t);
+          sGain.gain.setValueAtTime(0.001, t);
+          sGain.gain.exponentialRampToValueAtTime(0.06, t + 0.03);
+          sGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          shimmer.connect(sGain);
+          sGain.connect(this.ctx.destination);
+
+          osc.start(t);
+          shimmer.start(t);
+          osc.stop(t + 0.9);
+          shimmer.stop(t + 0.65);
+        });
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // =========================================================================
+    // STARFIELD BACKGROUND ANIMATION
+    // =========================================================================
+    const bgCanvas = document.getElementById('bgCanvas');
+    const bgCtx = bgCanvas.getContext('2d');
+    let stars = [];
+    let shootingStar = null;
+
+    function resizeBg() {
+      bgCanvas.width = window.innerWidth;
+      bgCanvas.height = window.innerHeight;
+      initStars();
+    }
+
+    function initStars() {
+      const count = Math.floor((bgCanvas.width * bgCanvas.height) / 7500);
+      stars = [];
+      for (let i = 0; i < count; i++) {
+        stars.push({
+          x: Math.random() * bgCanvas.width,
+          y: Math.random() * bgCanvas.height,
+          radius: 0.6 + Math.random() * 1.6,
+          baseAlpha: 0.2 + Math.random() * 0.7,
+          alpha: 0.5,
+          twinkleSpeed: 0.008 + Math.random() * 0.02,
+          phase: Math.random() * Math.PI * 2,
+          color: ['#00f0ff', '#ff00a0', '#ffbe00', '#ffffff', '#8ce8ff'][Math.floor(Math.random() * 5)]
+        });
+      }
+    }
+
+    function spawnShootingStar() {
+      if (shootingStar || Math.random() > 0.012) return;
+      shootingStar = {
+        x: Math.random() * bgCanvas.width * 0.8,
+        y: Math.random() * bgCanvas.height * 0.4,
+        len: 120 + Math.random() * 80,
+        speed: 12 + Math.random() * 8,
+        angle: Math.PI / 4 + (Math.random() - 0.5) * 0.3,
+        life: 1.0
+      };
+    }
+
+    function renderBg() {
+      bgCtx.fillStyle = '#060814';
+      bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+      // Deep ambient cosmic nebulae
+      const grad1 = bgCtx.createRadialGradient(
+        bgCanvas.width * 0.25, bgCanvas.height * 0.3, 20,
+        bgCanvas.width * 0.25, bgCanvas.height * 0.3, bgCanvas.width * 0.6
+      );
+      grad1.addColorStop(0, 'rgba(0, 110, 255, 0.08)');
+      grad1.addColorStop(0.6, 'rgba(170, 0, 255, 0.04)');
+      grad1.addColorStop(1, 'transparent');
+      bgCtx.fillStyle = grad1;
+      bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+      const grad2 = bgCtx.createRadialGradient(
+        bgCanvas.width * 0.8, bgCanvas.height * 0.75, 40,
+        bgCanvas.width * 0.8, bgCanvas.height * 0.75, bgCanvas.width * 0.55
+      );
+      grad2.addColorStop(0, 'rgba(255, 0, 140, 0.06)');
+      grad2.addColorStop(1, 'transparent');
+      bgCtx.fillStyle = grad2;
+      bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+      // Render twinkling stars
+      for (const s of stars) {
+        s.phase += s.twinkleSpeed;
+        s.alpha = s.baseAlpha + Math.sin(s.phase) * 0.25;
+        bgCtx.save();
+        bgCtx.globalAlpha = Math.max(0.1, Math.min(1, s.alpha));
+        bgCtx.fillStyle = s.color;
+        bgCtx.beginPath();
+        bgCtx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        bgCtx.fill();
+        bgCtx.restore();
+      }
+
+      // Shooting star
+      spawnShootingStar();
+      if (shootingStar) {
+        const sx = shootingStar.x;
+        const sy = shootingStar.y;
+        const ex = sx + Math.cos(shootingStar.angle) * shootingStar.len;
+        const ey = sy + Math.sin(shootingStar.angle) * shootingStar.len;
+
+        const sGrad = bgCtx.createLinearGradient(sx, sy, ex, ey);
+        sGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+        sGrad.addColorStop(0.8, 'rgba(0, 240, 255, ' + (shootingStar.life * 0.8) + ')');
+        sGrad.addColorStop(1, 'rgba(255, 255, 255, ' + shootingStar.life + ')');
+
+        bgCtx.strokeStyle = sGrad;
+        bgCtx.lineWidth = 1.8;
+        bgCtx.beginPath();
+        bgCtx.moveTo(sx, sy);
+        bgCtx.lineTo(ex, ey);
+        bgCtx.stroke();
+
+        shootingStar.x += Math.cos(shootingStar.angle) * shootingStar.speed;
+        shootingStar.y += Math.sin(shootingStar.angle) * shootingStar.speed;
+        shootingStar.life -= 0.024;
+        if (shootingStar.life <= 0) shootingStar = null;
+      }
+
+      requestAnimationFrame(renderBg);
+    }
+
+    window.addEventListener('resize', resizeBg);
+    resizeBg();
+    renderBg();
+
+    // =========================================================================
+    // LEVEL DATASET (30 HANDCRAFTED, GUARANTEED SOLVABLE LEVELS)
+    // =========================================================================
+    const LEVELS = [
+  {
+    "cols": 3,
+    "rows": 3,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 3,
+        "color": 0
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "len": 4,
+        "color": 1
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "len": 2,
+        "color": 2
+      }
+    ],
+    "blocked": [],
+    "id": 1,
+    "name": "Polaris",
+    "sector": "Nebula"
+  },
+  {
+    "cols": 3,
+    "rows": 3,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 5,
+        "color": 0
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "len": 4,
+        "color": 1
+      }
+    ],
+    "blocked": [],
+    "id": 2,
+    "name": "Vega",
+    "sector": "Nebula"
+  },
+  {
+    "cols": 3,
+    "rows": 3,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 6,
+        "color": 0
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "len": 3,
+        "color": 1
+      }
+    ],
+    "blocked": [],
+    "id": 3,
+    "name": "Sirius",
+    "sector": "Nebula"
+  },
+  {
+    "cols": 3,
+    "rows": 3,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 3,
+        "color": 0
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "len": 3,
+        "color": 1
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "len": 3,
+        "color": 2
+      }
+    ],
+    "blocked": [],
+    "id": 4,
+    "name": "Rigel",
+    "sector": "Nebula"
+  },
+  {
+    "cols": 3,
+    "rows": 3,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 3,
+        "color": 0
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "len": 6,
+        "color": 1
+      }
+    ],
+    "blocked": [],
+    "id": 5,
+    "name": "Altair",
+    "sector": "Nebula"
+  },
+  {
+    "cols": 4,
+    "rows": 4,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 4,
+        "color": 0
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "len": 6,
+        "color": 1
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "len": 4,
+        "color": 2
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "len": 2,
+        "color": 3
+      }
+    ],
+    "blocked": [],
+    "id": 6,
+    "name": "Cassiopeia",
+    "sector": "Aurora"
+  },
+  {
+    "cols": 4,
+    "rows": 4,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 3,
+        "color": 0
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "len": 6,
+        "color": 1
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "len": 5,
+        "color": 2
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "len": 2,
+        "color": 3
+      }
+    ],
+    "blocked": [],
+    "id": 7,
+    "name": "Andromeda",
+    "sector": "Aurora"
+  },
+  {
+    "cols": 4,
+    "rows": 4,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 3,
+        "color": 0
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "len": 6,
+        "color": 1
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "len": 3,
+        "color": 2
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "len": 4,
+        "color": 3
+      }
+    ],
+    "blocked": [],
+    "id": 8,
+    "name": "Antares",
+    "sector": "Aurora"
+  },
+  {
+    "cols": 4,
+    "rows": 4,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 4,
+        "color": 0
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "len": 4,
+        "color": 1
+      },
+      {
+        "x": 0,
+        "y": 2,
+        "len": 4,
+        "color": 2
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "len": 4,
+        "color": 3
+      }
+    ],
+    "blocked": [],
+    "id": 9,
+    "name": "Aldebaran",
+    "sector": "Aurora"
+  },
+  {
+    "cols": 4,
+    "rows": 4,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 3,
+        "color": 0
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "len": 5,
+        "color": 1
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "len": 6,
+        "color": 2
+      },
+      {
+        "x": 2,
+        "y": 3,
+        "len": 2,
+        "color": 3
+      }
+    ],
+    "blocked": [],
+    "id": 10,
+    "name": "Betelgeuse",
+    "sector": "Aurora"
+  },
+  {
+    "cols": 4,
+    "rows": 4,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 3,
+        "color": 0
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "len": 5,
+        "color": 1
+      },
+      {
+        "x": 0,
+        "y": 2,
+        "len": 6,
+        "color": 2
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "len": 2,
+        "color": 3
+      }
+    ],
+    "blocked": [],
+    "id": 11,
+    "name": "Spica",
+    "sector": "Aurora"
+  },
+  {
+    "cols": 4,
+    "rows": 4,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 6,
+        "color": 0
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "len": 4,
+        "color": 1
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "len": 3,
+        "color": 2
+      },
+      {
+        "x": 1,
+        "y": 3,
+        "len": 3,
+        "color": 3
+      }
+    ],
+    "blocked": [],
+    "id": 12,
+    "name": "Deneb",
+    "sector": "Aurora"
+  },
+  {
+    "cols": 5,
+    "rows": 5,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 3,
+        "color": 0
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "len": 5,
+        "color": 1
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "len": 5,
+        "color": 2
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "len": 6,
+        "color": 3
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "len": 3,
+        "color": 4
+      },
+      {
+        "x": 2,
+        "y": 4,
+        "len": 3,
+        "color": 5
+      }
+    ],
+    "blocked": [],
+    "id": 13,
+    "name": "Pleiades",
+    "sector": "Pulsar"
+  },
+  {
+    "cols": 5,
+    "rows": 5,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 4,
+        "color": 0
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "len": 4,
+        "color": 1
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "len": 6,
+        "color": 2
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "len": 6,
+        "color": 3
+      },
+      {
+        "x": 2,
+        "y": 2,
+        "len": 3,
+        "color": 4
+      },
+      {
+        "x": 3,
+        "y": 4,
+        "len": 2,
+        "color": 5
+      }
+    ],
+    "blocked": [],
+    "id": 14,
+    "name": "Capella",
+    "sector": "Pulsar"
+  },
+  {
+    "cols": 5,
+    "rows": 5,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 4,
+        "color": 0
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "len": 4,
+        "color": 1
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "len": 6,
+        "color": 2
+      },
+      {
+        "x": 1,
+        "y": 1,
+        "len": 4,
+        "color": 3
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "len": 4,
+        "color": 4
+      },
+      {
+        "x": 2,
+        "y": 4,
+        "len": 3,
+        "color": 5
+      }
+    ],
+    "blocked": [],
+    "id": 15,
+    "name": "Procyon",
+    "sector": "Pulsar"
+  },
+  {
+    "cols": 5,
+    "rows": 5,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 6,
+        "color": 0
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "len": 6,
+        "color": 1
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "len": 3,
+        "color": 2
+      },
+      {
+        "x": 0,
+        "y": 2,
+        "len": 5,
+        "color": 3
+      },
+      {
+        "x": 4,
+        "y": 2,
+        "len": 5,
+        "color": 4
+      }
+    ],
+    "blocked": [],
+    "id": 16,
+    "name": "Centauri",
+    "sector": "Pulsar"
+  },
+  {
+    "cols": 5,
+    "rows": 5,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 6,
+        "color": 0
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "len": 3,
+        "color": 1
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "len": 6,
+        "color": 2
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "len": 6,
+        "color": 3
+      },
+      {
+        "x": 4,
+        "y": 3,
+        "len": 4,
+        "color": 4
+      }
+    ],
+    "blocked": [],
+    "id": 17,
+    "name": "Canopus",
+    "sector": "Pulsar"
+  },
+  {
+    "cols": 5,
+    "rows": 5,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 5,
+        "color": 0
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "len": 4,
+        "color": 1
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "len": 4,
+        "color": 2
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "len": 5,
+        "color": 3
+      },
+      {
+        "x": 3,
+        "y": 2,
+        "len": 4,
+        "color": 4
+      },
+      {
+        "x": 0,
+        "y": 4,
+        "len": 3,
+        "color": 5
+      }
+    ],
+    "blocked": [],
+    "id": 18,
+    "name": "Arcturus",
+    "sector": "Pulsar"
+  },
+  {
+    "cols": 5,
+    "rows": 5,
+    "nodes": [
+      {
+        "x": 1,
+        "y": 0,
+        "len": 4,
+        "color": 0
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "len": 4,
+        "color": 1
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "len": 3,
+        "color": 2
+      },
+      {
+        "x": 4,
+        "y": 1,
+        "len": 5,
+        "color": 3
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "len": 5,
+        "color": 4
+      }
+    ],
+    "blocked": [
+      [
+        0,
+        0
+      ],
+      [
+        4,
+        0
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        4,
+        4
+      ]
+    ],
+    "id": 19,
+    "name": "Achernar",
+    "sector": "Quasar"
+  },
+  {
+    "cols": 5,
+    "rows": 5,
+    "nodes": [
+      {
+        "x": 2,
+        "y": 0,
+        "len": 3,
+        "color": 0
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "len": 4,
+        "color": 1
+      },
+      {
+        "x": 3,
+        "y": 1,
+        "len": 4,
+        "color": 2
+      },
+      {
+        "x": 4,
+        "y": 1,
+        "len": 4,
+        "color": 3
+      },
+      {
+        "x": 1,
+        "y": 2,
+        "len": 6,
+        "color": 4
+      }
+    ],
+    "blocked": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        3,
+        0
+      ],
+      [
+        4,
+        0
+      ]
+    ],
+    "id": 20,
+    "name": "Hadar",
+    "sector": "Quasar"
+  },
+  {
+    "cols": 5,
+    "rows": 5,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 5,
+        "color": 0
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "len": 5,
+        "color": 1
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "len": 6,
+        "color": 2
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "len": 5,
+        "color": 3
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "len": 3,
+        "color": 4
+      }
+    ],
+    "blocked": [
+      [
+        2,
+        2
+      ]
+    ],
+    "id": 21,
+    "name": "Acrux",
+    "sector": "Quasar"
+  },
+  {
+    "cols": 5,
+    "rows": 5,
+    "nodes": [
+      {
+        "x": 1,
+        "y": 0,
+        "len": 6,
+        "color": 0
+      },
+      {
+        "x": 1,
+        "y": 1,
+        "len": 6,
+        "color": 1
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "len": 4,
+        "color": 2
+      },
+      {
+        "x": 1,
+        "y": 3,
+        "len": 5,
+        "color": 3
+      }
+    ],
+    "blocked": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        4,
+        3
+      ],
+      [
+        4,
+        4
+      ]
+    ],
+    "id": 22,
+    "name": "Regulus",
+    "sector": "Quasar"
+  },
+  {
+    "cols": 5,
+    "rows": 5,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 4,
+        "color": 0
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "len": 5,
+        "color": 1
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "len": 3,
+        "color": 2
+      },
+      {
+        "x": 3,
+        "y": 2,
+        "len": 5,
+        "color": 3
+      },
+      {
+        "x": 2,
+        "y": 3,
+        "len": 4,
+        "color": 4
+      }
+    ],
+    "blocked": [
+      [
+        1,
+        1
+      ],
+      [
+        3,
+        1
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        3,
+        3
+      ]
+    ],
+    "id": 23,
+    "name": "Adhara",
+    "sector": "Quasar"
+  },
+  {
+    "cols": 5,
+    "rows": 5,
+    "nodes": [
+      {
+        "x": 1,
+        "y": 0,
+        "len": 4,
+        "color": 0
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "len": 3,
+        "color": 1
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "len": 3,
+        "color": 2
+      },
+      {
+        "x": 1,
+        "y": 2,
+        "len": 4,
+        "color": 3
+      },
+      {
+        "x": 3,
+        "y": 2,
+        "len": 3,
+        "color": 4
+      },
+      {
+        "x": 1,
+        "y": 4,
+        "len": 3,
+        "color": 5
+      }
+    ],
+    "blocked": [
+      [
+        0,
+        0
+      ],
+      [
+        4,
+        0
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        4,
+        4
+      ]
+    ],
+    "id": 24,
+    "name": "Castor",
+    "sector": "Quasar"
+  },
+  {
+    "cols": 6,
+    "rows": 6,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 5,
+        "color": 0
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "len": 3,
+        "color": 1
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "len": 6,
+        "color": 2
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "len": 4,
+        "color": 3
+      },
+      {
+        "x": 5,
+        "y": 2,
+        "len": 4,
+        "color": 4
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "len": 3,
+        "color": 5
+      },
+      {
+        "x": 1,
+        "y": 3,
+        "len": 5,
+        "color": 6
+      },
+      {
+        "x": 1,
+        "y": 4,
+        "len": 6,
+        "color": 7
+      }
+    ],
+    "blocked": [],
+    "id": 25,
+    "name": "Pollux",
+    "sector": "Supernova"
+  },
+  {
+    "cols": 6,
+    "rows": 6,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 5,
+        "color": 0
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "len": 4,
+        "color": 1
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "len": 5,
+        "color": 2
+      },
+      {
+        "x": 3,
+        "y": 1,
+        "len": 5,
+        "color": 3
+      },
+      {
+        "x": 0,
+        "y": 2,
+        "len": 5,
+        "color": 4
+      },
+      {
+        "x": 5,
+        "y": 2,
+        "len": 6,
+        "color": 5
+      },
+      {
+        "x": 1,
+        "y": 4,
+        "len": 3,
+        "color": 6
+      },
+      {
+        "x": 2,
+        "y": 5,
+        "len": 3,
+        "color": 7
+      }
+    ],
+    "blocked": [],
+    "id": 26,
+    "name": "Bellatrix",
+    "sector": "Supernova"
+  },
+  {
+    "cols": 6,
+    "rows": 6,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 6,
+        "color": 0
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "len": 6,
+        "color": 1
+      },
+      {
+        "x": 5,
+        "y": 0,
+        "len": 4,
+        "color": 2
+      },
+      {
+        "x": 3,
+        "y": 1,
+        "len": 5,
+        "color": 3
+      },
+      {
+        "x": 2,
+        "y": 2,
+        "len": 4,
+        "color": 4
+      },
+      {
+        "x": 5,
+        "y": 2,
+        "len": 4,
+        "color": 5
+      },
+      {
+        "x": 0,
+        "y": 4,
+        "len": 4,
+        "color": 6
+      },
+      {
+        "x": 5,
+        "y": 4,
+        "len": 3,
+        "color": 7
+      }
+    ],
+    "blocked": [],
+    "id": 27,
+    "name": "Alnilam",
+    "sector": "Supernova"
+  },
+  {
+    "cols": 6,
+    "rows": 6,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 5,
+        "color": 0
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "len": 6,
+        "color": 1
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "len": 4,
+        "color": 2
+      },
+      {
+        "x": 3,
+        "y": 1,
+        "len": 6,
+        "color": 3
+      },
+      {
+        "x": 5,
+        "y": 2,
+        "len": 4,
+        "color": 4
+      },
+      {
+        "x": 2,
+        "y": 3,
+        "len": 5,
+        "color": 5
+      },
+      {
+        "x": 0,
+        "y": 4,
+        "len": 2,
+        "color": 6
+      },
+      {
+        "x": 5,
+        "y": 4,
+        "len": 4,
+        "color": 7
+      }
+    ],
+    "blocked": [],
+    "id": 28,
+    "name": "Alnitak",
+    "sector": "Supernova"
+  },
+  {
+    "cols": 6,
+    "rows": 6,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 6,
+        "color": 0
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "len": 5,
+        "color": 1
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "len": 5,
+        "color": 2
+      },
+      {
+        "x": 4,
+        "y": 1,
+        "len": 5,
+        "color": 3
+      },
+      {
+        "x": 0,
+        "y": 2,
+        "len": 6,
+        "color": 4
+      },
+      {
+        "x": 2,
+        "y": 3,
+        "len": 4,
+        "color": 5
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "len": 5,
+        "color": 6
+      }
+    ],
+    "blocked": [],
+    "id": 29,
+    "name": "Mintaka",
+    "sector": "Supernova"
+  },
+  {
+    "cols": 6,
+    "rows": 6,
+    "nodes": [
+      {
+        "x": 0,
+        "y": 0,
+        "len": 6,
+        "color": 0
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "len": 6,
+        "color": 1
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "len": 4,
+        "color": 2
+      },
+      {
+        "x": 3,
+        "y": 1,
+        "len": 2,
+        "color": 3
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "len": 4,
+        "color": 4
+      },
+      {
+        "x": 1,
+        "y": 3,
+        "len": 3,
+        "color": 5
+      },
+      {
+        "x": 2,
+        "y": 3,
+        "len": 5,
+        "color": 6
+      },
+      {
+        "x": 4,
+        "y": 3,
+        "len": 6,
+        "color": 7
+      }
+    ],
+    "blocked": [],
+    "id": 30,
+    "name": "Saiph",
+    "sector": "Supernova"
+  }
+];
+
+    // Neon Star Color Palette
+    const COLORS = [
+      { hex: '#00f0ff', glow: 'rgba(0, 240, 255, 0.7)', light: '#a6f8ff', name: 'Cyan' },
+      { hex: '#ff00a0', glow: 'rgba(255, 0, 160, 0.7)', light: '#ffa3dd', name: 'Magenta' },
+      { hex: '#ffc800', glow: 'rgba(255, 200, 0, 0.7)', light: '#ffe88a', name: 'Solar Gold' },
+      { hex: '#00ff88', glow: 'rgba(0, 255, 136, 0.7)', light: '#a6ffd0', name: 'Lime' },
+      { hex: '#aa44ff', glow: 'rgba(170, 68, 255, 0.7)', light: '#dcb3ff', name: 'Violet' },
+      { hex: '#ff4d4d', glow: 'rgba(255, 77, 77, 0.7)', light: '#ffb3b3', name: 'Coral' },
+      { hex: '#00e5a3', glow: 'rgba(0, 229, 163, 0.7)', light: '#a8ffdf', name: 'Emerald' },
+      { hex: '#8ce8ff', glow: 'rgba(140, 232, 255, 0.7)', light: '#ffffff', name: 'Diamond' }
+    ];
+
+    // =========================================================================
+    // GAME CORE ENGINE
+    // =========================================================================
+    class CosmosGame {
+      constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.currentLevelIndex = 0;
+        this.level = null;
+        this.nodes = [];
+        this.blocked = new Set();
+        this.history = []; // Undo stack
+
+        // Interaction state
+        this.activeNodeIdx = null;
+        this.isDragging = false;
+        this.dragPointer = null; // {x, y} in canvas coordinates for smooth follow
+
+        // Grid layout metrics
+        this.cellSize = 64;
+        this.gridX = 0;
+        this.gridY = 0;
+        this.gridWidth = 0;
+        this.gridHeight = 0;
+
+        // Progress & Stats
+        this.moves = 0;
+        this.startTime = Date.now();
+        this.isWon = false;
+        this.winPulse = 0;
+        this.particles = [];
+
+        // Save data
+        this.savedData = this.loadSave();
+
+        this.initEvents();
+        this.loadLevel(this.savedData.highestLevel || 0);
+        this.animate();
+      }
+
+      loadSave() {
+        try {
+          const raw = localStorage.getItem('cosmos_lines_save');
+          return raw ? JSON.parse(raw) : { completed: [], highestLevel: 0 };
+        } catch (_) {
+          return { completed: [], highestLevel: 0 };
+        }
+      }
+
+      saveProgress(lvlIdx) {
+        if (!this.savedData.completed.includes(lvlIdx)) {
+          this.savedData.completed.push(lvlIdx);
+        }
+        if (lvlIdx + 1 > (this.savedData.highestLevel || 0)) {
+          this.savedData.highestLevel = Math.min(lvlIdx + 1, LEVELS.length - 1);
+        }
+        try {
+          localStorage.setItem('cosmos_lines_save', JSON.stringify(this.savedData));
+        } catch (_) {}
+      }
+
+      loadLevel(idx) {
+        if (idx < 0 || idx >= LEVELS.length) idx = 0;
+        this.currentLevelIndex = idx;
+        this.level = LEVELS[idx];
+        this.isWon = false;
+        this.winPulse = 0;
+        this.moves = 0;
+        this.startTime = Date.now();
+        this.history = [];
+        this.activeNodeIdx = null;
+        this.isDragging = false;
+        this.particles = [];
+
+        // Initialize blocked set
+        this.blocked = new Set();
+        (this.level.blocked || []).forEach(([bx, by]) => {
+          this.blocked.add(`${bx},${by}`);
+        });
+
+        // Initialize nodes and their paths
+        this.nodes = this.level.nodes.map((n, i) => ({
+          id: i,
+          x: n.x,
+          y: n.y,
+          len: n.len,
+          color: COLORS[n.color % COLORS.length],
+          path: [[n.x, n.y]] // Starts with its root cell
+        }));
+
+        this.updateHeader();
+        this.resize();
+      }
+
+      updateHeader() {
+        document.getElementById('txtLevelNum').textContent = `Level ${this.level.id}`;
+        document.getElementById('txtSector').textContent = this.level.sector;
+        document.getElementById('txtLevelName').textContent = this.level.name;
+        document.getElementById('hintMessage').textContent =
+          `Fill all ${this.level.cols * this.level.rows - (this.level.blocked || []).length} tiles with ${this.nodes.length} glowing cosmic lines`;
+      }
+
+      resize() {
+        const container = document.getElementById('gameContainer');
+        const main = document.querySelector('main');
+        const availW = Math.max(280, Math.min(window.innerWidth - 32, 600));
+        const availH = Math.max(280, Math.min(main.clientHeight - 24, 600));
+
+        const cols = this.level.cols;
+        const rows = this.level.rows;
+
+        // Calculate max cell size that fits
+        const maxCellW = Math.floor(availW / (cols + 0.5));
+        const maxCellH = Math.floor(availH / (rows + 0.5));
+        this.cellSize = Math.max(38, Math.min(maxCellW, maxCellH, 84));
+
+        this.gridWidth = cols * this.cellSize;
+        this.gridHeight = rows * this.cellSize;
+
+        const pad = Math.max(16, Math.floor(this.cellSize * 0.4));
+        const totalW = this.gridWidth + pad * 2;
+        const totalH = this.gridHeight + pad * 2;
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        this.canvas.width = totalW * dpr;
+        this.canvas.height = totalH * dpr;
+        this.canvas.style.width = `${totalW}px`;
+        this.canvas.style.height = `${totalH}px`;
+
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        this.gridX = pad;
+        this.gridY = pad;
+      }
+
+      // Check if a cell is occupied by any node or path
+      getCellOccupant(col, row) {
+        for (let i = 0; i < this.nodes.length; i++) {
+          const n = this.nodes[i];
+          for (let p = 0; p < n.path.length; p++) {
+            if (n.path[p][0] === col && n.path[p][1] === row) {
+              return { nodeIndex: i, pathIndex: p, isHead: p === n.path.length - 1, isRoot: p === 0 };
+            }
+          }
+        }
+        return null;
+      }
+
+      // Push current state to undo stack
+      saveSnapshot() {
+        const snapshot = this.nodes.map(n => n.path.map(pt => [pt[0], pt[1]]));
+        this.history.push(snapshot);
+        if (this.history.length > 80) this.history.shift();
+      }
+
+      undo() {
+        if (this.history.length === 0 || this.isWon) return;
+        const last = this.history.pop();
+        last.forEach((p, i) => {
+          this.nodes[i].path = p.map(pt => [pt[0], pt[1]]);
+        });
+        sound.playUndo();
+      }
+
+      reset() {
+        if (this.isWon) return;
+        this.saveSnapshot();
+        this.nodes.forEach(n => {
+          n.path = [[n.x, n.y]];
+        });
+        this.activeNodeIdx = null;
+        this.isDragging = false;
+        sound.playReset();
+      }
+
+      // =======================================================================
+      // INTERACTION & DRAG-TO-DRAW
+      // =======================================================================
+      initEvents() {
+        window.addEventListener('resize', () => this.resize());
+        window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 100));
+
+        const getCanvasPos = (e) => {
+          const rect = this.canvas.getBoundingClientRect();
+          return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+          };
+        };
+
+        const getCell = (pos) => {
+          const c = Math.floor((pos.x - this.gridX) / this.cellSize);
+          const r = Math.floor((pos.y - this.gridY) / this.cellSize);
+          if (c >= 0 && c < this.level.cols && r >= 0 && r < this.level.rows) {
+            return { c, r };
+          }
+          return null;
+        };
+
+        this.canvas.addEventListener('pointerdown', (e) => {
+          if (this.isWon) return;
+          this.canvas.setPointerCapture(e.pointerId);
+          sound.init();
+
+          const pos = getCanvasPos(e);
+          const cell = getCell(pos);
+          if (!cell) return;
+
+          const occ = this.getCellOccupant(cell.c, cell.r);
+          if (occ) {
+            const n = this.nodes[occ.nodeIndex];
+            this.activeNodeIdx = occ.nodeIndex;
+            this.isDragging = true;
+            this.dragPointer = pos;
+
+            // If clicked on an intermediate cell of the path, retract back to that cell!
+            if (occ.pathIndex < n.path.length - 1) {
+              this.saveSnapshot();
+              n.path = n.path.slice(0, occ.pathIndex + 1);
+              sound.playRetract();
+              this.moves++;
+            }
+          }
+        });
+
+        this.canvas.addEventListener('pointermove', (e) => {
+          if (!this.isDragging || this.activeNodeIdx === null || this.isWon) return;
+          const pos = getCanvasPos(e);
+          this.dragPointer = pos;
+          const cell = getCell(pos);
+          if (!cell) return;
+
+          const n = this.nodes[this.activeNodeIdx];
+          const head = n.path[n.path.length - 1];
+
+          // Check if hovering over the previous cell -> RETRACT
+          if (n.path.length > 1) {
+            const prev = n.path[n.path.length - 2];
+            if (prev[0] === cell.c && prev[1] === cell.r) {
+              this.saveSnapshot();
+              n.path.pop();
+              sound.playRetract();
+              this.moves++;
+              return;
+            }
+          }
+
+          // Check if moving to an adjacent orthogonal cell -> EXTEND
+          const dist = Math.abs(cell.c - head[0]) + Math.abs(cell.r - head[1]);
+          if (dist === 1) {
+            // Check if cell is blocked or occupied
+            if (this.blocked.has(`${cell.c},${cell.r}`)) return;
+
+            const occ = this.getCellOccupant(cell.c, cell.r);
+            if (!occ && n.path.length < n.len) {
+              this.saveSnapshot();
+              n.path.push([cell.c, cell.r]);
+              this.moves++;
+
+              // Spawn sparkle particle
+              this.emitSparkles(cell.c, cell.r, n.color.hex);
+
+              // Sound
+              if (n.path.length === n.len) {
+                sound.playNodeLock();
+              } else {
+                sound.playStep(n.path.length, n.len);
+              }
+
+              this.checkWinCondition();
+            }
+          }
+        });
+
+        const stopDrag = (e) => {
+          if (!this.isDragging) return;
+          this.isDragging = false;
+          this.dragPointer = null;
+          this.checkWinCondition();
+        };
+
+        this.canvas.addEventListener('pointerup', stopDrag);
+        this.canvas.addEventListener('pointercancel', stopDrag);
+
+        // Keyboard navigation
+        window.addEventListener('keydown', (e) => {
+          if (e.code === 'KeyZ' || (e.ctrlKey && e.code === 'KeyZ')) {
+            this.undo();
+          } else if (e.code === 'KeyR') {
+            this.reset();
+          } else if (e.code === 'KeyM') {
+            toggleSound();
+          } else if (e.code === 'KeyF') {
+            toggleFullscreen();
+          } else if (e.code === 'KeyL') {
+            openModal('modalLevels');
+          } else if (e.code === 'Escape') {
+            closeAllModals();
+          }
+        });
+      }
+
+      emitSparkles(c, r, color) {
+        const cx = this.gridX + (c + 0.5) * this.cellSize;
+        const cy = this.gridY + (r + 0.5) * this.cellSize;
+        for (let i = 0; i < 7; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 1.5 + Math.random() * 3.5;
+          this.particles.push({
+            x: cx,
+            y: cy,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            radius: 1.5 + Math.random() * 2,
+            color: color,
+            alpha: 1,
+            decay: 0.03 + Math.random() * 0.03
+          });
+        }
+      }
+
+      // Check if all lines are satisfied and full grid is covered
+      checkWinCondition() {
+        if (this.isWon) return;
+
+        // Check if every node reached target length
+        const allNodesFull = this.nodes.every(n => n.path.length === n.len);
+        if (!allNodesFull) return;
+
+        // Check total cells covered
+        let totalPathCells = 0;
+        this.nodes.forEach(n => totalPathCells += n.path.length);
+        const playableCells = this.level.cols * this.level.rows - (this.level.blocked || []).length;
+
+        if (totalPathCells === playableCells) {
+          this.triggerWin();
+        }
+      }
+
+      triggerWin() {
+        this.isWon = true;
+        this.winPulse = 1.0;
+        sound.playWin();
+        this.saveProgress(this.currentLevelIndex);
+
+        // Massive constellation starburst
+        for (const n of this.nodes) {
+          this.emitSparkles(n.x, n.y, n.color.hex);
+        }
+
+        setTimeout(() => {
+          showWinModal(this.moves, Date.now() - this.startTime);
+        }, 650);
+      }
+
+      // =======================================================================
+      // RENDERING ENGINE
+      // =======================================================================
+      animate() {
+        this.render();
+        requestAnimationFrame(() => this.animate());
+      }
+
+      render() {
+        const ctx = this.ctx;
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Outer ambient glow box for the constellation board
+        const bx = this.gridX - 8;
+        const by = this.gridY - 8;
+        const bw = this.gridWidth + 16;
+        const bh = this.gridHeight + 16;
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(10, 15, 34, 0.72)';
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.16)';
+        ctx.lineWidth = 1.5;
+        this.roundRect(ctx, bx, by, bw, bh, 20);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        // 1. Draw Grid Slots
+        const cols = this.level.cols;
+        const rows = this.level.rows;
+        const cs = this.cellSize;
+
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            if (this.blocked.has(`${c},${r}`)) continue; // Void
+
+            const x = this.gridX + c * cs;
+            const y = this.gridY + r * cs;
+            const pad = 4;
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.035)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+            ctx.lineWidth = 1.2;
+            this.roundRect(ctx, x + pad, y + pad, cs - pad * 2, cs - pad * 2, 12);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+
+        // 2. Draw Connected Paths (underneath nodes)
+        this.nodes.forEach(node => {
+          if (node.path.length < 2) return;
+          const col = node.color;
+
+          ctx.save();
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+
+          // Multi-layer neon bloom stroke
+          // Outer Glow
+          ctx.strokeStyle = col.glow;
+          ctx.lineWidth = cs * 0.46;
+          ctx.shadowColor = col.hex;
+          ctx.shadowBlur = 18;
+          this.tracePath(ctx, node.path);
+          ctx.stroke();
+
+          // Main Vibrant Body
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = col.hex;
+          ctx.lineWidth = cs * 0.32;
+          this.tracePath(ctx, node.path);
+          ctx.stroke();
+
+          // Inner Bright Core
+          ctx.strokeStyle = col.light;
+          ctx.lineWidth = cs * 0.14;
+          this.tracePath(ctx, node.path);
+          ctx.stroke();
+
+          ctx.restore();
+        });
+
+        // 3. Draw Path Head Indicator / Drag Pointer
+        this.nodes.forEach((node, idx) => {
+          if (node.path.length > 0) {
+            const head = node.path[node.path.length - 1];
+            const hx = this.gridX + (head[0] + 0.5) * cs;
+            const hy = this.gridY + (head[1] + 0.5) * cs;
+
+            ctx.save();
+            ctx.fillStyle = node.color.light;
+            ctx.shadowColor = node.color.hex;
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.arc(hx, hy, cs * 0.16, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        });
+
+        // 4. Draw Numbered Star Nodes
+        this.nodes.forEach(node => {
+          const nx = this.gridX + (node.x + 0.5) * cs;
+          const ny = this.gridY + (node.y + 0.5) * cs;
+          const r = cs * 0.38;
+          const isComplete = node.path.length === node.len;
+
+          ctx.save();
+          // Halo glow
+          ctx.shadowColor = node.color.hex;
+          ctx.shadowBlur = isComplete ? 24 : 14;
+
+          // Outer halo ring
+          ctx.strokeStyle = isComplete ? '#ffffff' : node.color.hex;
+          ctx.lineWidth = isComplete ? 3.5 : 2.5;
+          ctx.beginPath();
+          ctx.arc(nx, ny, r, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Node background fill
+          const grad = ctx.createRadialGradient(nx, ny, 2, nx, ny, r);
+          if (isComplete) {
+            grad.addColorStop(0, '#ffffff');
+            grad.addColorStop(0.45, node.color.hex);
+            grad.addColorStop(1, 'rgba(8, 12, 28, 0.95)');
+          } else {
+            grad.addColorStop(0, node.color.hex);
+            grad.addColorStop(0.3, 'rgba(16, 24, 52, 0.95)');
+            grad.addColorStop(1, 'rgba(8, 12, 28, 0.95)');
+          }
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(nx, ny, r - 1.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Number text
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = isComplete ? '#060814' : '#ffffff';
+          ctx.font = `800 ${Math.floor(cs * 0.36)}px ${getComputedStyle(document.body).fontFamily}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(node.len, nx, ny + 1);
+
+          // Star dots on outer ring
+          if (isComplete) {
+            ctx.fillStyle = '#ffffff';
+            for (let i = 0; i < 4; i++) {
+              const a = (i * Math.PI) / 2 + Date.now() * 0.002;
+              const px = nx + Math.cos(a) * (r + 4);
+              const py = ny + Math.sin(a) * (r + 4);
+              ctx.beginPath();
+              ctx.arc(px, py, 2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+
+          ctx.restore();
+        });
+
+        // 5. Particles Update & Render
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+          const p = this.particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.alpha -= p.decay;
+          if (p.alpha <= 0) {
+            this.particles.splice(i, 1);
+            continue;
+          }
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      tracePath(ctx, path) {
+        ctx.beginPath();
+        const cs = this.cellSize;
+        for (let i = 0; i < path.length; i++) {
+          const px = this.gridX + (path[i][0] + 0.5) * cs;
+          const py = this.gridY + (path[i][1] + 0.5) * cs;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+      }
+
+      roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      }
+    }
+
+    // =========================================================================
+    // UI MODALS & CONTROLS BINDING
+    // =========================================================================
+    let game;
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function closeAllModals() {
+      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+    }
+
+    function showWinModal(moves, timeMs) {
+      const sec = Math.floor(timeMs / 1000);
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      document.getElementById('winMoves').textContent = moves;
+      document.getElementById('winTime').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+      document.getElementById('winDesc').textContent =
+        `You aligned the ${game.level.name} constellation in Sector ${game.level.sector}!`;
+      openModal('modalWin');
+    }
+
+    function toggleSound() {
+      const isMuted = sound.toggleMute();
+      document.getElementById('iconSoundOn').style.display = isMuted ? 'none' : 'block';
+      document.getElementById('iconSoundOff').style.display = isMuted ? 'block' : 'none';
+    }
+
+    function toggleFullscreen() {
+      sound.init();
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function renderLevelSelector(sectorFilter = 'ALL') {
+      const grid = document.getElementById('levelGrid');
+      grid.innerHTML = '';
+      const saved = game.loadSave();
+
+      LEVELS.forEach((lvl, idx) => {
+        if (sectorFilter !== 'ALL' && lvl.sector !== sectorFilter) return;
+
+        const card = document.createElement('div');
+        const isCurrent = idx === game.currentLevelIndex;
+        const isCompleted = saved.completed.includes(idx);
+        const isUnlocked = idx <= (saved.highestLevel || 0) || isCompleted;
+
+        card.className = `level-card ${isCurrent ? 'current' : ''} ${isCompleted ? 'completed' : ''} ${!isUnlocked ? 'locked' : ''}`;
+
+        card.innerHTML = `
+          <span class="level-card-status">${isCompleted ? '⭐' : (!isUnlocked ? '🔒' : '')}</span>
+          <span class="level-card-num">${lvl.id}</span>
+          <span class="level-card-name">${lvl.name}</span>
+        `;
+
+        if (isUnlocked) {
+          card.onclick = () => {
+            sound.init();
+            sound.playStep(2, 4);
+            game.loadLevel(idx);
+            closeModal('modalLevels');
+          };
+        }
+
+        grid.appendChild(card);
+      });
+    }
+
+    // Init App
+    window.addEventListener('DOMContentLoaded', () => {
+      game = new CosmosGame();
+
+      // Sound initial UI sync
+      if (sound.muted) {
+        document.getElementById('iconSoundOn').style.display = 'none';
+        document.getElementById('iconSoundOff').style.display = 'block';
+      }
+
+      // Header buttons
+      document.getElementById('btnSound').onclick = toggleSound;
+      document.getElementById('btnFullscreen').onclick = toggleFullscreen;
+      document.getElementById('btnHelp').onclick = () => { sound.init(); openModal('modalHelp'); };
+      document.getElementById('btnLevels').onclick = () => {
+        sound.init();
+        renderLevelSelector('ALL');
+        openModal('modalLevels');
+      };
+      document.getElementById('btnHome').onclick = () => {
+        sound.init();
+        renderLevelSelector('ALL');
+        openModal('modalLevels');
+      };
+
+      // Modal close buttons
+      document.getElementById('btnCloseLevels').onclick = () => closeModal('modalLevels');
+      document.getElementById('btnCloseHelp').onclick = () => closeModal('modalHelp');
+      document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) closeModal(modal.id);
+        });
+      });
+
+      // Sector tabs filter
+      document.querySelectorAll('.sector-tab').forEach(tab => {
+        tab.onclick = () => {
+          sound.init();
+          document.querySelectorAll('.sector-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          renderLevelSelector(tab.dataset.sector);
+        };
+      });
+
+      // Footer buttons
+      document.getElementById('btnUndo').onclick = () => game.undo();
+      document.getElementById('btnReset').onclick = () => game.reset();
+
+      // Win modal buttons
+      document.getElementById('btnWinReplay').onclick = () => {
+        closeModal('modalWin');
+        game.reset();
+      };
+      document.getElementById('btnWinNext').onclick = () => {
+        closeModal('modalWin');
+        const nextIdx = (game.currentLevelIndex + 1) % LEVELS.length;
+        game.loadLevel(nextIdx);
+      };
+    });
+  </script>
+</body>
+</html>
