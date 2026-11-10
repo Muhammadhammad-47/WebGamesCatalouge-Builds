@@ -880,17 +880,21 @@
       margin-bottom: 14px;
     }
 
-    /* Eye Expression Buttons — inline in the scroll area */
+    /* Eye Expression Buttons — horizontal scroll row inside the drawer */
     .eye-expr-row {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 8px;
       margin-bottom: 14px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
     }
+    .eye-expr-row::-webkit-scrollbar { display: none; }
     .eye-expr-btn {
-      flex: 1 1 auto;
-      min-width: 110px;
-      padding: 9px 14px;
+      flex: none;
+      padding: 9px 16px;
       border-radius: 999px;
       border: 2px solid #e9d5ff;
       background: #ffffff;
