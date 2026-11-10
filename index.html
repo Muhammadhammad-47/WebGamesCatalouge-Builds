@@ -1,0 +1,2386 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Adopt Merge | CIEL WebGames</title>
+  <meta name="description" content="Merge adorable pets, fill adoption orders and grow your pet haven.">
+  <meta name="theme-color" content="#3b1677">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+:root {
+  --ink: #4a3558;
+  --ink-soft: #7c6a8a;
+  --panel: #fffaf0;
+  --tile-a: #e7f6d6;
+  --tile-b: #d9f0c4;
+  --gold: #ffc531;
+  --gold-dark: #d8901a;
+  --green: #5ccf6b;
+  --green-dark: #34a047;
+  --pink: #ff7fa8;
+  --pink-dark: #d8517e;
+  --blue: #5bb8ff;
+  --blue-dark: #2d86d1;
+  --top-h: clamp(44px, 8vh, 64px);
+  --pad: clamp(8px, 1.6vh, 16px);
+  --board: min(calc(100dvh - var(--top-h) - var(--pad) * 3), 56vw);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+body {
+  font-family: 'Fredoka', system-ui, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse 70% 40% at 15% 100%, #7fcf73 0 60%, transparent 61%),
+    radial-gradient(ellipse 70% 40% at 85% 100%, #86d67a 0 60%, transparent 61%),
+    linear-gradient(#9fdcff 0%, #c9f0ff 45%, #b6eaa3 70%, #8fd884 100%);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+svg { width: 22px; height: 22px; display: block; }
+
+.cloud { position: fixed; background: #fff; border-radius: 999px; opacity: .75; z-index: 0; animation: drift 60s linear infinite; }
+.cloud::before, .cloud::after { content: ''; position: absolute; background: inherit; border-radius: 50%; }
+.cloud::before { width: 55%; height: 160%; left: 15%; bottom: 20%; }
+.cloud::after { width: 40%; height: 130%; right: 12%; bottom: 25%; }
+.c1 { width: 160px; height: 40px; top: 14%; left: -10%; }
+.c2 { width: 110px; height: 30px; top: 30%; left: 40%; animation-duration: 85s; animation-delay: -30s; }
+.c3 { width: 200px; height: 46px; top: 8%; left: 70%; animation-duration: 110s; animation-delay: -60s; }
+@keyframes drift { from { transform: translateX(-30vw); } to { transform: translateX(130vw); } }
+
+/* ---------- landscape layout ---------- */
+#app {
+  position: relative; z-index: 1;
+  width: 100vw; height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr var(--board) 1fr;
+  grid-template-rows: var(--top-h) 1fr;
+  grid-template-areas: "top top top" "left board right";
+  gap: var(--pad);
+  padding: var(--pad) max(var(--pad), env(safe-area-inset-right)) var(--pad) max(var(--pad), env(safe-area-inset-left));
+}
+#top { grid-area: top; }
+#left { grid-area: left; }
+#boardWrap { grid-area: board; }
+#right { grid-area: right; }
+
+.panel {
+  align-self: center; justify-self: center; width: min(100%, 300px);
+  background: rgba(255, 250, 240, .78); border-radius: 22px; padding: 12px;
+  box-shadow: 0 5px 0 rgba(120, 90, 60, .25);
+  display: flex; flex-direction: column; gap: 10px;
+  max-height: 100%; overflow: hidden;
+}
+.panel-title { font-weight: 700; text-align: center; font-size: clamp(15px, 2.4vh, 20px); }
+.hint { margin: 0; font-size: 12px; color: var(--ink-soft); text-align: center; line-height: 1.3; }
+
+/* ---------- top bar ---------- */
+#top { display: flex; align-items: center; gap: 12px; }
+.lvl-badge {
+  flex: none; width: var(--top-h); height: var(--top-h); border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3a6, var(--gold) 55%, var(--gold-dark));
+  border: 3px solid #fff; box-shadow: 0 4px 0 rgba(120, 80, 20, .35);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: .9;
+  color: #7a4a00;
+}
+.lvl-badge small { font-size: 10px; font-weight: 700; }
+.lvl-badge b { font-size: calc(var(--top-h) * .4); }
+#xpBar {
+  flex: 1; position: relative; height: calc(var(--top-h) * .48); border-radius: 999px;
+  background: rgba(255,255,255,.8); border: 3px solid #fff; overflow: hidden;
+  box-shadow: 0 3px 0 rgba(74,53,88,.15), inset 0 2px 4px rgba(0,0,0,.08);
+}
+#xpFill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(#8ef08a, #45c35a); border-radius: 999px; transition: width .4s ease; }
+#xpText { position: relative; display: block; text-align: center; font-weight: 700; font-size: 13px; line-height: calc(var(--top-h) * .48 - 6px); }
+.top-btns { display: flex; gap: 8px; }
+.icon-btn {
+  width: calc(var(--top-h) * .85); height: calc(var(--top-h) * .85); border-radius: 14px; display: grid; place-items: center;
+  background: #fff; box-shadow: 0 4px 0 rgba(74,53,88,.2);
+}
+.icon-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(74,53,88,.2); }
+.icon-btn.muted .wave { opacity: .15; }
+
+.pill {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: #fff; border-radius: 999px; padding: 8px 14px; box-shadow: 0 3px 0 rgba(74,53,88,.15);
+}
+.pill b { font-size: clamp(18px, 3.4vh, 26px); }
+.pill small { color: var(--ink-soft); font-size: 13px; font-weight: 600; }
+
+.coin {
+  display: inline-block; width: 24px; height: 24px; border-radius: 50%; flex: none;
+  background: radial-gradient(circle at 35% 30%, #fff3a6 0 18%, var(--gold) 45%, var(--gold-dark) 100%);
+  border: 2px solid #b8740e; box-shadow: inset 0 -2px 0 rgba(0,0,0,.12);
+  vertical-align: middle; position: relative;
+}
+.coin::after { content: ''; position: absolute; inset: 5px; border-radius: 50%; border: 2px solid rgba(184,116,14,.45); }
+.coin.sm { width: 16px; height: 16px; border-width: 1.5px; }
+.coin.sm::after { inset: 3px; border-width: 1.5px; }
+
+/* ---------- orders ---------- */
+#orders { display: flex; flex-direction: column; gap: 10px; }
+.order {
+  background: #fff; border-radius: 16px; padding: 6px 10px 6px 6px;
+  box-shadow: 0 3px 0 rgba(74,53,88,.15); border: 3px solid transparent;
+  transition: transform .15s, border-color .15s; position: relative;
+  display: flex; align-items: center; gap: 8px; min-height: clamp(62px, 13vh, 96px);
+}
+.order::before {
+  content: ''; position: absolute; top: -6px; left: 50%; width: 14px; height: 14px; margin-left: -7px;
+  border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ff9fbf, #e0477a); box-shadow: 0 2px 0 rgba(0,0,0,.2);
+}
+.order img { width: clamp(46px, 11vh, 80px); height: clamp(46px, 11vh, 80px); pointer-events: none; flex: none; }
+.order img.unknown { filter: brightness(0) opacity(.3); }
+.order .otxt { display: flex; flex-direction: column; min-width: 0; }
+.order .oname { font-size: 13px; font-weight: 600; line-height: 1.15; color: var(--ink-soft); }
+.order .reward { font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+.order.ready { border-color: var(--green); animation: wiggle 1.6s ease-in-out infinite; }
+.order.over { transform: scale(1.06); border-color: var(--gold); }
+.order.empty { opacity: .65; justify-content: center; }
+.order .wait { font-size: 13px; color: var(--ink-soft); text-align: center; }
+
+/* ---------- board ---------- */
+#boardWrap { display: flex; align-items: center; justify-content: center; min-height: 0; }
+#board {
+  width: var(--board); height: var(--board);
+  display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(6, 1fr);
+  gap: calc(var(--board) * .012); padding: calc(var(--board) * .022);
+  background: #fff3da; border-radius: calc(var(--board) * .05);
+  box-shadow: 0 7px 0 #d9b98a, inset 0 0 0 5px #f1dcb4;
+}
+.cell {
+  position: relative; border-radius: 14%; background: var(--tile-a);
+  display: grid; place-items: center; transition: background .15s, transform .15s;
+}
+.cell.alt { background: var(--tile-b); }
+.cell .pet { width: 96%; height: 96%; pointer-events: none; animation: bob 2.4s ease-in-out infinite; transform-origin: 50% 90%; }
+.cell .lv {
+  position: absolute; left: 4%; bottom: 4%; font-size: calc(var(--board) * .022); font-weight: 700;
+  background: rgba(255,255,255,.9); border-radius: 8px; padding: 0 .4em; line-height: 1.4; pointer-events: none;
+}
+
+/* locked tiles: wooden fence crates */
+.cell.locked {
+  background:
+    linear-gradient(90deg, transparent 0 31%, rgba(110,70,30,.35) 31% 34%, transparent 34% 64%, rgba(110,70,30,.35) 64% 67%, transparent 67%),
+    linear-gradient(#e2a865, #c98846);
+  box-shadow: inset 0 -5px 0 rgba(110,70,30,.35), inset 0 3px 0 rgba(255,255,255,.35);
+  cursor: default;
+}
+.cell.locked .lock { width: 34%; height: 34%; color: rgba(90,55,20,.55); }
+.cell.locked.buyable { cursor: pointer; background:
+    linear-gradient(90deg, transparent 0 31%, rgba(110,70,30,.3) 31% 34%, transparent 34% 64%, rgba(110,70,30,.3) 64% 67%, transparent 67%),
+    linear-gradient(#f3c07e, #dc9b55); }
+.cell.locked .price {
+  display: flex; align-items: center; gap: .2em; font-weight: 700; color: #fff;
+  font-size: calc(var(--board) * .03); text-shadow: 0 2px 0 rgba(90,50,10,.6);
+  background: rgba(90,55,20,.45); padding: .15em .45em; border-radius: 999px;
+}
+.cell.locked .price .coin { width: 1.1em; height: 1.1em; border-width: 1.5px; }
+.cell.locked .price .coin::after { inset: 22%; border-width: 1.5px; }
+.cell.locked.afford { animation: glow 1.4s ease-in-out infinite; }
+.cell.unlocking { animation: popIn .45s cubic-bezier(.3,1.6,.5,1); }
+
+.cell.dragging .pet { opacity: .25; animation: none; }
+.cell.match { background: #fff0a8 !important; box-shadow: inset 0 0 0 3px var(--gold); }
+.cell.over { transform: scale(1.06); box-shadow: inset 0 0 0 3px var(--blue); }
+.cell.pop .pet { animation: popIn .45s cubic-bezier(.3,1.6,.5,1); }
+.cell.tap .pet { animation: squish .25s ease; }
+
+#ghost {
+  position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -60%) scale(1.15);
+  filter: drop-shadow(0 8px 6px rgba(0,0,0,.25));
+}
+
+/* ---------- right panel ---------- */
+#hatch {
+  position: relative; height: 20px; border-radius: 999px; background: #fff;
+  overflow: hidden; box-shadow: inset 0 2px 3px rgba(0,0,0,.08);
+}
+#hatchFill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, #ffd56b, #ffb03b); border-radius: 999px; }
+#hatch span { position: relative; display: block; text-align: center; font-size: 12px; font-weight: 600; line-height: 20px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.btn {
+  border-radius: 18px; display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-weight: 700; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.18);
+  transition: transform .08s;
+}
+.btn:active { transform: translateY(4px); }
+.btn.small { flex-direction: column; gap: 2px; font-size: 14px; padding: 10px 4px; background: var(--blue); box-shadow: 0 5px 0 var(--blue-dark); }
+.btn.small:active { box-shadow: 0 1px 0 var(--blue-dark); }
+.btn.sell { background: var(--pink); box-shadow: 0 5px 0 var(--pink-dark); border: 3px dashed rgba(255,255,255,.6); }
+.btn.sell:active { box-shadow: 0 1px 0 var(--pink-dark); }
+.btn.sell.over { transform: scale(1.07); background: #ff5c8f; }
+.btn.sell[aria-pressed="true"] { background: #fff; color: var(--pink-dark); text-shadow: none; border-color: var(--pink); animation: glow 1.2s ease-in-out infinite; }
+#shopBtn { position: relative; }
+#shopBtn.deal::after {
+  content: '!'; position: absolute; top: -7px; right: -7px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--gold); color: #7a4a00; font-size: 14px; line-height: 22px; text-shadow: none;
+  border: 2px solid #fff; box-shadow: 0 2px 0 rgba(0,0,0,.2); animation: bob 1.2s ease-in-out infinite;
+}
+/* tap-to-sell mode */
+.sell-tag {
+  position: absolute; left: 50%; top: 3%; transform: translateX(-50%); z-index: 3; pointer-events: none;
+  display: flex; align-items: center; gap: 3px; white-space: nowrap;
+  background: var(--pink); color: #fff; font-weight: 700; font-size: calc(var(--board) * .024);
+  padding: 1px 7px; border-radius: 999px; box-shadow: 0 2px 0 var(--pink-dark);
+}
+body.selling #board .cell:not(.locked) { cursor: pointer; }
+body.selling #board { box-shadow: 0 7px 0 #d9b98a, inset 0 0 0 5px var(--pink), 0 0 22px rgba(255,127,168,.7); }
+.btn.big { background: var(--green); box-shadow: 0 6px 0 var(--green-dark); padding: 8px 12px; font-size: 18px; }
+.btn.big:active { box-shadow: 0 2px 0 var(--green-dark); }
+.btn.big img { width: clamp(44px, 10vh, 72px); height: clamp(44px, 10vh, 72px); }
+.btn.big > span { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1; }
+.btn.big em { font-style: normal; font-size: 15px; opacity: .95; }
+.btn.big b { display: flex; align-items: center; gap: 5px; font-size: 22px; }
+.btn.big .coin { width: 20px; height: 20px; }
+.btn.big .coin::after { inset: 4px; }
+.btn.disabled { filter: grayscale(.6) brightness(.95); }
+
+/* ---------- fx ---------- */
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+.float {
+  position: absolute; transform: translate(-50%, -50%); font-weight: 700; font-size: 17px;
+  color: #ffd23a; -webkit-text-stroke: 1.5px #9b5c00; paint-order: stroke fill;
+  animation: floatUp 1s ease-out forwards; white-space: nowrap;
+}
+.float.big { font-size: 24px; color: #fff; -webkit-text-stroke: 2px var(--green-dark); }
+.float.xp { color: #b6ffb0; -webkit-text-stroke: 1.5px #2d7d3a; font-size: 14px; }
+.spark { position: absolute; width: 10px; height: 10px; border-radius: 50%; animation: spark .6s ease-out forwards; }
+
+#toast {
+  position: fixed; left: 50%; bottom: 8vh; transform: translate(-50%, 20px); z-index: 70;
+  background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 14px; font-weight: 600;
+  opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; text-align: center; max-width: 90vw;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- modal ---------- */
+#modal {
+  position: fixed; inset: 0; z-index: 80; background: rgba(50,30,70,.5);
+  display: grid; place-items: center; padding: 16px; touch-action: auto;
+}
+#modal.hidden { display: none; }
+.card {
+  width: min(520px, 100%); max-height: 90dvh; overflow: auto; background: var(--panel);
+  border-radius: 24px; padding: 18px; box-shadow: 0 8px 0 #d9b98a; animation: popIn .35s cubic-bezier(.3,1.5,.5,1);
+  touch-action: pan-y;
+}
+.card h2 { margin: 0 0 8px; text-align: center; font-size: 26px; }
+.card p { text-align: center; margin: 6px 0; color: var(--ink-soft); }
+.card .hero { width: min(170px, 35dvh); height: min(170px, 35dvh); display: block; margin: 0 auto; animation: bob 2s ease-in-out infinite; }
+.card .actions { display: flex; justify-content: center; gap: 10px; margin-top: 14px; }
+.card .btn.go { background: var(--green); box-shadow: 0 5px 0 var(--green-dark); padding: 10px 26px; font-size: 18px; }
+.book { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+.book div { background: #fff; border-radius: 14px; padding: 6px; text-align: center; font-size: 12px; font-weight: 600; }
+.book img { width: 100%; aspect-ratio: 1; }
+.book .locked img { filter: brightness(0) opacity(.18); }
+.book small { display: block; color: var(--ink-soft); font-weight: 500; }
+.shop-item { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 16px; padding: 10px 12px; margin-bottom: 8px; }
+.shop-item .ic { font-size: 30px; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; flex: none; }
+.shop-item .txt { flex: 1; }
+.shop-item .txt b { display: block; }
+.shop-item .txt small { color: var(--ink-soft); }
+.shop-item .btn { background: var(--green); box-shadow: 0 4px 0 var(--green-dark); padding: 8px 12px; font-size: 15px; min-width: 92px; }
+.shop-item .buy { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: none; }
+.shop-item .need { font-size: 11px; font-weight: 600; color: var(--ink-soft); white-space: nowrap; }
+.shop-item .btn.disabled { background: #b9b0c4; box-shadow: 0 4px 0 #8f849d; filter: none; }
+.shop-item .btn.maxed { background: var(--gold); box-shadow: 0 4px 0 var(--gold-dark); }
+.reset { display: block; margin: 12px auto 0; background: none; color: var(--ink-soft); text-decoration: underline; font-size: 13px; }
+
+/* ---------- animations ---------- */
+@keyframes bob { 0%,100% { transform: translateY(0) scale(1, 1); } 50% { transform: translateY(-3%) scale(1.02, .98); } }
+@keyframes popIn { 0% { transform: scale(.3); } 100% { transform: scale(1); } }
+@keyframes squish { 0% { transform: scale(1); } 40% { transform: scale(1.15, .85); } 100% { transform: scale(1); } }
+@keyframes floatUp { 0% { opacity: 0; margin-top: 0; } 15% { opacity: 1; } 100% { opacity: 0; margin-top: -60px; } }
+@keyframes spark { to { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; } }
+@keyframes wiggle { 0%,85%,100% { transform: rotate(0); } 90% { transform: rotate(-3deg); } 95% { transform: rotate(3deg); } }
+@keyframes glow { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.15); } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.shake { animation: shake .3s ease; }
+
+/* ---------- portrait fallback (phones held upright) ---------- */
+@media (orientation: portrait) {
+  #app {
+    grid-template-columns: 100%;
+    grid-template-rows: var(--top-h) auto minmax(0, 1fr) auto;
+    grid-template-areas: "top" "left" "board" "right";
+  }
+  /* Board fills exactly the space left between the panels, so nothing overlaps. */
+  #boardWrap { container-type: size; width: 100%; height: 100%; }
+  #board { --board: min(100cqw, 100cqh); }
+  .panel { width: 100%; padding: 8px; gap: 6px; }
+  .panel-title, .hint { display: none; }
+  #orders { flex-direction: row; }
+  .order { flex: 1; flex-direction: column; gap: 0; padding: 6px 4px; min-height: 0; text-align: center; }
+  .order .otxt { align-items: center; }
+  .order img { width: 44px; height: 44px; }
+  .order .oname { font-size: 11px; }
+  .order .reward { font-size: 15px; }
+  #right { display: grid; grid-template-columns: 1fr 1.6fr 1fr; grid-template-rows: auto auto; }
+  #right .pill { grid-column: 1 / -1; grid-row: 2; padding: 4px 12px; }
+  #right .row2 { display: contents; }
+  #shopBtn { grid-column: 1; grid-row: 1; }
+  #buyBtn { grid-column: 2; grid-row: 1; }
+  #sell { grid-column: 3; grid-row: 1; }
+  #hatch { grid-column: 1 / -1; grid-row: 3; height: 14px; }
+  #hatch span { line-height: 14px; font-size: 10px; }
+}
+
+/* ==========================================================================
+   BACK BUTTON IN TOP HEADER
+   ========================================================================== */
+.back-btn {
+  flex: none;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f0ff 100%);
+  color: var(--ink);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+}
+
+.back-btn:hover {
+  filter: brightness(1.08);
+}
+
+.back-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(74, 53, 88, 0.2);
+}
+
+.back-btn svg {
+  stroke: var(--ink);
+}
+
+/* ==========================================================================
+   EXIT CONFIRMATION MODAL ("Leave the Tab" and "Keep Playing")
+   ========================================================================== */
+.exit-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(35, 20, 50, 0.65);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: none;
+  place-items: center;
+  padding: 16px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.exit-modal-overlay.active {
+  display: grid;
+  opacity: 1;
+}
+
+.exit-modal-card {
+  width: min(390px, 92vw);
+  background: linear-gradient(180deg, #fffcf5 0%, #fff4e2 100%);
+  border: 4px solid #fff;
+  border-radius: 26px;
+  box-shadow: 0 10px 0 rgba(110, 80, 50, 0.25), 0 20px 42px rgba(0, 0, 0, 0.35);
+  padding: 24px 20px 22px;
+  text-align: center;
+  animation: popIn 0.25s cubic-bezier(0.2, 1.4, 0.4, 1);
+  box-sizing: border-box;
+}
+
+.exit-modal-badge {
+  display: inline-block;
+  background: #4a3558;
+  color: #fff;
+  font-size: 19px;
+  font-weight: 700;
+  padding: 6px 22px;
+  border-radius: 999px;
+  letter-spacing: 0.6px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.22);
+}
+
+.exit-modal-art {
+  margin: 14px auto 6px;
+  width: 88px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+}
+
+.exit-modal-pet {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: bob 2.2s ease-in-out infinite;
+}
+
+.exit-modal-desc {
+  font-size: 15px;
+  font-weight: 600;
+  color: #5a4568;
+  line-height: 1.45;
+  margin: 8px 0 18px;
+}
+
+.exit-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.exit-action-btn {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 16px;
+  padding: 12px 14px;
+  cursor: pointer;
+  outline: none;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: transform 0.1s ease, filter 0.1s ease, box-shadow 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.exit-action-btn:hover {
+  filter: brightness(1.08);
+}
+
+.exit-action-btn:active {
+  transform: translateY(3px);
+}
+
+/* Leave Tab Danger Button */
+.btn-leave-tab {
+  background: linear-gradient(180deg, #ff5c77 0%, #db2949 100%);
+  border: 2.5px solid #8e1529;
+  box-shadow: 0 4px 0 #6e0c1d;
+  color: #fff;
+  flex: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.btn-leave-tab:active {
+  box-shadow: 0 1px 0 #6e0c1d;
+}
+
+/* Keep Playing Stay Button */
+.btn-keep-playing {
+  background: linear-gradient(180deg, #5ec928 0%, #2f8c0d 100%);
+  border: 2.5px solid #1a5606;
+  box-shadow: 0 4px 0 #123d04;
+  color: #fff;
+  flex: 1.3;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.btn-keep-playing:active {
+  box-shadow: 0 1px 0 #123d04;
+}
+
+/* ==========================================================================
+   CIEL GAMES BRAND — purple loading splash, main menu & settings
+   ========================================================================== */
+:root {
+  --ciel-1: #170834;
+  --ciel-2: #2c1060;
+  --ciel-3: #4b1c9c;
+  --ciel-4: #7b3fe4;
+  --ciel-5: #b98cff;
+  --ciel-gold: #ffd34d;
+}
+
+.ciel-purple {
+  background:
+    radial-gradient(ellipse 120% 70% at 50% 0%, #5a24b8 0%, transparent 60%),
+    radial-gradient(ellipse 90% 60% at 50% 110%, #3a138a 0%, transparent 70%),
+    linear-gradient(160deg, var(--ciel-2) 0%, var(--ciel-1) 100%);
+  color: #fff;
+  overflow: hidden;
+}
+.ciel-glow { position: absolute; border-radius: 50%; filter: blur(50px); opacity: .55; pointer-events: none; animation: cielFloat 9s ease-in-out infinite; }
+.ciel-glow.g1 { width: 46vmax; height: 46vmax; left: -14vmax; top: -12vmax; background: #8a46ff; }
+.ciel-glow.g2 { width: 38vmax; height: 38vmax; right: -12vmax; bottom: -12vmax; background: #d14bff; opacity: .35; animation-delay: -3s; }
+.ciel-glow.g3 { width: 24vmax; height: 24vmax; right: 18%; top: 8%; background: #4f7dff; opacity: .28; animation-delay: -6s; }
+@keyframes cielFloat { 50% { transform: translate(2vmax, 3vmax) scale(1.08); } }
+
+.ciel-stars {
+  position: absolute; inset: 0; pointer-events: none; opacity: .8;
+  background-image:
+    radial-gradient(1.6px 1.6px at 12% 18%, #fff 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 28% 72%, #fff 50%, transparent 51%),
+    radial-gradient(2px 2px at 46% 12%, #ffe9a8 50%, transparent 51%),
+    radial-gradient(1.3px 1.3px at 64% 64%, #fff 50%, transparent 51%),
+    radial-gradient(1.8px 1.8px at 82% 26%, #fff 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 90% 82%, #e5d4ff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 6% 88%, #fff 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 54% 90%, #fff 50%, transparent 51%);
+  animation: twinkle 3.2s ease-in-out infinite alternate;
+}
+@keyframes twinkle { from { opacity: .35; } to { opacity: .9; } }
+
+/* ---------- Brand logo ---------- */
+.ciel-logo { display: inline-flex; align-items: center; gap: 12px; }
+.ciel-logo-mark { width: 64px; height: 64px; flex: none; filter: drop-shadow(0 6px 14px rgba(123,63,228,.65)); }
+.ciel-logo-mark svg { width: 100%; height: 100%; }
+.ciel-logo-text { display: flex; flex-direction: column; align-items: flex-start; line-height: .9; }
+.ciel-logo-text b { font-size: 44px; font-weight: 700; letter-spacing: 3px; color: #fff; text-shadow: 0 3px 0 var(--ciel-3), 0 0 22px rgba(185,140,255,.7); }
+.ciel-logo-text em { font-style: normal; font-size: 16px; font-weight: 700; letter-spacing: 9.5px; color: var(--ciel-5); margin-top: 4px; padding-left: 2px; }
+.ciel-logo.small { gap: 7px; }
+.ciel-logo.small .ciel-logo-mark { width: 30px; height: 30px; filter: none; }
+.ciel-logo.small .ciel-logo-text b { font-size: 17px; letter-spacing: 1.5px; text-shadow: none; }
+.ciel-logo.small .ciel-logo-text em { font-size: 8px; letter-spacing: 4px; margin-top: 2px; }
+
+.ciel-presented { font-size: 13px; font-weight: 600; letter-spacing: 4px; text-transform: uppercase; color: rgba(229,212,255,.8); margin-bottom: 12px; }
+.ciel-copyright { position: absolute; left: 0; right: 0; bottom: calc(12px + env(safe-area-inset-bottom)); text-align: center; font-size: 12px; font-weight: 600; letter-spacing: .5px; color: rgba(229,212,255,.6); z-index: 2; }
+
+/* ---------- Loading splash ---------- */
+.ciel-loading-overlay {
+  position: fixed; inset: 0; z-index: 99999;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity .5s ease, transform .5s ease;
+}
+.ciel-loading-overlay.fade-out { opacity: 0; pointer-events: none; transform: scale(1.03); }
+.ciel-loading-content {
+  position: relative; z-index: 2;
+  width: min(420px, 92vw); max-height: 100dvh;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 16px 12px 40px;
+}
+.ciel-loading-content .ciel-presented { animation: cielRise .6s .1s ease-out both; }
+.ciel-logo.big { animation: cielLogoIn .8s .25s cubic-bezier(.2,1.3,.4,1) both; }
+.ciel-divider { width: 60%; height: 2px; margin: 20px 0 16px; border-radius: 2px; background: linear-gradient(90deg, transparent, rgba(185,140,255,.8), transparent); animation: cielRise .6s .7s ease-out both; }
+.ciel-game-card { display: flex; flex-direction: column; align-items: center; animation: cielRise .7s .9s ease-out both; }
+@keyframes cielLogoIn { from { opacity: 0; transform: scale(.6) translateY(10px); filter: blur(6px); } }
+@keyframes cielRise { from { opacity: 0; transform: translateY(14px); } }
+
+#loading-hero-canvas, #menu-hero-canvas {
+  width: min(260px, 70vw, 26dvh * 1.58); height: auto;
+  border-radius: 20px;
+  background: radial-gradient(circle at 50% 60%, rgba(255,255,255,.18), rgba(255,255,255,.04) 70%);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.12);
+}
+.ciel-game-title, .menu-title {
+  margin: 10px 0 0; font-size: clamp(28px, 7vw, 38px); line-height: 1.05; color: #fff;
+  text-shadow: 0 3px 0 var(--ciel-3), 0 6px 16px rgba(0,0,0,.35);
+}
+.ciel-game-subtitle, .menu-subtitle { margin-top: 4px; font-size: 15px; font-weight: 700; color: var(--ciel-gold); letter-spacing: .5px; }
+.loading-pets-row { display: flex; justify-content: center; gap: 8px; margin-top: 12px; min-height: 40px; }
+.mini-loader-pet {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(255,255,255,.92); border: 2px solid #fff;
+  box-shadow: 0 3px 0 rgba(23,8,52,.4);
+  animation: miniPetHop 1.2s ease-in-out infinite;
+}
+@keyframes miniPetHop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+
+.loading-bar-wrapper { width: 100%; max-width: 320px; margin-top: 18px; animation: cielRise .6s 1.1s ease-out both; }
+.loading-bar-track {
+  width: 100%; height: 16px; border-radius: 999px; overflow: hidden; position: relative;
+  background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.35);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.35);
+}
+.loading-bar-fill {
+  height: 100%; width: 0%; border-radius: 999px; position: relative;
+  background: linear-gradient(90deg, #8a46ff, #d14bff 60%, var(--ciel-gold));
+  box-shadow: 0 0 12px rgba(209,75,255,.8);
+  transition: width .18s ease-out;
+}
+.loading-bar-spark { position: absolute; right: 0; top: 0; bottom: 0; width: 16px; background: rgba(255,255,255,.75); filter: blur(3px); }
+.loading-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 13px; font-weight: 700; color: rgba(229,212,255,.85); }
+.loading-percent-text { color: var(--ciel-gold); font-size: 14px; }
+
+/* ---------- Main menu & settings screens ---------- */
+.ciel-screen {
+  position: fixed; inset: 0; z-index: 9000;
+  display: flex; align-items: center; justify-content: center;
+  padding: calc(14px + env(safe-area-inset-top)) 14px calc(34px + env(safe-area-inset-bottom));
+  opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility .35s;
+}
+.ciel-screen.show { opacity: 1; visibility: visible; }
+#settingsScreen { z-index: 9100; }
+
+.menu-card {
+  position: relative; z-index: 2;
+  width: min(400px, 100%); max-height: 100%;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.ciel-screen.show .menu-card { animation: cielRise .45s ease-out both; }
+.menu-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.menu-presents { font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: rgba(229,212,255,.75); }
+.menu-hero { display: flex; flex-direction: column; align-items: center; }
+#menu-hero-canvas { animation: bob 3s ease-in-out infinite; }
+.menu-actions { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 20px; }
+.menu-save {
+  min-height: 20px; font-size: 13px; font-weight: 600; color: rgba(229,212,255,.85);
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+}
+.menu-save span { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 3px 10px; }
+
+.menu-btn {
+  width: min(290px, 100%);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 14px 18px; border-radius: 20px;
+  font-size: 21px; font-weight: 700; color: #fff; letter-spacing: .3px;
+  text-shadow: 0 2px 0 rgba(0,0,0,.22);
+  transition: transform .08s, filter .15s;
+}
+.menu-btn svg { width: 22px; height: 22px; flex: none; }
+.menu-btn:hover { filter: brightness(1.08); }
+.menu-btn:active { transform: translateY(4px); }
+.btn-continue { background: linear-gradient(#7fe36b, #3fb54a); box-shadow: 0 6px 0 #26812f, 0 10px 18px rgba(0,0,0,.3), inset 0 2px 0 rgba(255,255,255,.45); }
+.btn-continue:active { box-shadow: 0 2px 0 #26812f, inset 0 2px 0 rgba(255,255,255,.45); }
+.btn-new { background: linear-gradient(#ffd75a, #ff9f2e); box-shadow: 0 6px 0 #c4630f, 0 10px 18px rgba(0,0,0,.3), inset 0 2px 0 rgba(255,255,255,.5); }
+.btn-new:active { box-shadow: 0 2px 0 #c4630f, inset 0 2px 0 rgba(255,255,255,.5); }
+.btn-settings { background: linear-gradient(#a777ff, #6a2fd1); box-shadow: 0 6px 0 #3f1590, 0 10px 18px rgba(0,0,0,.3), inset 0 2px 0 rgba(255,255,255,.35); }
+.btn-settings:active { box-shadow: 0 2px 0 #3f1590, inset 0 2px 0 rgba(255,255,255,.35); }
+.menu-btn.is-disabled { filter: grayscale(.85) brightness(.75); opacity: .65; cursor: not-allowed; }
+.menu-row { width: min(290px, 100%); display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.menu-row .menu-btn { width: 100%; font-size: 16px; padding: 12px 8px; gap: 6px; }
+.menu-row .menu-btn svg { width: 19px; height: 19px; }
+.btn-howto { background: linear-gradient(#4fd6e8, #1f97c4); box-shadow: 0 6px 0 #11648a, 0 10px 18px rgba(0,0,0,.3), inset 0 2px 0 rgba(255,255,255,.4); }
+.btn-howto:active { box-shadow: 0 2px 0 #11648a, inset 0 2px 0 rgba(255,255,255,.4); }
+.btn-exit { font-size: 17px; padding: 10px 18px; background: linear-gradient(#ff7a8e, #db2949); box-shadow: 0 5px 0 #8e1529, 0 10px 18px rgba(0,0,0,.3), inset 0 2px 0 rgba(255,255,255,.35); }
+.btn-exit:active { box-shadow: 0 1px 0 #8e1529, inset 0 2px 0 rgba(255,255,255,.35); }
+.btn-exit svg { width: 19px; height: 19px; }
+
+/* how to play */
+#howToScreen { z-index: 9200; }
+.how-card { width: min(480px, 100%); }
+.how-list { width: 100%; }
+.how-row .set-txt small { font-size: 13px; line-height: 1.3; margin-top: 2px; }
+.how-row .set-txt small b { font-size: inherit; }
+.how-art { flex: none; width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; }
+.how-merge { width: auto; height: auto; display: flex; align-items: center; gap: 1px; background: #e7f6d6; border-radius: 13px; padding: 2px 5px; font-weight: 700; color: var(--ink-soft); }
+.how-merge img { width: 30px; height: 30px; }
+.how-keys { margin: 2px 0 14px; font-size: 12px; font-weight: 600; color: rgba(229,212,255,.8); }
+.how-keys kbd { font: inherit; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.25); border-radius: 6px; padding: 0 5px; }
+@media (hover: none) { .how-keys { display: none; } }
+
+/* settings panel */
+.settings-card {
+  background: rgba(255,255,255,.08);
+  border: 1.5px solid rgba(255,255,255,.18);
+  border-radius: 28px;
+  padding: 18px 18px 22px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  overflow: auto;
+}
+.settings-head { width: 100%; display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 14px; }
+.settings-head h2 { margin: 0; font-size: 28px; text-shadow: 0 3px 0 var(--ciel-3); }
+.settings-back {
+  position: absolute; left: 0; width: 42px; height: 42px; border-radius: 14px;
+  background: rgba(255,255,255,.14); color: #fff; display: grid; place-items: center;
+}
+.settings-back svg { width: 22px; height: 22px; }
+.set-row {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  background: #fffaf3; color: var(--ink);
+  border-radius: 18px; padding: 10px 12px; margin-bottom: 10px;
+  box-shadow: 0 4px 0 rgba(23,8,52,.35);
+  text-align: left;
+}
+.set-ic { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; font-size: 20px; flex: none; }
+.set-txt { flex: 1; display: flex; flex-direction: column; line-height: 1.2; }
+.set-txt b { font-size: 16px; }
+.set-txt small { font-size: 12px; color: var(--ink-soft); font-weight: 500; }
+.switch {
+  width: 56px; height: 32px; border-radius: 999px; flex: none; position: relative;
+  background: #cfc6d9; box-shadow: inset 0 2px 4px rgba(0,0,0,.2);
+  transition: background .2s;
+}
+.switch i { position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.3); transition: transform .2s cubic-bezier(.3,1.4,.5,1); }
+.switch[aria-checked="true"] { background: linear-gradient(#a777ff, #6a2fd1); }
+.switch[aria-checked="true"] i { transform: translateX(24px); }
+.set-danger { padding: 8px 14px; border-radius: 12px; font-weight: 700; font-size: 14px; color: #fff; background: linear-gradient(#ff6b82, #db2949); box-shadow: 0 3px 0 #8e1529; }
+.set-danger:active { transform: translateY(2px); box-shadow: 0 1px 0 #8e1529; }
+.set-about { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 8px 0 16px; }
+.set-about small { font-size: 12px; color: rgba(229,212,255,.75); font-weight: 600; }
+
+/* exit modal "Main Menu" button + purple confirm badge */
+.btn-to-menu { background: linear-gradient(180deg, #a777ff 0%, #6a2fd1 100%); border: 2.5px solid #3f1590; box-shadow: 0 4px 0 #2c0d6b; color: #fff; flex: 1; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+.btn-to-menu:active { box-shadow: 0 1px 0 #2c0d6b; }
+.exit-modal-actions { flex-wrap: wrap; }
+.exit-modal-badge.ciel-badge-purple { background: linear-gradient(#7b3fe4, #4b1c9c); }
+#cielConfirm { z-index: 100001; }
+
+/* ---------- Responsive: short / landscape screens ---------- */
+@media (orientation: landscape) and (max-height: 620px) {
+  .menu-card:not(.settings-card) {
+    width: min(760px, 100%);
+    display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr;
+    column-gap: 28px; align-items: center;
+  }
+  .menu-brand { grid-column: 1 / -1; margin-bottom: 6px; justify-content: center; }
+  .menu-actions { margin-top: 0; }
+  #menu-hero-canvas { width: min(240px, 34vw, 42dvh * 1.58); }
+  .menu-title { font-size: clamp(24px, 4.2vw, 34px); }
+  .menu-btn { padding: 11px 16px; font-size: 18px; }
+  .ciel-loading-content { width: min(640px, 94vw); padding-bottom: 30px; }
+  .ciel-logo.big .ciel-logo-mark { width: 48px; height: 48px; }
+  .ciel-logo.big .ciel-logo-text b { font-size: 34px; }
+  .ciel-logo.big .ciel-logo-text em { font-size: 13px; letter-spacing: 7px; }
+  .ciel-divider { margin: 10px 0 8px; }
+  #loading-hero-canvas { width: min(200px, 30dvh * 1.58); }
+  .ciel-game-title { font-size: 26px; margin-top: 4px; }
+  .loading-pets-row { display: none; }
+  .loading-bar-wrapper { margin-top: 10px; }
+  .settings-card { width: min(520px, 100%); padding: 12px 16px 14px; }
+  .set-row { padding: 7px 10px; margin-bottom: 7px; }
+  .set-about { display: none; }
+}
+@media (max-height: 520px) {
+  .ciel-copyright { display: none; }
+  .menu-subtitle, .ciel-game-subtitle { font-size: 13px; }
+}
+@media (max-width: 360px) {
+  .ciel-logo.big .ciel-logo-text b { font-size: 36px; }
+  .menu-btn { font-size: 19px; padding: 12px 14px; }
+}
+
+
+/* ---------- Score & Combo additions ---------- */
+.score-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  box-shadow: 0 3px 0 rgba(74,53,88,.15);
+}
+.score-star {
+  font-size: 18px;
+  animation: starPulse 2s ease-in-out infinite;
+}
+@keyframes starPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2) rotate(10deg); }
+}
+.score-pill b {
+  font-size: clamp(16px, 2.6vh, 22px);
+  color: #ff9100;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.06);
+}
+.score-pill small {
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 2px;
+  border-left: 1.5px solid rgba(74,53,88,0.15);
+  padding-left: 6px;
+}
+
+.icon-btn.disabled {
+  opacity: 0.38;
+  pointer-events: none;
+  filter: grayscale(0.8);
+}
+
+.float.score-float {
+  color: #ff9900;
+  font-weight: 800;
+  font-size: 18px;
+  text-shadow: 0 2px 0 #fff, 0 -2px 0 #fff, 2px 0 0 #fff, -2px 0 0 #fff, 0 3px 6px rgba(0,0,0,0.25);
+  animation: floatScore 1.1s cubic-bezier(.1, .9, .2, 1) forwards;
+}
+@keyframes floatScore {
+  0% { transform: translate(-50%, 0) scale(0.6); opacity: 0; }
+  20% { transform: translate(-50%, -15px) scale(1.25); opacity: 1; }
+  80% { transform: translate(-50%, -45px) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -65px) scale(0.9); opacity: 0; }
+}
+
+.float.combo-float {
+  color: #ff3377;
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: 0.05em;
+  text-shadow: 0 2px 0 #fff, 0 -2px 0 #fff, 2px 0 0 #fff, -2px 0 0 #fff, 0 4px 10px rgba(255, 50, 120, 0.4);
+  animation: floatCombo 1.3s cubic-bezier(.2, 1.4, .4, 1) forwards;
+}
+@keyframes floatCombo {
+  0% { transform: translate(-50%, 0) scale(0.4) rotate(-10deg); opacity: 0; }
+  25% { transform: translate(-50%, -20px) scale(1.35) rotate(5deg); opacity: 1; }
+  75% { transform: translate(-50%, -50px) scale(1.05) rotate(-3deg); opacity: 1; }
+  100% { transform: translate(-50%, -75px) scale(0.8) rotate(0deg); opacity: 0; }
+}
+
+.float.heart-float {
+  font-size: 24px;
+  animation: floatHeart 1.2s ease-out forwards;
+}
+@keyframes floatHeart {
+  0% { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
+  30% { transform: translate(-50%, -25px) scale(1.3); opacity: 1; }
+  100% { transform: translate(-50%, -70px) scale(1); opacity: 0; }
+}
+
+@media (orientation: portrait) {
+  .score-pill { padding: 3px 8px; }
+  .score-pill b { font-size: 15px; }
+  .score-pill small { display: none; }
+  .top-btns { gap: 5px; }
+  .icon-btn { width: calc(var(--top-h) * 0.78); height: calc(var(--top-h) * 0.78); }
+}
+
+</style>
+</head>
+<body>
+  <!-- CIEL Games loading screen -->
+  <script src="ciel-loader.js?v=1"></script>
+  <!-- ============ 2. MAIN MENU ============ -->
+  <section id="mainMenu" class="ciel-screen ciel-purple" aria-label="Main menu">
+    <div class="ciel-glow g1"></div><div class="ciel-glow g2"></div><div class="ciel-glow g3"></div>
+    <div class="ciel-stars" aria-hidden="true"></div>
+
+    <div class="menu-card">
+      <div class="menu-brand">
+        <span class="ciel-logo small">
+          <span class="ciel-logo-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="3" y="3" width="58" height="58" rx="16" fill="#7b3fe4"/><path d="M42 21.5a14 14 0 1 0 0 21" fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round"/><path d="M48 10l2.3 5.2L55.5 17.5l-5.2 2.3L48 25l-2.3-5.2L40.5 17.5l5.2-2.3z" fill="#ffd34d"/></svg></span>
+          <span class="ciel-logo-text"><b>CIEL</b><em>GAMES</em></span>
+        </span>
+        <span class="menu-presents">presents</span>
+      </div>
+
+      <div class="menu-hero">
+        <canvas id="menu-hero-canvas" width="300" height="190"></canvas>
+        <h1 class="menu-title">Pet Adoption</h1>
+        <div class="menu-subtitle">🐾 Merge Haven 🐾</div>
+      </div>
+
+      <div class="menu-actions">
+        <div class="menu-save" id="menuSave"></div>
+        <button class="menu-btn btn-continue" id="btnContinue">
+          <svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>Continue
+        </button>
+        <button class="menu-btn btn-new" id="btnNewGame">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg>New Game
+        </button>
+        <div class="menu-row">
+          <button class="menu-btn btn-howto" id="btnHowTo">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M9.4 9.3a2.7 2.7 0 1 1 3.6 2.6c-.7.3-1 .8-1 1.5v.6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.3" r="1.4" fill="currentColor"/></svg>How to Play
+          </button>
+          <button class="menu-btn btn-settings" id="btnSettings">
+            <svg viewBox="0 0 24 24"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.6-2-3.4-2.4.9a7.4 7.4 0 0 0-2.6-1.5L14 2.4h-4l-.4 2.5A7.4 7.4 0 0 0 7 6.4l-2.4-.9-2 3.4 2 1.6a7.6 7.6 0 0 0 0 3l-2 1.6 2 3.4 2.4-.9a7.4 7.4 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 2.6-1.5l2.4.9 2-3.4Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>Settings
+          </button>
+        </div>
+        <button class="menu-btn btn-exit" id="btnExitGame">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Exit
+        </button>
+      </div>
+    </div>
+    <div class="ciel-copyright">© 2026 CIEL Games · v1.0</div>
+  </section>
+
+  <!-- ============ 3. SETTINGS SCREEN ============ -->
+  <section id="settingsScreen" class="ciel-screen ciel-purple" aria-label="Settings">
+    <div class="ciel-glow g1"></div><div class="ciel-glow g2"></div><div class="ciel-glow g3"></div>
+    <div class="menu-card settings-card">
+      <div class="settings-head">
+        <button class="settings-back" id="btnSettingsBack" aria-label="Back to menu">
+          <svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <h2>Settings</h2>
+      </div>
+
+      <div class="set-row">
+        <div class="set-ic" style="background:#ffe1ec">🔊</div>
+        <div class="set-txt"><b>Sound Effects</b><small>Merges, coins and pops</small></div>
+        <button class="switch" id="setSound" role="switch" aria-checked="true" aria-label="Sound effects"><i></i></button>
+      </div>
+      <div class="set-row">
+        <div class="set-ic" style="background:#e3f2ff">⛶</div>
+        <div class="set-txt"><b>Full Screen</b><small>Hide the browser bars</small></div>
+        <button class="switch" id="setFull" role="switch" aria-checked="false" aria-label="Full screen"><i></i></button>
+      </div>
+      <div class="set-row">
+        <div class="set-ic" style="background:#ffe9d6">🗑️</div>
+        <div class="set-txt"><b>Reset Progress</b><small>Erase pets, coins and level</small></div>
+        <button class="set-danger" id="setReset">Reset</button>
+      </div>
+
+      <div class="set-about">
+        <span class="ciel-logo small">
+          <span class="ciel-logo-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="3" y="3" width="58" height="58" rx="16" fill="#7b3fe4"/><path d="M42 21.5a14 14 0 1 0 0 21" fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round"/><path d="M48 10l2.3 5.2L55.5 17.5l-5.2 2.3L48 25l-2.3-5.2L40.5 17.5l5.2-2.3z" fill="#ffd34d"/></svg></span>
+          <span class="ciel-logo-text"><b>CIEL</b><em>GAMES</em></span>
+        </span>
+        <small>Pet Adoption: Merge Haven · v1.0</small>
+      </div>
+
+      <button class="menu-btn btn-continue" id="btnSettingsDone">Done</button>
+    </div>
+  </section>
+
+  <!-- ============ 4. HOW TO PLAY SCREEN ============ -->
+  <section id="howToScreen" class="ciel-screen ciel-purple" aria-label="How to play">
+    <div class="ciel-glow g1"></div><div class="ciel-glow g2"></div><div class="ciel-glow g3"></div>
+    <div class="menu-card settings-card how-card">
+      <div class="settings-head">
+        <button class="settings-back" id="btnHowToBack" aria-label="Back">
+          <svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <h2>How to Play</h2>
+      </div>
+
+      <div class="how-list">
+        <div class="set-row how-row">
+          <div class="how-art how-merge"><img data-pet="1" alt=""><span>+</span><img data-pet="1" alt=""><span>=</span><img data-pet="2" alt=""></div>
+          <div class="set-txt"><b>1. Merge pets</b><small>Drag a pet onto a matching pet to merge them into a new, higher-level pet. There are 13 to discover.</small></div>
+        </div>
+        <div class="set-row how-row">
+          <div class="set-ic" style="background:#fff1c2">🪙</div>
+          <div class="set-txt"><b>2. Earn coins</b><small>Every pet earns coins by itself. Tap a pet for a quick bonus.</small></div>
+        </div>
+        <div class="set-row how-row">
+          <div class="set-ic" style="background:#ffe1ec">🏠</div>
+          <div class="set-txt"><b>3. Fill adoption orders</b><small>Drag the pet a family wants onto their card on the Adoption Board for big coin and XP rewards.</small></div>
+        </div>
+        <div class="set-row how-row">
+          <div class="set-ic" style="background:#e3f7d9">🥚</div>
+          <div class="set-txt"><b>4. Get more pets</b><small>Tap <b>Buy egg</b>, or wait for the free egg bar to fill.</small></div>
+        </div>
+        <div class="set-row how-row">
+          <div class="set-ic" style="background:#f1e4d6">🔓</div>
+          <div class="set-txt"><b>5. Grow your yard</b><small>Tap a tile that shows a price to unlock more space.</small></div>
+        </div>
+        <div class="set-row how-row">
+          <div class="set-ic" style="background:#e3f2ff">🛍️</div>
+          <div class="set-txt"><b>6. Shop &amp; Sell</b><small>Tap <b>Shop</b> to buy upgrades. Tap <b>Sell</b>, then tap a pet to sell it (or drag a pet onto Sell).</small></div>
+        </div>
+      </div>
+      <p class="how-keys">Keyboard: <kbd>Space</kbd> buys an egg · <kbd>F</kbd> full screen · <kbd>Esc</kbd> back</p>
+
+      <button class="menu-btn btn-continue" id="btnHowToDone">Got it!</button>
+    </div>
+  </section>
+
+  <!-- ============ CONFIRM DIALOG (New Game / Reset) ============ -->
+  <div id="cielConfirm" class="exit-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="cielConfirmTitle">
+    <div class="exit-modal-card">
+      <div class="exit-modal-badge ciel-badge-purple" id="cielConfirmTitle">START OVER?</div>
+      <p class="exit-modal-desc" id="cielConfirmText">Your current pets, coins and level will be lost.</p>
+      <div class="exit-modal-actions">
+        <button id="cielConfirmNo" class="exit-action-btn btn-keep-playing">Cancel</button>
+        <button id="cielConfirmYes" class="exit-action-btn btn-leave-tab">Yes, start new</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+
+  <div id="app">
+    <header id="top">
+      <!-- BACK BUTTON (Leave Tab with confirmation) -->
+      <button class="icon-btn back-btn" id="gameBackBtn" aria-label="Leave Game" title="Leave Game">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
+
+      <div class="lvl-badge"><small>LV</small><b id="lvl">1</b></div>
+      <div id="xpBar"><div id="xpFill"></div><span id="xpText">0 / 10</span></div>
+      <div class="pill score-pill" title="Current Score">
+        <span class="score-star">⭐</span>
+        <b id="score">0</b>
+        <small id="highScoreText">BEST: 0</small>
+      </div>
+      <div class="top-btns">
+        <button class="icon-btn" id="btnUndo" aria-label="Undo move" title="Undo (Z)">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7v6h6"/>
+            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="btnReset" aria-label="Reset board" title="Reset (R)">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="helpBtn" aria-label="How to play" title="How to play">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M9.4 9.3a2.7 2.7 0 1 1 3.6 2.6c-.7.3-1 .8-1 1.5v.6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.3" r="1.4" fill="currentColor"/></svg>
+        </button>
+        <button class="icon-btn" id="bookBtn" aria-label="Pet collection">
+          <svg viewBox="0 0 24 24"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5a2.5 2.5 0 0 0 0 5H20v-2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 4.5v15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </button>
+        <button class="icon-btn" id="soundBtn" aria-label="Toggle sound">
+          <svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path class="wave" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
+        <button class="icon-btn" id="fsBtn" aria-label="Toggle full screen">
+          <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <aside id="left" class="panel">
+      <div class="panel-title">Adoption Board</div>
+      <div id="orders"></div>
+    </aside>
+
+    <main id="boardWrap"><div id="board"></div></main>
+
+    <aside id="right" class="panel">
+      <div class="pill coins"><i class="coin"></i><b id="coins">0</b><small id="rate">0/s</small></div>
+      <button class="btn big" id="buyBtn">
+        <img id="buyIcon" alt="">
+        <span><em>Buy egg</em><b><i class="coin"></i><span id="cost">0</span></b></span>
+      </button>
+      <div id="hatch"><div id="hatchFill"></div><span>Free egg</span></div>
+      <div class="row2">
+        <button class="btn small" id="shopBtn">
+          <svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 12H6.2z" fill="currentColor"/><path d="M9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>
+          Shop
+        </button>
+        <button class="btn small sell" id="sell" aria-pressed="false">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>
+          <span id="sellLabel">Sell</span>
+        </button>
+      </div>
+      <p class="hint">Drag matching pets together to merge. Tap <b>?</b> for help.</p>
+    </aside>
+  </div>
+
+  <div id="fx"></div>
+  <div id="toast"></div>
+  <div id="modal" class="hidden"><div class="card" id="modalCard"></div></div>
+
+  <!-- EXIT CONFIRMATION MODAL (Leave the Tab & Keep Playing) -->
+  <div id="gameExitModal" class="exit-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="exitModalTitle">
+    <div class="exit-modal-card">
+      <div class="exit-modal-badge" id="exitModalTitle">LEAVE GAME?</div>
+      <div class="exit-modal-art">
+        <img id="exitModalPetImg" class="exit-modal-pet" alt="Pet Haven Mascot">
+      </div>
+      <p class="exit-modal-desc">
+        Are you sure you want to leave?<br>
+        Your pets, coins, and level progress are safely saved.
+      </p>
+      <div class="exit-modal-actions">
+        <button id="btnConfirmExit" class="exit-action-btn btn-leave-tab" title="Leave the Tab">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Leave the Tab
+        </button>
+        <button id="btnExitToMenu" class="exit-action-btn btn-to-menu" title="Main Menu">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          Main Menu
+        </button>
+        <button id="btnCancelExit" class="exit-action-btn btn-keep-playing" title="Keep Playing">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <polygon points="6 4 20 12 6 20 6 4"/>
+          </svg>
+          Keep Playing
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+// All pet art is drawn procedurally on <canvas> — no external images.
+const PETS = [
+  { name: 'Speckled Egg',      type: 'egg',     color: '#fff3dc', spot: '#f6b26b' },
+  { name: 'Chirpy Chick',      type: 'chick',   color: '#ffd84a' },
+  { name: 'Kitten Puff',       type: 'cat',     color: '#ffad60', belly: '#fff1de', stripe: '#d9772f' },
+  { name: 'Pudding Pup',       type: 'dog',     color: '#dcab7e', ear: '#8b5a3c', belly: '#fff1de' },
+  { name: 'Mochi Bunny',       type: 'bunny',   color: '#ffcadd', belly: '#ffffff', inner: '#ff8fb5' },
+  { name: 'Ember Fox',         type: 'fox',     color: '#ff7f3f', belly: '#fff6ec' },
+  { name: 'Bamboo Panda',      type: 'panda',   color: '#fbfbfb', dark: '#3a3340' },
+  { name: 'Cloud Koala',       type: 'koala',   color: '#aeb9cc', inner: '#f6d4e2' },
+  { name: 'Frost Penguin',     type: 'penguin', color: '#3f4d73', belly: '#ffffff' },
+  { name: 'Starlight Unicorn', type: 'unicorn', color: '#fff7ff' },
+  { name: 'Mossy Dragon',      type: 'dragon',  color: '#72d38f', belly: '#effbd0' },
+  { name: 'Sunburst Phoenix',  type: 'phoenix', color: '#ffbe3b' },
+  { name: 'Cosmic Spirit',     type: 'spirit',  color: '#8d7bff' },
+];
+
+function shade(hex, amt) {
+  const c = parseInt(hex.slice(1), 16);
+  let r = c >> 16, g = (c >> 8) & 255, b = c & 255;
+  if (amt >= 0) { r += (255 - r) * amt; g += (255 - g) * amt; b += (255 - b) * amt; }
+  else { r *= 1 + amt; g *= 1 + amt; b *= 1 + amt; }
+  return `rgb(${r | 0},${g | 0},${b | 0})`;
+}
+
+function renderPet(level, px) {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = px;
+  const ctx = cv.getContext('2d');
+  ctx.scale(px / 200, px / 200);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  drawPet(ctx, PETS[level - 1]);
+  return cv;
+}
+
+function drawPet(ctx, p) {
+  const T = p.type, C = p.color, OUT = shade(C === '#fbfbfb' || C === '#fff7ff' ? '#8a7fa0' : C, -0.45);
+  const E = (x, y, rx, ry, rot = 0) => { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2); };
+  const fs = (fill, stroke = OUT, lw = 5) => {
+    ctx.fillStyle = fill; ctx.fill();
+    if (stroke) { ctx.lineWidth = lw; ctx.strokeStyle = stroke; ctx.stroke(); }
+  };
+  const grad = (col, x, y, r) => {
+    const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.45, r * 0.05, x, y, r * 1.15);
+    g.addColorStop(0, shade(col, 0.45)); g.addColorStop(0.55, col); g.addColorStop(1, shade(col, -0.15));
+    return g;
+  };
+  const star = (x, y, r, col) => {
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4, rr = i % 2 ? r * 0.35 : r;
+      ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+    }
+    ctx.closePath(); ctx.fillStyle = col; ctx.fill();
+  };
+
+  // Glow for legendary pets
+  if (T === 'unicorn' || T === 'phoenix' || T === 'spirit') {
+    const glowCol = T === 'unicorn' ? '255,190,250' : T === 'phoenix' ? '255,200,80' : '160,140,255';
+    const g = ctx.createRadialGradient(100, 105, 20, 100, 105, 100);
+    g.addColorStop(0, `rgba(${glowCol},.7)`); g.addColorStop(1, `rgba(${glowCol},0)`);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 200, 200);
+  }
+
+  // Ground shadow
+  E(100, 183, 56, 9); ctx.fillStyle = 'rgba(40,30,60,.18)'; ctx.fill();
+
+  if (T === 'egg') { drawEgg(); return; }
+
+  // ---------- behind body ----------
+  if (T === 'fox') {
+    E(160, 140, 22, 38, -0.7); fs(grad(C, 160, 140, 38));
+    E(175, 118, 12, 14, -0.7); fs('#fff6ec', null);
+  }
+  if (T === 'dragon') {
+    wings('#4fae6a', '#a6e8b6');
+    ctx.beginPath(); ctx.moveTo(140, 150); ctx.quadraticCurveTo(185, 165, 182, 128);
+    ctx.lineTo(192, 120); ctx.lineTo(176, 118); ctx.quadraticCurveTo(170, 145, 135, 135); ctx.closePath();
+    fs(grad(C, 160, 140, 30));
+  }
+  if (T === 'phoenix') {
+    for (let i = -1; i <= 1; i++) {
+      E(100 + i * 22, 168, 10, 30, i * 0.5); fs(i === 0 ? '#ff5b3a' : '#ff8a3d');
+    }
+    wings('#ff6a3d', '#ffd36b');
+  }
+  if (T === 'spirit') {
+    ctx.save(); ctx.globalAlpha = 0.85; wings('#b6a8ff', '#efeaff'); ctx.restore();
+  }
+
+  // Ears behind the head
+  if (T === 'cat' || T === 'fox') {
+    for (const s of [-1, 1]) {
+      ctx.beginPath(); ctx.moveTo(100 + s * 20, 70); ctx.lineTo(100 + s * 56, 24); ctx.lineTo(100 + s * 68, 84); ctx.closePath();
+      fs(grad(C, 100 + s * 50, 50, 40));
+      ctx.beginPath(); ctx.moveTo(100 + s * 32, 68); ctx.lineTo(100 + s * 54, 40); ctx.lineTo(100 + s * 60, 76); ctx.closePath();
+      fs(T === 'fox' ? '#5a2a1a' : '#ffb3c6', null);
+    }
+  }
+  if (T === 'bunny') {
+    for (const s of [-1, 1]) {
+      E(100 + s * 26, 34, 15, 40, s * 0.18); fs(grad(C, 100 + s * 26, 34, 40));
+      E(100 + s * 26, 38, 7, 28, s * 0.18); fs(p.inner, null);
+    }
+  }
+  if (T === 'panda') {
+    for (const s of [-1, 1]) { E(100 + s * 48, 62, 22, 22); fs(p.dark, '#221d27'); }
+  }
+  if (T === 'koala') {
+    for (const s of [-1, 1]) {
+      E(100 + s * 58, 74, 32, 30); fs(grad(C, 100 + s * 58, 74, 32));
+      E(100 + s * 58, 76, 18, 17); fs(p.inner, null);
+    }
+  }
+  if (T === 'dragon') {
+    for (const s of [-1, 1]) {
+      ctx.beginPath(); ctx.moveTo(100 + s * 18, 62); ctx.quadraticCurveTo(100 + s * 34, 18, 100 + s * 50, 26);
+      ctx.quadraticCurveTo(100 + s * 40, 45, 100 + s * 42, 66); ctx.closePath(); fs('#fff3c4', '#b08b4a');
+    }
+  }
+
+  // ---------- body ----------
+  const bodyRy = T === 'penguin' ? 64 : 60;
+  E(100, 114, 66, bodyRy); fs(grad(C, 100, 114, 66));
+
+  // Belly / markings
+  if (p.belly && T !== 'penguin') { E(100, 140, 36, 25); fs(p.belly, null); }
+  if (T === 'penguin') {
+    E(83, 108, 28, 28); fs('#fff', null); E(117, 108, 28, 28); fs('#fff', null);
+    E(100, 138, 40, 32); fs('#fff', null);
+    for (const s of [-1, 1]) { E(100 + s * 64, 125, 12, 26, s * -0.35); fs(grad(C, 100 + s * 64, 125, 26)); }
+  }
+  if (T === 'cat') {
+    ctx.strokeStyle = p.stripe; ctx.lineWidth = 5;
+    for (const dx of [-12, 0, 12]) { ctx.beginPath(); ctx.moveTo(100 + dx, 56); ctx.lineTo(100 + dx * 0.8, 72); ctx.stroke(); }
+  }
+  if (T === 'dog') { E(124, 98, 18, 16, 0.3); fs('rgba(139,90,60,.45)', null); }
+  if (T === 'fox') { E(100, 132, 46, 30); fs(p.belly, null); }
+  if (T === 'panda') {
+    for (const s of [-1, 1]) { E(100 + s * 24, 106, 15, 19, s * -0.5); fs(p.dark, null); }
+  }
+  if (T === 'chick') {
+    for (const s of [-1, 1]) { E(100 + s * 64, 125, 14, 22, s * -0.5); fs(grad(C, 100 + s * 64, 125, 22)); }
+  }
+  if (T === 'dragon') {
+    ctx.strokeStyle = 'rgba(120,150,80,.5)'; ctx.lineWidth = 3;
+    for (const dy of [130, 142, 154]) { ctx.beginPath(); ctx.moveTo(78, dy); ctx.quadraticCurveTo(100, dy + 5, 122, dy); ctx.stroke(); }
+  }
+  if (T === 'spirit') {
+    star(70, 145, 7, 'rgba(255,255,255,.85)'); star(135, 150, 5, 'rgba(255,255,255,.8)');
+    star(128, 72, 4, 'rgba(255,255,255,.7)'); star(62, 90, 4, 'rgba(255,255,255,.7)');
+  }
+
+  // Feet
+  if (T !== 'spirit') {
+    const footCol = T === 'penguin' || T === 'chick' || T === 'phoenix' ? '#ff9a3c' : T === 'unicorn' ? '#d8c2ff' : shade(C, -0.08);
+    for (const s of [-1, 1]) { E(100 + s * 26, 170, 17, 10); fs(footCol); }
+  }
+
+  // ---------- face ----------
+  const happy = T === 'spirit';
+  const eyeY = 104, eyeDX = 24;
+  for (const s of [-1, 1]) {
+    const x = 100 + s * eyeDX;
+    if (happy) {
+      ctx.beginPath(); ctx.moveTo(x - 9, eyeY + 3); ctx.quadraticCurveTo(x, eyeY - 9, x + 9, eyeY + 3);
+      ctx.lineWidth = 5; ctx.strokeStyle = '#2b1d3a'; ctx.stroke();
+    } else {
+      E(x, eyeY, 9, 10); ctx.fillStyle = T === 'panda' ? '#000' : '#2b1d2a'; ctx.fill();
+      E(x - 3, eyeY - 4, 3.6, 3.6); ctx.fillStyle = '#fff'; ctx.fill();
+      E(x + 3, eyeY + 3, 1.6, 1.6); ctx.fill();
+    }
+    E(100 + s * 40, 122, 10, 6); ctx.fillStyle = 'rgba(255,100,140,.42)'; ctx.fill();
+  }
+
+  if (T === 'chick' || T === 'penguin' || T === 'phoenix') {
+    ctx.beginPath(); ctx.moveTo(90, 116); ctx.lineTo(110, 116); ctx.lineTo(100, 128); ctx.closePath();
+    fs('#ff9a3c', '#c0611d', 3);
+  } else {
+    if (T === 'dog' || T === 'koala' || T === 'panda' || T === 'fox' || T === 'cat' || T === 'bunny') {
+      E(100, 114, T === 'koala' ? 9 : 5, T === 'koala' ? 7 : 3.5); ctx.fillStyle = '#3a2630'; ctx.fill();
+    }
+    if (T === 'dragon') { E(94, 116, 2, 2); E(106, 116, 2, 2); ctx.fillStyle = '#2f6b40'; ctx.fill(); }
+    ctx.beginPath(); ctx.moveTo(92, 120); ctx.quadraticCurveTo(96, 126, 100, 120); ctx.quadraticCurveTo(104, 126, 108, 120);
+    ctx.lineWidth = 3.5; ctx.strokeStyle = '#3a2630'; ctx.stroke();
+  }
+
+  // ---------- front extras ----------
+  if (T === 'dog') {
+    for (const s of [-1, 1]) { E(100 + s * 60, 92, 17, 33, s * -0.35); fs(grad(p.ear, 100 + s * 60, 92, 33), shade(p.ear, -0.4)); }
+  }
+  if (T === 'chick') {
+    ctx.strokeStyle = shade(C, -0.35); ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(100, 56); ctx.quadraticCurveTo(92, 36, 104, 30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(100, 56); ctx.quadraticCurveTo(112, 40, 120, 42); ctx.stroke();
+  }
+  if (T === 'unicorn') {
+    const mane = ['#ff9ec7', '#ffcf7a', '#9ee6a6', '#8fd3ff', '#c3a6ff'];
+    for (let i = 0; i < 6; i++) {
+      const a = Math.PI * (1.05 + i * 0.12);
+      E(100 + Math.cos(a) * 62, 112 + Math.sin(a) * 56, 16, 16); fs(mane[i % 5], null);
+    }
+    ctx.beginPath(); ctx.moveTo(86, 60); ctx.lineTo(100, 8); ctx.lineTo(114, 60); ctx.closePath();
+    const hg = ctx.createLinearGradient(86, 0, 114, 0); hg.addColorStop(0, '#ffe58a'); hg.addColorStop(1, '#f5b93c');
+    fs(hg, '#b9862a', 4);
+    ctx.strokeStyle = '#d99a2b'; ctx.lineWidth = 2.5;
+    for (const y of [24, 36, 48]) { ctx.beginPath(); ctx.moveTo(100 - (y - 8) * 0.25, y + 3); ctx.lineTo(100 + (y - 8) * 0.25, y - 3); ctx.stroke(); }
+  }
+  if (T === 'phoenix') {
+    const flames = [['#ff4d2e', -18, 40, -0.4], ['#ffd34d', 18, 40, 0.4], ['#ff7a2e', 0, 30, 0]];
+    for (const [col, dx, len, rot] of flames) {
+      ctx.save(); ctx.translate(100 + dx, 58); ctx.rotate(rot);
+      ctx.beginPath(); ctx.moveTo(0, 6); ctx.quadraticCurveTo(-14, -len * 0.4, 0, -len); ctx.quadraticCurveTo(14, -len * 0.4, 0, 6);
+      fs(col, '#c2421d', 3); ctx.restore();
+    }
+  }
+  if (T === 'spirit') {
+    E(100, 40, 34, 9); ctx.lineWidth = 6; ctx.strokeStyle = '#ffd95e'; ctx.stroke();
+    star(100, 22, 12, '#fff3a8');
+  }
+
+  function wings(col, tip) {
+    for (const s of [-1, 1]) {
+      ctx.beginPath(); ctx.moveTo(100 + s * 40, 96);
+      ctx.quadraticCurveTo(100 + s * 80, 40, 100 + s * 96, 58);
+      ctx.quadraticCurveTo(100 + s * 82, 72, 100 + s * 94, 88);
+      ctx.quadraticCurveTo(100 + s * 78, 96, 100 + s * 88, 114);
+      ctx.quadraticCurveTo(100 + s * 70, 118, 100 + s * 52, 138);
+      ctx.closePath();
+      const g = ctx.createLinearGradient(100 + s * 40, 0, 100 + s * 96, 0);
+      g.addColorStop(0, col); g.addColorStop(1, tip);
+      fs(g, shade(col.length === 7 ? col : '#888888', -0.4));
+    }
+  }
+
+  function drawEgg() {
+    ctx.beginPath(); ctx.moveTo(100, 30);
+    ctx.bezierCurveTo(146, 30, 160, 110, 156, 128);
+    ctx.bezierCurveTo(152, 168, 128, 178, 100, 178);
+    ctx.bezierCurveTo(72, 178, 48, 168, 44, 128);
+    ctx.bezierCurveTo(40, 110, 54, 30, 100, 30); ctx.closePath();
+    fs(grad(C, 100, 110, 70), '#c99a5e');
+    ctx.save(); ctx.clip();
+    for (const [x, y, r] of [[72, 70, 10], [128, 84, 13], [62, 150, 12], [140, 150, 9], [104, 58, 6], [100, 160, 7]]) {
+      E(x, y, r, r * 0.85); ctx.fillStyle = p.spot; ctx.globalAlpha = 0.75; ctx.fill();
+    }
+    ctx.globalAlpha = 1; ctx.restore();
+    for (const s of [-1, 1]) {
+      E(100 + s * 18, 118, 7, 8); ctx.fillStyle = '#2b1d2a'; ctx.fill();
+      E(100 + s * 18 - 2, 115, 2.6, 2.6); ctx.fillStyle = '#fff'; ctx.fill();
+      E(100 + s * 32, 132, 8, 5); ctx.fillStyle = 'rgba(255,100,140,.4)'; ctx.fill();
+    }
+    ctx.beginPath(); ctx.moveTo(94, 132); ctx.quadraticCurveTo(100, 138, 106, 132);
+    ctx.lineWidth = 3.5; ctx.strokeStyle = '#3a2630'; ctx.stroke();
+  }
+}
+
+// Procedural Art Generation for CIEL Games Loading Panel
+function renderLoadingHero(canvas) {
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  // Soft radiant backdrop glow
+  const bgGrad = ctx.createRadialGradient(w / 2, h / 2 + 10, 20, w / 2, h / 2 + 10, w * 0.48);
+  bgGrad.addColorStop(0, 'rgba(255, 248, 220, 0.95)');
+  bgGrad.addColorStop(0.65, 'rgba(255, 235, 190, 0.55)');
+  bgGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = bgGrad;
+  ctx.beginPath();
+  ctx.arc(w / 2, h / 2 + 10, w * 0.48, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Floating decorative sparkles & stars
+  const stars = [
+    { x: w * 0.14, y: h * 0.28, r: 6, col: '#ffc531' },
+    { x: w * 0.86, y: h * 0.24, r: 7, col: '#ffc531' },
+    { x: w * 0.24, y: h * 0.16, r: 5, col: '#ff7fa8' },
+    { x: w * 0.76, y: h * 0.16, r: 5, col: '#ff7fa8' },
+    { x: w * 0.50, y: h * 0.12, r: 4, col: '#5ccf6b' },
+  ];
+  stars.forEach(s => {
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.fillStyle = s.col;
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4;
+      const rad = i % 2 ? s.r * 0.38 : s.r;
+      ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // Floating central heart
+  ctx.save();
+  ctx.fillStyle = '#ff6b95';
+  ctx.beginPath();
+  const hx = w / 2, hy = h * 0.23, hr = 9;
+  ctx.moveTo(hx, hy);
+  ctx.bezierCurveTo(hx - hr, hy - hr * 1.2, hx - hr * 1.6, hy + hr * 0.5, hx, hy + hr * 1.5);
+  ctx.bezierCurveTo(hx + hr * 1.6, hy + hr * 0.5, hx + hr, hy - hr * 1.2, hx, hy);
+  ctx.fill();
+  ctx.restore();
+
+  // Cute lush meadow hill / cushion
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(w / 2, h * 0.90, w * 0.46, h * 0.22, 0, 0, Math.PI * 2);
+  const grassGrad = ctx.createLinearGradient(0, h * 0.68, 0, h);
+  grassGrad.addColorStop(0, '#9fe28d');
+  grassGrad.addColorStop(1, '#6ec659');
+  ctx.fillStyle = grassGrad;
+  ctx.fill();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = '#4e993b';
+  ctx.stroke();
+
+  // Daisies on the lawn
+  const flowers = [
+    { x: w * 0.15, y: h * 0.84 },
+    { x: w * 0.85, y: h * 0.84 }
+  ];
+  flowers.forEach(fl => {
+    ctx.fillStyle = '#ffffff';
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
+      ctx.beginPath();
+      ctx.arc(fl.x + Math.cos(a) * 4.5, fl.y + Math.sin(a) * 4.5, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#ffc531';
+    ctx.beginPath();
+    ctx.arc(fl.x, fl.y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+
+  // Procedural pets: Kitten Puff (Lv 3), Pudding Pup (Lv 4), Speckled Egg (Lv 1)
+  const kittenCanvas = renderPet(3, 140);
+  const eggCanvas = renderPet(1, 100);
+  const pupCanvas = renderPet(4, 140);
+
+  ctx.drawImage(kittenCanvas, w * 0.12, h * 0.30, 94, 94);
+  ctx.drawImage(pupCanvas, w * 0.56, h * 0.30, 94, 94);
+  ctx.drawImage(eggCanvas, w * 0.38, h * 0.40, 72, 72);
+}
+
+
+(() => {
+  'use strict';
+
+  const COLS = 6, ROWS = 6, N = COLS * ROWS, MAX = PETS.length;
+  const SAVE_KEY = 'petMergeHaven.v2';
+  // Tiles open at the start: a small 2x3 patch in the middle of the yard.
+  const START_OPEN = [8, 9, 14, 15, 20, 21];
+  const $ = (s) => document.querySelector(s);
+
+  const IMGS = PETS.map((_, i) => renderPet(i + 1, 180).toDataURL());
+  const LOCK_SVG = '<svg class="lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2.5" fill="currentColor"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10" fill="none" stroke="currentColor" stroke-width="2.6"/></svg>';
+
+  const UPG = {
+    egg: {
+      name: 'Golden Nest', icon: '🪺', bg: '#ffe9a8', max: MAX - 6,
+      desc: (l) => `New eggs hatch as ${PETS[Math.min(l + 1, MAX - 1)].name}`,
+      cost: (l) => Math.floor(900 * Math.pow(28, l)),
+    },
+    hatch: {
+      name: 'Warm Incubator', icon: '🔥', bg: '#ffd6c4', max: 8,
+      desc: (l) => `Free egg every ${hatchInterval(l + 1).toFixed(1)}s (now ${hatchInterval(l).toFixed(1)}s)`,
+      cost: (l) => Math.floor(150 * Math.pow(3, l)),
+    },
+    charm: {
+      name: 'Lucky Clover', icon: '🍀', bg: '#d4f5cf', max: 30,
+      desc: (l) => `+25% coins from every pet (now +${l * 25}%)`,
+      cost: (l) => Math.floor(400 * Math.pow(3.1, l)),
+    },
+  };
+
+  // ---------- state ----------
+  let S = load() || fresh();
+
+  // Settings live in their own key so changing them on the menu never creates a save game.
+  const SETTINGS_KEY = 'petMergeHaven.settings';
+  function loadSettings() { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch (e) { return {}; } }
+  let seenHelp = !!loadSettings().seenHelp;
+  function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ sound: S.sound, seenHelp })); } catch (e) {} }
+  const hasSave = () => { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } };
+  { const st = loadSettings(); if (typeof st.sound === 'boolean') S.sound = st.sound; }
+  let running = false;   // game loop active (false while on loading / menu screens)
+  let started = false;   // a game session has begun this visit
+
+  function fresh() {
+    const grid = Array(N).fill(0), open = Array(N).fill(0);
+    START_OPEN.forEach((i) => (open[i] = 1));
+    grid[14] = 1; grid[15] = 1; grid[20] = 1;
+    return {
+      coins: 20, score: 0, highScore: parseInt(localStorage.getItem("adopt_high_score") || "0", 10), grid, open, bought: 0, maxLevel: 1, discovered: [1],
+      upg: { egg: 0, hatch: 0, charm: 0 }, orders: [null, null, null], served: 0,
+      level: 1, xp: 0, hatchT: 0, last: Date.now(), sound: true,
+    };
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      if (!Array.isArray(s.grid) || s.grid.length !== N || !Array.isArray(s.open)) return null;
+      return Object.assign(fresh(), s);
+    } catch (e) { return null; }
+  }
+  function save() {
+    S.last = Date.now();
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {}
+  }
+
+  // ---------- economy ----------
+  const baseIncome = (L) => Math.round(Math.pow(2.3, L - 1));
+  const income = (L) => baseIncome(L) * (1 + 0.25 * S.upg.charm);
+  const totalIncome = () => S.grid.reduce((a, L) => a + (L ? income(L) : 0), 0);
+  const eggCost = () => Math.floor(15 * Math.pow(1.07, S.bought));
+  const spawnLevel = () => 1 + S.upg.egg;
+  function hatchInterval(l = S.upg.hatch) { return Math.max(2, 8 - 0.75 * l); }
+  const sellValue = (L) => Math.floor(income(L) * 12);
+  const openCount = () => S.open.reduce((a, b) => a + b, 0);
+  const unlockCost = () => Math.floor(30 * Math.pow(1.45, openCount() - START_OPEN.length));
+  const xpNeed = (lv) => Math.floor(10 * Math.pow(1.45, lv - 1));
+
+  function neighbors(i) {
+    const r = Math.floor(i / COLS), c = i % COLS, out = [];
+    if (r > 0) out.push(i - COLS);
+    if (r < ROWS - 1) out.push(i + COLS);
+    if (c > 0) out.push(i - 1);
+    if (c < COLS - 1) out.push(i + 1);
+    return out;
+  }
+  const buyable = (i) => !S.open[i] && neighbors(i).some((j) => S.open[j]);
+
+  function fmt(n) {
+    n = Math.floor(n);
+    if (n < 1000) return String(n);
+    const u = ['K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp'];
+    let i = -1;
+    while (n >= 1000 && i < u.length - 1) { n /= 1000; i++; }
+    return (n < 10 ? n.toFixed(2) : n < 100 ? n.toFixed(1) : Math.floor(n)) + u[i];
+  }
+
+
+  // ---------- Score & Undo Tracking ----------
+  let undoStack = [];
+  const MAX_UNDO = 20;
+
+  function pushUndo() {
+    const snap = {
+      grid: [...S.grid],
+      open: [...S.open],
+      coins: S.coins,
+      score: S.score || 0,
+      bought: S.bought,
+      level: S.level,
+      xp: S.xp,
+      orders: JSON.parse(JSON.stringify(S.orders)),
+      served: S.served,
+    };
+    undoStack.push(snap);
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+    updateUndoBtn();
+  }
+
+  function undo() {
+    if (!undoStack.length) {
+      SFX.bad();
+      toast("Nothing to undo!");
+      return;
+    }
+    const prev = undoStack.pop();
+    S.grid = prev.grid;
+    S.open = prev.open;
+    S.coins = prev.coins;
+    S.score = prev.score;
+    S.bought = prev.bought;
+    S.level = prev.level;
+    S.xp = prev.xp;
+    S.orders = prev.orders;
+    S.served = prev.served;
+
+    SFX.undo();
+    save();
+    renderAll();
+    updateUndoBtn();
+    toast("Move undone! ↩️");
+  }
+
+  function updateUndoBtn() {
+    const btn = $('#btnUndo');
+    if (btn) btn.classList.toggle('disabled', undoStack.length === 0);
+  }
+
+  function addScore(pts, x, y) {
+    S.score = (S.score || 0) + pts;
+    if (S.score > (S.highScore || 0)) {
+      S.highScore = S.score;
+      try { localStorage.setItem('adopt_high_score', String(S.highScore)); } catch (_) {}
+    }
+    if (x != null && y != null) {
+      floatText(x, y - 18, '+' + fmt(pts) + ' PTS', 'score-float');
+    }
+    renderScore();
+  }
+
+  function renderScore() {
+    const sc = $('#score'), hsc = $('#highScoreText');
+    if (sc) sc.textContent = fmt(S.score || 0);
+    if (hsc) hsc.textContent = 'BEST: ' + fmt(S.highScore || 0);
+  }
+
+  let comboCount = 0;
+  let lastMergeTime = 0;
+
+  function confirmReset() {
+    openModal(`<h2>Restart or Reset?</h2>
+      <p style="font-size:16px;line-height:1.4;margin:8px 0 16px;">Choose an action below:</p>
+      <div class="actions" style="flex-direction:column;gap:8px;">
+        <button class="btn go" id="btnConfirmResetBoard" style="background:linear-gradient(#5ccf6b, #34a047);">
+          🧹 Clear Board Only (Keep Coins &amp; Stats)
+        </button>
+        <button class="btn go" id="btnConfirmResetAll" style="background:linear-gradient(#ff6b82, #db2949);">
+          ⚠️ Reset Entire Career (Fresh Start)
+        </button>
+        <button class="btn" data-close style="background:#cfc6d9;color:var(--ink);">Cancel</button>
+      </div>`, (root) => {
+      root.querySelector('#btnConfirmResetBoard').onclick = () => {
+        pushUndo();
+        for (let i = 0; i < N; i++) if (S.open[i]) S.grid[i] = 0;
+        START_OPEN.slice(0, 3).forEach(idx => { S.grid[idx] = spawnLevel(); });
+        SFX.reset();
+        save();
+        renderAll();
+        closeModal();
+        toast("Board cleared with 3 fresh eggs!");
+      };
+      root.querySelector('#btnConfirmResetAll').onclick = () => {
+        const snd = S.sound;
+        S = fresh();
+        S.sound = snd;
+        undoStack = [];
+        save();
+        try { localStorage.removeItem('adopt_high_score'); } catch (_) {}
+        SFX.reset();
+        closeModal();
+        renderAll();
+        toast("Entire game reset to Level 1!");
+      };
+    });
+  }
+
+  // ---------- audio ----------
+  let AC;
+  function tone(f, d = 0.1, type = 'sine', vol = 0.15, slide = 0) {
+    if (!S.sound) return;
+    try {
+      AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+      const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t);
+      if (slide) o.frequency.exponentialRampToValueAtTime(f * slide, t + d);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+      o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d + 0.02);
+    } catch (e) {}
+  }
+  const SFX = {
+    merge: (l) => { tone(300 + l * 50, 0.15, 'triangle', 0.2, 2); setTimeout(() => tone(500 + l * 70, 0.2, 'sine', 0.14, 1.5), 70); },
+    pop: () => tone(620, 0.07, 'sine', 0.1, 1.5),
+    tap: () => tone(1100, 0.06, 'square', 0.035, 1.3),
+    buy: () => tone(420, 0.12, 'triangle', 0.16, 1.7),
+    bad: () => tone(170, 0.16, 'sawtooth', 0.07, 0.7),
+    cash: () => { tone(880, 0.08, 'square', 0.05); setTimeout(() => tone(1320, 0.12, 'square', 0.05), 80); },
+    unlock: () => { tone(330, 0.1, 'square', 0.06, 1.5); setTimeout(() => tone(660, 0.18, 'triangle', 0.14, 1.3), 90); },
+    fanfare: () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, 0.25, 'triangle', 0.16), i * 110)),
+    undo: () => {
+      if (!S.sound) return;
+      tone(520, 0.12, 'sine', 0.18);
+      setTimeout(() => tone(360, 0.14, 'sine', 0.15), 60);
+      setTimeout(() => tone(240, 0.18, 'sine', 0.12), 120);
+    },
+    reset: () => {
+      if (!S.sound) return;
+      tone(440, 0.1, 'triangle', 0.15);
+      setTimeout(() => tone(330, 0.12, 'triangle', 0.12), 80);
+      setTimeout(() => tone(220, 0.18, 'triangle', 0.10), 160);
+    },
+  };
+
+  // ---------- DOM ----------
+  const board = $('#board'), ordersEl = $('#orders'), fx = $('#fx');
+  const cells = [];
+  for (let i = 0; i < N; i++) {
+    const c = document.createElement('div');
+    c.className = 'cell'; c.dataset.i = i;
+    board.appendChild(c); cells.push(c);
+  }
+
+  function renderCell(i, anim) {
+    const c = cells[i], L = S.grid[i];
+    const alt = (Math.floor(i / COLS) + (i % COLS)) % 2 === 1;
+    c.className = 'cell' + (alt ? ' alt' : '');
+    c.innerHTML = '';
+    if (!S.open[i]) {
+      c.classList.add('locked');
+      if (buyable(i)) {
+        c.classList.add('buyable');
+        c.innerHTML = `<div class="price"><i class="coin"></i>${fmt(unlockCost())}</div>`;
+        if (S.coins >= unlockCost()) c.classList.add('afford');
+      } else c.innerHTML = LOCK_SVG;
+      return;
+    }
+    if (L) {
+      const im = new Image();
+      im.src = IMGS[L - 1]; im.className = 'pet'; im.draggable = false; im.alt = PETS[L - 1].name;
+      im.style.animationDelay = (-Math.random() * 2.4).toFixed(2) + 's';
+      c.appendChild(im);
+      const b = document.createElement('span'); b.className = 'lv'; b.textContent = L; c.appendChild(b);
+      if (sellMode) { const t = document.createElement('span'); t.className = 'sell-tag'; t.innerHTML = `<i class="coin sm"></i>${fmt(sellValue(L))}`; c.appendChild(t); }
+      if (anim) { void c.offsetWidth; c.classList.add('pop'); }
+    }
+  }
+  function renderLocked() { for (let i = 0; i < N; i++) if (!S.open[i]) renderCell(i); }
+  function renderAll() { for (let i = 0; i < N; i++) renderCell(i); renderOrders(); renderHUD(); renderXP(); renderScore(); updateUndoBtn(); }
+
+  let lastAfford = null;
+  let sellMode = false;
+  const anyUpgradeAffordable = () => Object.entries(UPG).some(([k, u]) => S.upg[k] < u.max && S.coins >= u.cost(S.upg[k]));
+  function renderHUD() {
+    $('#coins').textContent = fmt(S.coins);
+    $('#rate').textContent = fmt(totalIncome()) + '/s';
+    const cost = eggCost();
+    $('#cost').textContent = fmt(cost);
+    $('#buyBtn').classList.toggle('disabled', S.coins < cost || !emptyCells().length);
+    $('#buyIcon').src = IMGS[spawnLevel() - 1];
+    $('#soundBtn').classList.toggle('muted', !S.sound);
+    $('#shopBtn').classList.toggle('deal', anyUpgradeAffordable());
+    refreshShop();
+    const afford = S.coins >= unlockCost();
+    if (afford !== lastAfford) {
+      lastAfford = afford;
+      document.querySelectorAll('.cell.buyable').forEach((c) => c.classList.toggle('afford', afford));
+    }
+  }
+  function renderXP() {
+    const need = xpNeed(S.level);
+    $('#lvl').textContent = S.level;
+    $('#xpFill').style.width = Math.min(100, (S.xp / need) * 100) + '%';
+    $('#xpText').textContent = `${fmt(S.xp)} / ${fmt(need)} XP`;
+  }
+
+  function renderOrders() {
+    ordersEl.innerHTML = '';
+    S.orders.forEach((o, k) => {
+      const d = document.createElement('div');
+      d.dataset.k = k;
+      if (o && o.level) {
+        const known = S.discovered.includes(o.level);
+        d.className = 'order' + (S.grid.includes(o.level) ? ' ready' : '');
+        d.innerHTML = `<img src="${IMGS[o.level - 1]}" class="${known ? '' : 'unknown'}" alt="">
+          <div class="otxt"><div class="oname">${known ? PETS[o.level - 1].name : 'Merge to discover!'}</div>
+          <div class="reward"><i class="coin sm"></i>${fmt(o.reward)}</div></div>`;
+      } else {
+        d.className = 'order empty';
+        d.innerHTML = '<div class="wait">A new family<br>is on the way…</div>';
+      }
+      ordersEl.appendChild(d);
+    });
+  }
+
+  // ---------- fx ----------
+  function centerOf(el) { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }
+  function floatText(x, y, text, cls = '') {
+    const d = document.createElement('div');
+    d.className = 'float ' + cls;
+    d.textContent = text; d.style.left = x + 'px'; d.style.top = y + 'px';
+    fx.appendChild(d); setTimeout(() => d.remove(), 1000);
+  }
+  function sparks(x, y, n = 12) {
+    const cols = ['#ffd23a', '#ff7fa8', '#7fd3ff', '#9be67a', '#ffffff'];
+    for (let k = 0; k < n; k++) {
+      const s = document.createElement('div');
+      s.className = 'spark';
+      const a = Math.random() * Math.PI * 2, r = 30 + Math.random() * 40;
+      s.style.left = x - 5 + 'px'; s.style.top = y - 5 + 'px';
+      s.style.background = cols[k % cols.length];
+      s.style.setProperty('--dx', Math.cos(a) * r + 'px'); s.style.setProperty('--dy', Math.sin(a) * r + 'px');
+      fx.appendChild(s); setTimeout(() => s.remove(), 600);
+    }
+  }
+  let toastT;
+  function toast(msg) {
+    const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+  function shake(el) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+
+  // ---------- modal ----------
+  const modal = $('#modal'), card = $('#modalCard');
+  const modalQueue = [];
+  function openModal(html, onBind) {
+    if (!modal.classList.contains('hidden')) { modalQueue.push([html, onBind]); return; }
+    card.innerHTML = html; modal.classList.remove('hidden');
+    card.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeModal));
+    if (onBind) onBind(card);
+  }
+  function closeModal() {
+    modal.classList.add('hidden');
+    if (modalQueue.length) { const [h, b] = modalQueue.shift(); setTimeout(() => openModal(h, b), 120); }
+  }
+  modal.addEventListener('pointerdown', (e) => { if (e.target === modal) closeModal(); });
+
+  function showDiscovery(L) {
+    SFX.fanfare();
+    openModal(`<h2>New pet!</h2><img class="hero" src="${IMGS[L - 1]}" alt="">
+      <p style="font-size:22px;color:var(--ink);font-weight:700;margin-top:4px">${PETS[L - 1].name}</p>
+      <p>Level ${L} · earns <b>${fmt(income(L))}</b> coins/sec</p>
+      ${L === MAX ? '<p><b>You found the rarest pet of all!</b></p>' : ''}
+      <div class="actions"><button class="btn go" data-close>Yay!</button></div>`);
+  }
+
+  function showBook() {
+    const items = PETS.map((p, i) => {
+      const L = i + 1, known = S.discovered.includes(L);
+      return `<div class="${known ? '' : 'locked'}"><img src="${IMGS[i]}" alt="">${known ? p.name : '???'}
+        <small>Lv ${L}${known ? ' · ' + fmt(income(L)) + '/s' : ''}</small></div>`;
+    }).join('');
+    openModal(`<h2>Pet Collection</h2><p>${S.discovered.length} / ${MAX} discovered · ${S.served} adoptions</p>
+      <div class="book">${items}</div><div class="actions"><button class="btn go" data-close>Close</button></div>`);
+  }
+
+  // Keeps the open shop's price buttons in sync with the coin count (called from renderHUD).
+  function refreshShop() {
+    if (modal.classList.contains('hidden')) return;
+    card.querySelectorAll('[data-up]').forEach((b) => {
+      const k = b.dataset.up, u = UPG[k], l = S.upg[k];
+      if (l >= u.max) return;
+      const c = u.cost(l), poor = S.coins < c;
+      b.classList.toggle('disabled', poor);
+      const need = b.parentElement.querySelector('.need');
+      if (need) need.textContent = poor ? `Need ${fmt(c - S.coins)} more` : 'Tap to buy!';
+    });
+  }
+
+  function showShop() {
+    exitSellMode();
+    const body = () => Object.entries(UPG).map(([k, u]) => {
+      const l = S.upg[k], maxed = l >= u.max, c = maxed ? 0 : u.cost(l), poor = !maxed && S.coins < c;
+      return `<div class="shop-item"><div class="ic" style="background:${u.bg}">${u.icon}</div>
+        <div class="txt"><b>${u.name} <small>Lv ${l}</small></b><small>${maxed ? 'Maxed out!' : u.desc(l)}</small></div>
+        <div class="buy"><button class="btn ${maxed ? 'maxed' : poor ? 'disabled' : ''}" data-up="${k}">${maxed ? 'MAX' : `<i class="coin sm"></i>${fmt(c)}`}</button>
+        ${maxed ? '' : `<small class="need">${poor ? `Need ${fmt(c - S.coins)} more` : 'Tap to buy!'}</small>`}</div></div>`;
+    }).join('');
+    const bind = (root) => {
+      root.querySelectorAll('[data-up]').forEach((b) => b.addEventListener('click', () => {
+        const k = b.dataset.up, u = UPG[k], l = S.upg[k];
+        if (l >= u.max) { SFX.bad(); toast(`${u.name} is already maxed out!`); return; }
+        const c = u.cost(l);
+        if (S.coins < c) { SFX.bad(); shake(b); toast(`You need ${fmt(c - S.coins)} more coins for ${u.name}.`); return; }
+        S.coins -= c; S.upg[k]++; SFX.buy(); save();
+        const [x, y] = centerOf(b); sparks(x, y, 12);
+        toast(`${u.name} upgraded to Lv ${S.upg[k]}!`);
+        root.querySelector('#shopList').innerHTML = body(); bind(root); renderAll();
+      }));
+      const r = root.querySelector('.reset');
+      if (r) r.onclick = () => askConfirm('RESET PROGRESS?', 'This permanently erases your pets, coins and level. It cannot be undone.', 'Yes, reset', () => {
+        const snd = S.sound; S = fresh(); S.sound = snd; save(); closeModal(); lastAfford = null; renderAll();
+      });
+    };
+    openModal(`<h2>Shop</h2><div id="shopList">${body()}</div>
+      <div class="actions"><button class="btn go" data-close>Close</button></div>
+      <button class="reset">Reset progress</button>`, bind);
+  }
+
+  // ---------- core actions ----------
+  function emptyCells() { const e = []; for (let i = 0; i < N; i++) if (S.open[i] && !S.grid[i]) e.push(i); return e; }
+
+  function addCoins(v) { S.coins += v; }
+
+  function addXP(v, x, y) {
+    S.xp += v;
+    if (x != null) floatText(x, y + 14, `+${fmt(v)} XP`, 'xp');
+    while (S.xp >= xpNeed(S.level)) {
+      S.xp -= xpNeed(S.level); S.level++;
+      const bonus = Math.max(50, Math.round(totalIncome() * 30));
+      addCoins(bonus);
+      SFX.fanfare();
+      openModal(`<h2>Level ${S.level}!</h2>
+        <p style="font-size:18px">Your pet haven is growing.</p>
+        <p>Level-up bonus: <b style="color:var(--ink)">${fmt(bonus)}</b> coins</p>
+        <div class="actions"><button class="btn go" data-close>Great!</button></div>`);
+      renderHUD();
+    }
+    renderXP();
+  }
+
+  function spawn(level) {
+    const e = emptyCells();
+    if (!e.length) return false;
+    const i = e[(Math.random() * e.length) | 0];
+    S.grid[i] = level; renderCell(i, true); SFX.pop();
+    discover(level);
+    renderOrders();
+    return true;
+  }
+
+  function buyEgg() {
+    const c = eggCost();
+    if (!emptyCells().length) { SFX.bad(); shake($('#buyBtn')); toast('No free tiles — merge pets or unlock more tiles!'); return; }
+    if (S.coins < c) { SFX.bad(); shake($('#buyBtn')); toast('Not enough coins yet!'); return; }
+    pushUndo(); S.coins -= c; S.bought++; spawn(spawnLevel()); SFX.buy(); renderHUD();
+  }
+
+  function tryUnlock(i) {
+    if (!buyable(i)) { SFX.bad(); shake(cells[i]); toast('Unlock the tiles next to your yard first!'); return; }
+    const c = unlockCost();
+    if (S.coins < c) { SFX.bad(); shake(cells[i]); toast(`You need ${fmt(c)} coins to unlock this tile.`); return; }
+    pushUndo(); S.coins -= c; S.open[i] = 1;
+    lastAfford = null;
+    renderLocked(); renderCell(i);
+    cells[i].classList.add('unlocking');
+    const [x, y] = centerOf(cells[i]); sparks(x, y, 14); SFX.unlock();
+    addXP(3, x, y);
+    renderHUD(); save();
+    if (openCount() === N) toast('Your whole yard is unlocked!');
+  }
+
+  function discover(L) {
+    if (S.discovered.includes(L)) return;
+    S.discovered.push(L);
+    S.maxLevel = Math.max(S.maxLevel, L);
+    showDiscovery(L);
+    save();
+  }
+
+  function merge(from, to) {
+    pushUndo();
+    const L = S.grid[from] + 1;
+    S.grid[from] = 0; S.grid[to] = L;
+    renderCell(from); renderCell(to, true);
+    const [x, y] = centerOf(cells[to]);
+    sparks(x, y, 14);
+
+    const now = Date.now();
+    if (now - lastMergeTime < 2400) {
+      comboCount++;
+    } else {
+      comboCount = 1;
+    }
+    lastMergeTime = now;
+
+    SFX.merge(L);
+    discover(L);
+    addXP(L, x, y);
+
+    const pts = L * 100 * (1 + (comboCount - 1) * 0.5);
+    addScore(pts, x, y);
+
+    if (comboCount >= 2) {
+      floatText(x, y - 48, comboCount + 'x COMBO! 🔥', 'combo-float');
+    }
+
+    renderOrders(); renderHUD();
+  }
+
+  function fulfill(from, k) {
+    pushUndo();
+    const o = S.orders[k];
+    const reward = o.reward, L = o.level;
+    S.grid[from] = 0; renderCell(from);
+    addCoins(reward); S.served++;
+    const el = ordersEl.children[k], [x, y] = centerOf(el);
+    floatText(x, y, '+' + fmt(reward), 'big');
+    floatText(x, y - 25, '❤️ ADOPTED!', 'heart-float');
+    sparks(x, y, 18); SFX.cash();
+    setTimeout(() => SFX.fanfare(), 220);
+    addXP(L * 4, x, y + 10);
+    addScore(L * 500, x, y);
+    S.orders[k] = { until: Date.now() + 3500 };
+    renderOrders(); renderHUD(); save();
+  }
+
+  function newOrder() {
+    const lo = Math.max(spawnLevel() + 1, S.maxLevel - 2);
+    let hi = Math.max(lo, S.maxLevel);
+    if (S.maxLevel < MAX && Math.random() < 0.2) hi = S.maxLevel + 1;
+    const level = Math.min(MAX, lo + Math.floor(Math.random() * (hi - lo + 1)));
+    const reward = Math.round(income(level) * (40 + Math.random() * 30) + 25);
+    return { level, reward };
+  }
+
+  // ---------- drag & drop ----------
+  let drag = null;
+  function targetAt(x, y) {
+    const el = document.elementFromPoint(x, y);
+    if (!el) return null;
+    const c = el.closest('.cell'); if (c) return { kind: 'cell', el: c, i: +c.dataset.i };
+    const o = el.closest('.order'); if (o) return { kind: 'order', el: o, k: +o.dataset.k };
+    const s = el.closest('#sell'); if (s) return { kind: 'sell', el: s };
+    return null;
+  }
+  function clearOver() { document.querySelectorAll('.over').forEach((e) => e.classList.remove('over')); }
+
+  board.addEventListener('pointerdown', (e) => {
+    const c = e.target.closest('.cell');
+    if (!c || drag) return;
+    const i = +c.dataset.i;
+    if (!S.open[i]) { e.preventDefault(); tryUnlock(i); return; }
+    if (!S.grid[i]) return;
+    e.preventDefault();
+    drag = { i, x0: e.clientX, y0: e.clientY, moved: false, ghost: null, id: e.pointerId };
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 6) {
+      drag.moved = true;
+      const L = S.grid[drag.i], size = cells[drag.i].getBoundingClientRect().width;
+      const g = new Image(); g.id = 'ghost'; g.src = IMGS[L - 1];
+      g.style.width = g.style.height = size + 'px';
+      document.body.appendChild(g); drag.ghost = g;
+      cells[drag.i].classList.add('dragging');
+      S.grid.forEach((l, j) => { if (j !== drag.i && S.open[j] && l === L && L < MAX) cells[j].classList.add('match'); });
+    }
+    if (drag.moved) {
+      drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
+      clearOver();
+      const t = targetAt(e.clientX, e.clientY);
+      if (t && !(t.kind === 'cell' && (t.i === drag.i || !S.open[t.i]))) t.el.classList.add('over');
+    }
+  });
+
+  function endDrag(e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag; drag = null;
+    clearOver();
+    document.querySelectorAll('.match').forEach((c) => c.classList.remove('match'));
+    if (!d.moved) { tapPet(d.i); return; }
+    d.ghost.remove(); cells[d.i].classList.remove('dragging');
+    if (e.type === 'pointercancel') return;
+
+    const t = targetAt(e.clientX, e.clientY), L = S.grid[d.i];
+    if (!t) return;
+    if (t.kind === 'cell') {
+      const j = t.i;
+      if (j === d.i) return;
+      if (!S.open[j]) { SFX.bad(); shake(cells[j]); return; }
+      if (!S.grid[j]) { S.grid[j] = L; S.grid[d.i] = 0; renderCell(d.i); renderCell(j, true); SFX.pop(); }
+      else if (S.grid[j] === L && L < MAX) merge(d.i, j);
+      else { S.grid[d.i] = S.grid[j]; S.grid[j] = L; renderCell(d.i, true); renderCell(j, true); SFX.pop(); }
+      renderOrders();
+    } else if (t.kind === 'order') {
+      const o = S.orders[t.k];
+      if (o && o.level === L) fulfill(d.i, t.k);
+      else { SFX.bad(); shake(t.el); if (o && o.level) toast(`This family wants a ${S.discovered.includes(o.level) ? PETS[o.level - 1].name : 'pet you have not discovered yet'}!`); }
+    } else if (t.kind === 'sell') {
+      sellPet(d.i, t.el);
+    }
+    save();
+  }
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
+
+  function sellPet(i, at) {
+    const L = S.grid[i]; if (!L) return;
+    const v = sellValue(L);
+    const [x, y] = centerOf(at || cells[i]);
+    S.grid[i] = 0; renderCell(i); addCoins(v);
+    floatText(x, y - 30, '+' + fmt(v)); sparks(x, y, 8); SFX.cash();
+    renderOrders(); renderHUD(); save();
+  }
+
+  function enterSellMode() {
+    if (!S.grid.some((L, i) => L && S.open[i])) { SFX.bad(); shake($('#sell')); toast('You have no pets to sell yet.'); return; }
+    sellMode = true; SFX.tap();
+    document.body.classList.add('selling');
+    $('#sell').setAttribute('aria-pressed', 'true'); $('#sellLabel').textContent = 'Done';
+    for (let i = 0; i < N; i++) if (S.grid[i]) renderCell(i);
+    toast('Tap a pet to sell it. Tap Done when you are finished.');
+  }
+  function exitSellMode() {
+    if (!sellMode) return;
+    sellMode = false;
+    document.body.classList.remove('selling');
+    $('#sell').setAttribute('aria-pressed', 'false'); $('#sellLabel').textContent = 'Sell';
+    for (let i = 0; i < N; i++) if (S.grid[i]) renderCell(i);
+  }
+
+  function tapPet(i) {
+    const L = S.grid[i]; if (!L) return;
+    if (sellMode) { sellPet(i); if (!S.grid.some((l) => l)) exitSellMode(); return; }
+    const c = cells[i]; c.classList.remove('tap'); void c.offsetWidth; c.classList.add('tap');
+    const v = income(L); addCoins(v);
+    const [x, y] = centerOf(c); floatText(x, y - 20, '+' + fmt(v)); SFX.tap(); renderHUD();
+  }
+
+  // ---------- full screen ----------
+  function isFull() { return document.fullscreenElement || document.webkitFullscreenElement; }
+  async function toggleFullscreen() {
+    try {
+      if (isFull()) { await (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+      const el = document.documentElement;
+      await (el.requestFullscreen || el.webkitRequestFullscreen).call(el, { navigationUI: 'hide' });
+      if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+    } catch (e) { toast('Full screen is not available in this browser.'); }
+  }
+
+  // ---------- buttons ----------
+  $('#buyBtn').addEventListener('click', buyEgg);
+  $('#shopBtn').addEventListener('click', () => { SFX.tap(); showShop(); });
+  $('#sell').addEventListener('click', () => (sellMode ? (SFX.tap(), exitSellMode()) : enterSellMode()));
+  $('#bookBtn').addEventListener('click', () => { exitSellMode(); showBook(); });
+  $('#fsBtn').addEventListener('click', toggleFullscreen);
+  $('#soundBtn').addEventListener('click', () => { S.sound = !S.sound; renderHUD(); save(); saveSettings(); if (S.sound) SFX.pop(); });
+
+  // ---------- exit confirmation modal ("Leave the Tab" & "Keep Playing") ----------
+  const backBtn = $('#gameBackBtn');
+  const exitModal = $('#gameExitModal');
+  const confirmExitBtn = $('#btnConfirmExit');
+  const cancelExitBtn = $('#btnCancelExit');
+  const exitModalPetImg = $('#exitModalPetImg');
+
+  function openExitModal() {
+    exitSellMode();
+    SFX.pop();
+    if (exitModalPetImg) {
+      const petIndex = Math.min(Math.max(0, S.maxLevel - 1), IMGS.length - 1);
+      exitModalPetImg.src = IMGS[petIndex] || IMGS[2]; // Default to Kitten Puff or highest pet
+    }
+    if (exitModal) exitModal.classList.add('active');
+  }
+
+  function closeExitModal() {
+    SFX.tap();
+    if (exitModal) exitModal.classList.remove('active');
+  }
+
+  function doLeaveTab() {
+    SFX.bad();
+    if (started) save();
+
+    // 1. If inside an iframe (e.g. CIEL games portal modal), notify parent window
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ action: 'closeModal', type: 'GAME_ENDED' }, '*');
+        window.parent.postMessage('closeModal', '*');
+      }
+    } catch (e) {}
+
+    // 2. Try window.close()
+    try { window.close(); } catch (e) {}
+
+    // 3. Fallback: browser history or back to game portal root
+    setTimeout(() => {
+      if (window.history && window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = '../';
+      }
+    }, 120);
+  }
+
+  if (backBtn) backBtn.addEventListener('click', openExitModal);
+  if (cancelExitBtn) cancelExitBtn.addEventListener('click', closeExitModal);
+  if (confirmExitBtn) confirmExitBtn.addEventListener('click', doLeaveTab);
+  $('#btnExitToMenu').addEventListener('click', () => { closeExitModal(); showMainMenu(); });
+  if (exitModal) {
+    exitModal.addEventListener('click', (e) => {
+      if (e.target === exitModal) closeExitModal();
+    });
+  }
+
+  // ---------- main menu, settings & confirm ----------
+  const mainMenu = $('#mainMenu'), settingsScreen = $('#settingsScreen'), howToScreen = $('#howToScreen');
+  const confirmBox = $('#cielConfirm');
+  const isShown = (el) => el.classList.contains('show');
+  let confirmYes = null;
+
+  function askConfirm(title, text, yesLabel, onYes) {
+    $('#cielConfirmTitle').textContent = title;
+    $('#cielConfirmText').textContent = text;
+    $('#cielConfirmYes').textContent = yesLabel;
+    confirmYes = onYes;
+    confirmBox.classList.add('active');
+    SFX.pop();
+  }
+  function closeConfirm() { confirmBox.classList.remove('active'); confirmYes = null; }
+  $('#cielConfirmNo').addEventListener('click', () => { SFX.tap(); closeConfirm(); });
+  $('#cielConfirmYes').addEventListener('click', () => { const fn = confirmYes; closeConfirm(); if (fn) fn(); });
+  confirmBox.addEventListener('click', (e) => { if (e.target === confirmBox) closeConfirm(); });
+
+  function renderMenu() {
+    const saved = hasSave();
+    $('#btnContinue').classList.toggle('is-disabled', !saved);
+    $('#menuSave').innerHTML = saved
+      ? `<span>Level ${S.level}</span><span>🪙 ${fmt(S.coins)}</span><span>🐾 ${S.discovered.length}/${MAX} pets</span>`
+      : '<span>No saved game yet. Start a new one!</span>';
+  }
+
+  function showMainMenu() {
+    if (started) { running = false; save(); }
+    closeModal();
+    exitSellMode();
+    renderMenu();
+    settingsScreen.classList.remove('show');
+    howToScreen.classList.remove('show');
+    mainMenu.classList.add('show');
+  }
+
+  function startGame(isNew) {
+    if (isNew) {
+      const snd = S.sound;
+      S = fresh(); S.sound = snd;
+      lastAfford = null;
+      renderAll();
+    }
+    mainMenu.classList.remove('show');
+    settingsScreen.classList.remove('show');
+    const firstStart = !started;
+    started = true;
+    running = true;
+    lastFrame = performance.now(); acc = 0;
+    // Offline earnings only when resuming a saved game on first entry this visit
+    if (!isNew && firstStart) {
+      const away = Math.min(7200, (Date.now() - S.last) / 1000);
+      if (away > 60 && totalIncome() > 0) {
+        const earned = Math.floor(totalIncome() * away * 0.5);
+        addCoins(earned);
+        openModal(`<h2>Welcome back!</h2><img class="hero" src="${IMGS[S.maxLevel - 1]}" alt="">
+          <p>Your pets earned <b style="color:var(--ink)">${fmt(earned)}</b> coins while you were away.</p>
+          <div class="actions"><button class="btn go" data-close>Collect</button></div>`);
+      }
+    }
+    renderAll();
+    save();
+    if (isNew && !seenHelp) openHowTo(true);
+  }
+
+  $('#btnContinue').addEventListener('click', () => {
+    if (!hasSave()) { SFX.bad(); shake($('#btnContinue')); return; }
+    SFX.buy(); startGame(false);
+  });
+  $('#btnNewGame').addEventListener('click', () => {
+    SFX.tap();
+    if (hasSave()) {
+      askConfirm('START OVER?', 'Starting a new game erases your current pets, coins and level.', 'Yes, start new', () => { SFX.buy(); startGame(true); });
+    } else { SFX.buy(); startGame(true); }
+  });
+
+  function syncSettings() {
+    $('#setSound').setAttribute('aria-checked', String(!!S.sound));
+    $('#setFull').setAttribute('aria-checked', String(!!isFull()));
+  }
+  function openSettings() { SFX.tap(); syncSettings(); settingsScreen.classList.add('show'); }
+  function closeSettings() { SFX.tap(); settingsScreen.classList.remove('show'); renderMenu(); }
+  $('#btnSettings').addEventListener('click', openSettings);
+
+  // ---------- how to play ----------
+  howToScreen.querySelectorAll('img[data-pet]').forEach((im) => { im.src = IMGS[+im.dataset.pet - 1]; });
+  let howToPaused = false; // true when the screen paused a running game
+  function openHowTo(silent) {
+    if (!silent) SFX.tap();
+    exitSellMode();
+    howToPaused = running && !isShown(mainMenu);
+    if (howToPaused) running = false;
+    howToScreen.querySelector('.how-card').scrollTop = 0;
+    howToScreen.classList.add('show');
+  }
+  function closeHowTo() {
+    SFX.tap();
+    howToScreen.classList.remove('show');
+    if (!seenHelp) { seenHelp = true; saveSettings(); }
+    if (howToPaused) { howToPaused = false; running = true; lastFrame = performance.now(); }
+  }
+  $('#btnHowTo').addEventListener('click', () => openHowTo());
+  $('#helpBtn').addEventListener('click', () => openHowTo());
+  $('#btnHowToBack').addEventListener('click', closeHowTo);
+  $('#btnHowToDone').addEventListener('click', closeHowTo);
+
+  // ---------- exit from the main menu ----------
+  function askExitGame() {
+    askConfirm('LEAVE GAME?', 'Are you sure you want to leave? Your progress is saved.', 'Yes, leave', doLeaveTab);
+  }
+  $('#btnExitGame').addEventListener('click', () => { SFX.tap(); askExitGame(); });
+  $('#btnSettingsBack').addEventListener('click', closeSettings);
+  $('#btnSettingsDone').addEventListener('click', closeSettings);
+  $('#setSound').addEventListener('click', () => {
+    S.sound = !S.sound; saveSettings();
+    if (hasSave()) save();
+    syncSettings(); renderHUD();
+    if (S.sound) SFX.pop();
+  });
+  $('#setFull').addEventListener('click', () => { SFX.tap(); toggleFullscreen(); });
+  document.addEventListener('fullscreenchange', syncSettings);
+  document.addEventListener('webkitfullscreenchange', syncSettings);
+  $('#setReset').addEventListener('click', () => {
+    if (!hasSave()) { toast('There is no progress to reset yet.'); return; }
+    askConfirm('RESET PROGRESS?', 'This permanently erases your pets, coins and level. It cannot be undone.', 'Yes, reset', () => {
+      try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+      const snd = S.sound; S = fresh(); S.sound = snd;
+      started = false; running = false; lastAfford = null;
+      renderAll(); renderMenu(); SFX.bad();
+      toast('Progress reset. Start a new game from the menu!');
+    });
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (confirmBox.classList.contains('active')) { closeConfirm(); return; }
+      if (isShown(howToScreen)) { closeHowTo(); return; }
+      if (isShown(settingsScreen)) { closeSettings(); return; }
+      if (isShown(mainMenu)) { askExitGame(); return; }
+      if (sellMode) { exitSellMode(); return; }
+      if (exitModal && exitModal.classList.contains('active')) {
+        closeExitModal();
+        return;
+      }
+      if (!modal.classList.contains('hidden')) {
+        closeModal();
+        return;
+      }
+      openExitModal();
+      return;
+    }
+    if (!running || isShown(howToScreen)) return;
+    if (!modal.classList.contains('hidden') || (exitModal && exitModal.classList.contains('active'))) return;
+    if (e.code === 'Space') { e.preventDefault(); buyEgg(); }
+    if (e.code === 'KeyF') toggleFullscreen();
+  });
+
+  // ---------- main menu art (the CIEL Games loading screen comes from ciel-loader.js) ----------
+  function initMenuArt() {
+    const menuCanvas = $('#menu-hero-canvas');
+    if (typeof renderLoadingHero === 'function' && menuCanvas) {
+      try { renderLoadingHero(menuCanvas); } catch (err) { /* ignore */ }
+    }
+  }
+
+  // ---------- loop ----------
+  let tick = 0, lastFrame = performance.now(), acc = 0;
+  function secondTick() {
+    tick++;
+    // Every pet pays out every 3 seconds, staggered across the board.
+    for (let i = 0; i < N; i++) {
+      const L = S.grid[i];
+      if (!L || (i + tick) % 3) continue;
+      const v = income(L) * 3; addCoins(v);
+      const [x, y] = centerOf(cells[i]); floatText(x, y - 18, '+' + fmt(v));
+    }
+    const now = Date.now();
+    let changed = false;
+    S.orders = S.orders.map((o) => {
+      if (!o || (o.until && now >= o.until)) { changed = true; return newOrder(); }
+      return o;
+    });
+    if (changed) renderOrders();
+    renderHUD();
+    if (tick % 5 === 0) save();
+  }
+
+  function frame(t) {
+    const dt = Math.min(0.25, (t - lastFrame) / 1000); lastFrame = t;
+    if (!running) { requestAnimationFrame(frame); return; } // paused on loading / menu screens
+    acc += dt;
+    if (acc >= 1) { acc -= 1; secondTick(); }
+    const iv = hatchInterval();
+    if (emptyCells().length) {
+      S.hatchT += dt;
+      if (S.hatchT >= iv) { S.hatchT = 0; spawn(spawnLevel()); renderHUD(); }
+    } else S.hatchT = Math.min(S.hatchT + dt, iv);
+    $('#hatchFill').style.width = (S.hatchT / iv) * 100 + '%';
+    requestAnimationFrame(frame);
+  }
+
+  // Only persist once a game has actually been started, so the menu never creates an empty save.
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { if (started) save(); } else lastFrame = performance.now(); });
+  window.addEventListener('pagehide', () => { if (started) save(); });
+
+  // ---------- boot: CIEL loading screen -> main menu -> game ----------
+  renderAll();
+  initMenuArt();
+  showMainMenu(); // shown underneath the CIEL loading screen, revealed when it fades out
+  requestAnimationFrame(frame);
+})();
+
+  </script>
+</body>
+</html>
