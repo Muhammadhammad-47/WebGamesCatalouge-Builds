@@ -616,19 +616,25 @@
       flex-direction: column;
       overflow: hidden;
       min-height: 0;
+      position: relative;
     }
 
-    /* Category Slider Container */
+    /* Category Slider Container — sticky floating bar */
     .category-slider-wrap {
-      position: relative;
+      position: sticky;
+      top: 0;
       flex: none;
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 8px 10px 4px;
-      background: rgba(255, 255, 255, 0.85);
-      border-bottom: 1px solid #f1e9f7;
-      z-index: 2;
+      padding: 10px 10px 14px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      z-index: 10;
+      /* downward shadow to create "floating above" depth */
+      box-shadow: 0 8px 28px rgba(110, 70, 140, 0.15), 0 2px 0 rgba(233, 213, 255, 0.5);
+      border-radius: 28px 28px 0 0;
     }
 
     .tab-slider-arrow {
@@ -683,16 +689,15 @@
     }
     .category-tabs::-webkit-scrollbar { display: none; }
 
-    /* Slider Progress Track & Thumb */
+    /* Slider Progress Track & Thumb — lives at bottom of the floating tab bar */
     .category-slider-track {
-      width: calc(100% - 28px);
-      height: 4px;
-      margin: 2px 14px 6px;
+      flex: 0 0 100%;
+      height: 3px;
+      margin: 2px 4px 0;
       background: rgba(233, 213, 255, 0.4);
       border-radius: 999px;
-      position: relative;
       overflow: hidden;
-      flex: none;
+      position: relative;
     }
     .category-slider-thumb {
       height: 100%;
@@ -706,20 +711,21 @@
 
     .tab-btn {
       flex: none;
-      padding: 9px 15px;
-      border-radius: 16px;
-      border: 1.5px solid #f1e7f8;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1.5px solid #ede9f6;
       background: #ffffff;
       color: #64748b;
       font-family: var(--font);
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 6px;
       transition: all 0.2s cubic-bezier(0.2, 1.4, 0.4, 1);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      white-space: nowrap;
     }
     .tab-btn:hover {
       background: #fdf2f8;
@@ -735,11 +741,11 @@
       background: linear-gradient(135deg, #ff7eb3 0%, #ec4899 100%);
       border-color: transparent;
       color: #ffffff;
-      box-shadow: 0 5px 15px rgba(236, 72, 153, 0.35);
+      box-shadow: 0 5px 18px rgba(236, 72, 153, 0.4);
       transform: translateY(-1px);
     }
 
-    /* Drawer Items Grid Area */
+    /* Drawer Items Grid Area — scrolls under the sticky tab bar */
     .drawer-content {
       flex: 1;
       padding: 14px;
@@ -1364,10 +1370,10 @@
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </button>
-        </div>
-
-        <div class="category-slider-track">
-          <div class="category-slider-thumb" id="tabSliderThumb"></div>
+          <!-- Scroll progress track lives at bottom of the floating tab bar -->
+          <div class="category-slider-track">
+            <div class="category-slider-thumb" id="tabSliderThumb"></div>
+          </div>
         </div>
 
         <!-- Drawer Content Container -->
