@@ -2406,6 +2406,15 @@
         openModal('modalHelp');
       };
 
+      // Exit button
+      document.getElementById('btnMenuExit').onclick = () => {
+        if (confirm('Leave Cosmos Lines?\n\nYour progress is saved automatically.')) {
+          try { window.parent.postMessage({ action: 'exit_game' }, '*'); } catch(e) {}
+          try { window.history.back(); } catch(e) {}
+          setTimeout(() => { window.close(); }, 300);
+        }
+      };
+
       // Header buttons
       // Back button to Main Menu
       const btnBack = document.getElementById('btnBack');
