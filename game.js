@@ -273,7 +273,7 @@
     this.coins = [];
     this.steamParticles = [];
     this.waterDelivered = 0;
-    this.waterTarget = 18;
+    this.waterTarget = 12;
     this.isOver = false;
     this.won = false;
   }
@@ -1071,27 +1071,24 @@
       objective: "Extinguish the hot lava with water before reaching the fish!",
       hint: "Pull the top pin first so water turns lava into solid stone!",
       setup: function (world) {
-        // Left chamber (Lava), Right chamber (Water), Bottom (Fish)
-        world.addWall(80, 60, 80, 480, 10);
-        world.addWall(320, 60, 320, 480, 10);
-        world.addWall(80, 480, 320, 480, 10);
+        // Outer vertical shaft
+        world.addWall(100, 60, 100, 480, 10);
+        world.addWall(300, 60, 300, 480, 10);
+        world.addWall(100, 480, 300, 480, 10);
 
-        // Divider
-        world.addWall(200, 60, 200, 220, 10);
+        // Pin 1 (Top: separates Water from Lava)
+        world.addPin('pin1', 105, 180, 295, 180, 'right', 'end');
 
-        // Pin 1 (Top right under water)
-        world.addPin('pin1', 205, 220, 315, 220, 'right', 'end');
+        // Pin 2 (Bottom: separates Lava from Fish)
+        world.addPin('pin2', 105, 320, 295, 320, 'left', 'start');
 
-        // Pin 2 (Bottom separating chamber from fish)
-        world.addPin('pin2', 85, 340, 315, 340, 'left', 'start');
+        // Top chamber: Pure cool water (52 particles)
+        world.addFluid(PARTICLE_WATER, 200, 120, 52, 40);
 
-        // Water in top right
-        world.addFluid(PARTICLE_WATER, 260, 140, 35, 35);
+        // Middle chamber: Hot bubbling lava (16 particles)
+        world.addFluid(PARTICLE_LAVA, 200, 250, 16, 28);
 
-        // Lava in top left
-        world.addFluid(PARTICLE_LAVA, 140, 140, 22, 30);
-
-        // Fish at bottom
+        // Bottom chamber: The Fish waiting to be saved
         world.setFish(200, 440);
       }
     },
@@ -1123,8 +1120,8 @@
         // Crab bottom left
         world.addCrab(140, 440, 100, 180);
 
-        // Water top right
-        world.addFluid(PARTICLE_WATER, 260, 140, 35, 35);
+        // Water top right (42 particles)
+        world.addFluid(PARTICLE_WATER, 260, 140, 42, 35);
 
         // Fish bottom right
         world.setFish(260, 440);
@@ -1148,11 +1145,11 @@
         world.addPin('pin2', 95, 290, 305, 290, 'left', 'start');
         world.addPin('pin3', 95, 390, 305, 390, 'right', 'end');
 
-        // Top: Water
-        world.addFluid(PARTICLE_WATER, 200, 110, 36, 40);
+        // Top: Water (52 particles)
+        world.addFluid(PARTICLE_WATER, 200, 110, 52, 40);
 
-        // Middle: Lava
-        world.addFluid(PARTICLE_LAVA, 200, 230, 20, 35);
+        // Middle: Lava (16 particles)
+        world.addFluid(PARTICLE_LAVA, 200, 230, 16, 30);
 
         // Bottom: Fish
         world.setFish(200, 450);
@@ -1199,7 +1196,7 @@
         world.addPin('pinTop', 75, 180, 325, 180, 'right', 'end');
         world.addPin('pinBot', 75, 360, 325, 360, 'left', 'start');
 
-        world.addFluid(PARTICLE_WATER, 200, 110, 48, 45);
+        world.addFluid(PARTICLE_WATER, 200, 110, 56, 45);
         world.addFluid(PARTICLE_LAVA, 130, 280, 14, 25);
         world.addFluid(PARTICLE_LAVA, 270, 280, 14, 25);
 
@@ -1392,7 +1389,7 @@
         world.addPin('pTop', 75, 180, 325, 180, 'right', 'end');
         world.addPin('pBot', 75, 360, 325, 360, 'left', 'start');
 
-        world.addFluid(PARTICLE_WATER, 200, 110, 48, 45);
+        world.addFluid(PARTICLE_WATER, 200, 110, 56, 45);
         world.addFluid(PARTICLE_LAVA, 130, 270, 16, 25);
         world.addFluid(PARTICLE_LAVA, 270, 270, 16, 25);
 
