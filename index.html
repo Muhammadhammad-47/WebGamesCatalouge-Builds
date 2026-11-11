@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Brain Test: Tricky Puzzles | CIEL WebGames</title>
+  <meta name="description" content="Tricky brain puzzles that will challenge your mind!">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>🧠</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <script src="ciel-loader.js?v=1" onerror="void 0"></script>
+
+  <!-- CONFETTI -->
+  <div id="confettiLayer" aria-hidden="true"></div>
+
+  <!-- MAIN MENU -->
+  <div id="screenMenu" class="screen active">
+    <div class="menu-wrap">
+      <div class="menu-logo-area">
+        <div class="brain-icon">🧠</div>
+        <h1 class="menu-title">Brain Test</h1>
+        <p class="menu-sub">Tricky Puzzles</p>
+        <p class="menu-tagline">Think outside the box!</p>
+      </div>
+      <div class="menu-actions">
+        <button class="btn-menu btn-play" id="btnPlay">▶ Play Game</button>
+        <button class="btn-menu btn-levels" id="btnLevelSelect">⊞ Level Select</button>
+        <div class="menu-row">
+          <button class="btn-menu btn-sm" id="btnMenuHelp">❓ How to Play</button>
+          <button class="btn-menu btn-sm btn-exit" id="btnMenuExit">← Exit</button>
+        </div>
+      </div>
+      <div class="menu-progress-row">
+        <span id="menuProgressText">0 / 25 Solved</span>
+        <div class="menu-prog-bar"><div class="menu-prog-fill" id="menuProgFill"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEVEL SELECT -->
+  <div id="screenLevels" class="screen">
+    <div class="level-select-wrap">
+      <div class="ls-header">
+        <button class="btn-back-sm" id="btnLevelsBack">← Back</button>
+        <h2>Select Level</h2>
+      </div>
+      <div class="level-grid" id="levelGrid"></div>
+    </div>
+  </div>
+
+  <!-- HOW TO PLAY -->
+  <div id="modalHelp" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h2>How to Play 🧠</h2>
+      <ul class="help-list">
+        <li>🤔 Read the question carefully</li>
+        <li>👆 Tap, drag, or interact with objects</li>
+        <li>🧐 Think outside the box!</li>
+        <li>💡 Tap the lightbulb for a hint</li>
+        <li>✨ The answer is never what you expect!</li>
+      </ul>
+      <button class="btn-modal-close" id="btnHelpClose">Got It! 🎯</button>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="screenGame" class="screen">
+    <header class="game-header">
+      <button class="btn-back-sm" id="btnGameBack">← Menu</button>
+      <div class="level-badge" id="levelBadge">Level 1</div>
+      <button class="btn-hint" id="btnHint">💡</button>
+    </header>
+    <div class="game-card">
+      <div class="question-box" id="questionBox"></div>
+      <div class="puzzle-area" id="puzzleArea"></div>
+    </div>
+    <div class="hint-bubble hidden" id="hintBubble"></div>
+    <!-- WIN -->
+    <div class="win-overlay hidden" id="winOverlay">
+      <div class="win-box">
+        <div class="win-emoji" id="winEmoji">🎉</div>
+        <h2 class="win-title" id="winTitle">Brilliant!</h2>
+        <div class="stars-row" id="starsRow"></div>
+        <div class="win-btns">
+          <button class="btn-win btn-next" id="btnNext">Next Level ▶</button>
+          <button class="btn-win btn-replay" id="btnReplay">↺ Retry</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js?v=1"></script>
+</body>
+</html>
