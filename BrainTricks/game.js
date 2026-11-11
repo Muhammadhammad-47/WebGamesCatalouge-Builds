@@ -1,934 +1,1582 @@
-// =============================================
-// BRAIN TEST — TRICKY PUZZLES  |  game.js
-// =============================================
+/* ==========================================================================
+   BRAIN TEST: TRICKY PUZZLES - GAME ENGINE & PUZZLES
+   ========================================================================== */
 
-'use strict';
+(function () {
+  'use strict';
 
-// ---- STATE ----
-const TOTAL = 25;
-const SAVE_KEY = 'braintest_v1';
-let state = { progress: 0, stars: {} };
-let currentLevel = 0;
-let hintUsed = false;
+  // ==========================================================================
+  // AUDIO SYNTHESIZER (Web Audio API - No external files needed)
+  // ==========================================================================
+  var Sound = (function () {
+    var ctx = null;
+    var enabled = true;
 
-function loadState() {
-  try { state = JSON.parse(localStorage.getItem(SAVE_KEY)) || { progress: 0, stars: {} }; }
-  catch(e) { state = { progress: 0, stars: {} }; }
-}
-function saveState() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch(e) {}
-}
+    function getCtx() {
+      if (!ctx && (window.AudioContext || window.webkitAudioContext)) {
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      return ctx;
+    }
 
-// ---- DOM ----
-const $ = id => document.getElementById(id);
-const dom = {
-  screenMenu: $('screenMenu'), screenLevels: $('screenLevels'), screenGame: $('screenGame'),
-  menuProgressText: $('menuProgressText'), menuProgFill: $('menuProgFill'),
-  levelGrid: $('levelGrid'), levelBadge: $('levelBadge'),
-  questionBox: $('questionBox'), puzzleArea: $('puzzleArea'),
-  hintBubble: $('hintBubble'),
-  winOverlay: $('winOverlay'), winEmoji: $('winEmoji'), winTitle: $('winTitle'), starsRow: $('starsRow'),
-  btnPlay: $('btnPlay'), btnLevelSelect: $('btnLevelSelect'), btnMenuHelp: $('btnMenuHelp'), btnMenuExit: $('btnMenuExit'),
-  btnLevelsBack: $('btnLevelsBack'), btnGameBack: $('btnGameBack'),
-  btnHint: $('btnHint'), btnNext: $('btnNext'), btnReplay: $('btnReplay'),
-  modalHelp: $('modalHelp'), btnHelpClose: $('btnHelpClose'),
-  confettiLayer: $('confettiLayer'),
-};
+    return {
+      toggle: function () {
+        enabled = !enabled;
+        return enabled;
+      },
+      isEnabled: function () {
+        return enabled;
+      },
+      tap: function () {
+        if (!enabled) return;
+        var ac = getCtx();
+        if (!ac) return;
+        var osc = ac.createOscillator();
+        var g = ac.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, ac.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ac.currentTime + 0.06);
+        g.gain.setValueAtTime(0.2, ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.06);
+        osc.connect(g);
+        g.connect(ac.destination);
+        osc.start();
+        osc.stop(ac.currentTime + 0.06);
+      },
+      wrong: function () {
+        if (!enabled) return;
+        var ac = getCtx();
+        if (!ac) return;
+        var osc = ac.createOscillator();
+        var g = ac.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, ac.currentTime);
+        osc.frequency.linearRampToValueAtTime(110, ac.currentTime + 0.22);
+        g.gain.setValueAtTime(0.25, ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.22);
+        osc.connect(g);
+        g.connect(ac.destination);
+        osc.start();
+        osc.stop(ac.currentTime + 0.22);
+      },
+      correct: function () {
+        if (!enabled) return;
+        var ac = getCtx();
+        if (!ac) return;
+        var notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach(function (f, i) {
+          var osc = ac.createOscillator();
+          var g = ac.createGain();
+          var t = ac.currentTime + i * 0.09;
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, t);
+          g.gain.setValueAtTime(0.28, t);
+          g.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
+          osc.connect(g);
+          g.connect(ac.destination);
+          osc.start(t);
+          osc.stop(t + 0.35);
+        });
+      },
+      pop: function () {
+        if (!enabled) return;
+        var ac = getCtx();
+        if (!ac) return;
+        var osc = ac.createOscillator();
+        var g = ac.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, ac.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(740, ac.currentTime + 0.08);
+        g.gain.setValueAtTime(0.3, ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.08);
+        osc.connect(g);
+        g.connect(ac.destination);
+        osc.start();
+        osc.stop(ac.currentTime + 0.08);
+      }
+    };
+  })();
 
-// ---- SCREENS ----
-function showScreen(name) {
-  ['screenMenu','screenLevels','screenGame'].forEach(id => {
-    $(id).classList.toggle('active', id === name);
-  });
-}
+  // ==========================================================================
+  // CONFETTI SYSTEM
+  // ==========================================================================
+  var Confetti = (function () {
+    var canvas = document.getElementById('confettiCanvas');
+    var ctx = canvas ? canvas.getContext('2d') : null;
+    var particles = [];
+    var animating = false;
+    var colors = ['#ff6b35', '#2ecc71', '#3b82f6', '#facc15', '#a855f7', '#ff70a6'];
 
-// ---- MENU ----
-function updateMenuProgress() {
-  const p = state.progress;
-  dom.menuProgressText.textContent = `${p} / ${TOTAL} Solved`;
-  dom.menuProgFill.style.width = `${(p / TOTAL) * 100}%`;
-}
+    function resize() {
+      if (!canvas) return;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
 
-// ---- LEVEL GRID ----
-function buildLevelGrid() {
-  dom.levelGrid.innerHTML = '';
-  for (let i = 0; i < TOTAL; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'level-btn';
-    const solved = i < state.progress;
-    const current = i === state.progress;
-    const locked = i > state.progress;
-    btn.classList.add(solved ? 'solved' : current ? 'current' : 'locked');
-    const stars = state.stars[i] || 0;
-    btn.innerHTML = `<span>${i + 1}</span><span class="level-stars">${'⭐'.repeat(stars)}</span>`;
-    btn.disabled = locked;
-    btn.onclick = () => { startLevel(i); showScreen('screenGame'); };
-    dom.levelGrid.appendChild(btn);
+    function update() {
+      if (!animating || !ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      var alive = false;
+      for (var i = 0; i < particles.length; i++) {
+        var p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.rotation += p.rotSpeed;
+        p.alpha -= 0.008;
+
+        if (p.alpha > 0) {
+          alive = true;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.alpha);
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.4);
+          ctx.restore();
+        }
+      }
+
+      if (alive) {
+        requestAnimationFrame(update);
+      } else {
+        animating = false;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    return {
+      launch: function (count) {
+        if (!canvas) return;
+        resize();
+        particles = [];
+        var num = count || 80;
+        var startX = canvas.width / 2;
+        var startY = canvas.height * 0.45;
+
+        for (var i = 0; i < num; i++) {
+          var angle = Math.random() * Math.PI * 2;
+          var speed = 4 + Math.random() * 12;
+          particles.push({
+            x: startX + (Math.random() - 0.5) * 80,
+            y: startY + (Math.random() - 0.5) * 40,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 5,
+            gravity: 0.35,
+            size: 8 + Math.random() * 8,
+            rotation: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.25,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            alpha: 1
+          });
+        }
+        if (!animating) {
+          animating = true;
+          requestAnimationFrame(update);
+        }
+      }
+    };
+  })();
+
+  // ==========================================================================
+  // UNIFIED POINTER DRAG & DROP HELPER
+  // ==========================================================================
+  function makeDraggable(el, options) {
+    options = options || {};
+    var startX, startY, origX, origY, isDragging = false;
+
+    function getCoords(e) {
+      if (e.touches && e.touches.length > 0) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    function onStart(e) {
+      // Don't drag if target is button
+      if (e.target.tagName === 'BUTTON') return;
+      isDragging = true;
+      var c = getCoords(e);
+      startX = c.x;
+      startY = c.y;
+      origX = el.offsetLeft;
+      origY = el.offsetTop;
+      el.style.zIndex = '300';
+      el.classList.add('is-dragging');
+      Sound.tap();
+
+      if (options.onStart) options.onStart(el, origX, origY);
+
+      window.addEventListener('mousemove', onMove, { passive: false });
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('mouseup', onEnd);
+      window.addEventListener('touchend', onEnd);
+    }
+
+    function onMove(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      var c = getCoords(e);
+      var dx = c.x - startX;
+      var dy = c.y - startY;
+
+      var newX = origX + dx;
+      var newY = origY + dy;
+
+      if (options.constrainX) {
+        newX = Math.max(options.minX || 0, Math.min(options.maxX || 300, newX));
+      }
+      if (options.constrainY) {
+        newY = Math.max(options.minY || 0, Math.min(options.maxY || 400, newY));
+      }
+
+      el.style.left = newX + 'px';
+      el.style.top = newY + 'px';
+
+      if (options.onMove) options.onMove(el, newX, newY, c.x, c.y);
+    }
+
+    function onEnd(e) {
+      if (!isDragging) return;
+      isDragging = false;
+      el.style.zIndex = '';
+      el.classList.remove('is-dragging');
+
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('mouseup', onEnd);
+      window.removeEventListener('touchend', onEnd);
+
+      if (options.onEnd) {
+        var c = (e.changedTouches && e.changedTouches.length > 0)
+          ? { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY }
+          : { x: e.clientX, y: e.clientY };
+        options.onEnd(el, el.offsetLeft, el.offsetTop, c.x, c.y);
+      }
+    }
+
+    el.addEventListener('mousedown', onStart);
+    el.addEventListener('touchstart', onStart, { passive: false });
   }
-}
 
-// ---- CONFETTI ----
-const CONFETTI_COLORS = ['#ff6b35','#4ecdc4','#ffe66d','#a855f7','#22c55e','#f43f5e','#38bdf8'];
-function fireConfetti(count = 60) {
-  dom.confettiLayer.innerHTML = '';
-  for (let i = 0; i < count; i++) {
-    const p = document.createElement('div');
-    p.className = 'confetti-piece';
-    p.style.cssText = `
-      left:${Math.random()*100}%;
-      background:${CONFETTI_COLORS[i % CONFETTI_COLORS.length]};
-      --dur:${1.5 + Math.random()*1.5}s;
-      --delay:${Math.random()*0.6}s;
-      transform: rotate(${Math.random()*360}deg);
-      width:${8 + Math.random()*8}px; height:${10 + Math.random()*10}px;
-    `;
-    dom.confettiLayer.appendChild(p);
+  // Hit test helper
+  function isOverlapping(elA, elB) {
+    var rA = elA.getBoundingClientRect();
+    var rB = elB.getBoundingClientRect();
+    return !(
+      rA.right < rB.left ||
+      rA.left > rB.right ||
+      rA.bottom < rB.top ||
+      rA.top > rB.bottom
+    );
   }
-  setTimeout(() => dom.confettiLayer.innerHTML = '', 3500);
-}
 
-// ---- WIN ----
-const WIN_MSGS = ['Brilliant!','Amazing!','Genius!','Outstanding!','Impressive!','Mind-Blowing!'];
-function triggerWin(starCount = 3) {
-  if (currentLevel >= state.progress) {
-    state.progress = currentLevel + 1;
-    state.stars[currentLevel] = Math.max(state.stars[currentLevel] || 0, starCount);
-    saveState();
-  }
-  fireConfetti(80);
-  dom.winEmoji.textContent = starCount === 3 ? '🎉' : starCount === 2 ? '🥳' : '😊';
-  dom.winTitle.textContent = WIN_MSGS[Math.floor(Math.random() * WIN_MSGS.length)];
-  dom.starsRow.textContent = '⭐'.repeat(starCount) + '☆'.repeat(3 - starCount);
-  dom.winOverlay.classList.remove('hidden');
-  dom.btnNext.style.display = currentLevel < TOTAL - 1 ? '' : 'none';
-  updateMenuProgress();
-}
+  // ==========================================================================
+  // PUZZLES REGISTRY (15 Authentic Brain Test Puzzles)
+  // ==========================================================================
+  var PUZZLES = [
 
-// ---- HINT ----
-function showHint(text) {
-  dom.hintBubble.textContent = text;
-  dom.hintBubble.classList.remove('hidden');
-  clearTimeout(dom.hintBubble._t);
-  dom.hintBubble._t = setTimeout(() => dom.hintBubble.classList.add('hidden'), 3500);
-}
+    // ========================================================================
+    // LEVEL 1: Which one is the biggest?
+    // Lion is drawn huge, elephant is drawn tiny!
+    // ========================================================================
+    {
+      level: 1,
+      title: "Which one is the biggest?",
+      hint: "Don't think about real life size. Look at how they are drawn right on your screen!",
+      explanation: "Even though elephants are bigger in real life, this lion is drawn much bigger on screen!",
+      render: function (stage, onSolve, onFail) {
+        stage.innerHTML = [
+          '<div class="animals-grid">',
+            // Lion (Biggest)
+            '<div class="animal-item animal-lion" id="animalLion" title="Lion">',
+              '<div class="animal-svg-wrap">',
+                '<svg viewBox="0 0 160 160">',
+                  '<!-- Mane -->',
+                  '<circle cx="80" cy="80" r="70" fill="#f59e0b" stroke="#2d3748" stroke-width="4.5"/>',
+                  '<path d="M40 30 C30 15 50 10 60 25 C70 10 90 10 100 25 C110 10 130 15 120 30 C140 35 145 55 135 65 C150 75 150 95 135 105 C145 115 140 135 120 140 C110 155 90 155 80 140 C70 155 50 155 40 140 C20 135 15 115 25 105 C10 95 10 75 25 65 C15 55 20 35 40 30 Z" fill="#d97706" opacity="0.6"/>',
+                  '<!-- Face -->',
+                  '<circle cx="80" cy="84" r="48" fill="#fde047" stroke="#2d3748" stroke-width="4"/>',
+                  '<!-- Ears -->',
+                  '<circle cx="48" cy="48" r="14" fill="#f59e0b" stroke="#2d3748" stroke-width="3.5"/>',
+                  '<circle cx="48" cy="48" r="8" fill="#fef08a"/>',
+                  '<circle cx="112" cy="48" r="14" fill="#f59e0b" stroke="#2d3748" stroke-width="3.5"/>',
+                  '<circle cx="112" cy="48" r="8" fill="#fef08a"/>',
+                  '<!-- Eyes -->',
+                  '<ellipse cx="64" cy="76" rx="6" ry="8" fill="#2d3748"/>',
+                  '<circle cx="62" cy="73" r="2.5" fill="#fff"/>',
+                  '<ellipse cx="96" cy="76" rx="6" ry="8" fill="#2d3748"/>',
+                  '<circle cx="94" cy="73" r="2.5" fill="#fff"/>',
+                  '<!-- Nose & Whiskers -->',
+                  '<polygon points="80,90 73,82 87,82" fill="#78350f"/>',
+                  '<path d="M80 90 L80 100 M80 100 C74 106 68 100 64 96 M80 100 C86 106 92 100 96 96" stroke="#2d3748" stroke-width="3" fill="none" stroke-linecap="round"/>',
+                  '<line x1="42" y1="92" x2="60" y2="94" stroke="#2d3748" stroke-width="2.5" stroke-linecap="round"/>',
+                  '<line x1="44" y1="102" x2="62" y2="100" stroke="#2d3748" stroke-width="2.5" stroke-linecap="round"/>',
+                  '<line x1="118" y1="92" x2="100" y2="94" stroke="#2d3748" stroke-width="2.5" stroke-linecap="round"/>',
+                  '<line x1="116" y1="102" x2="98" y2="100" stroke="#2d3748" stroke-width="2.5" stroke-linecap="round"/>',
+                '</svg>',
+              '</div>',
+            '</div>',
+            // Elephant (Drawn tiny)
+            '<div class="animal-item animal-elephant" id="animalElephant" title="Elephant">',
+              '<div class="animal-svg-wrap">',
+                '<svg viewBox="0 0 100 100">',
+                  '<!-- Big Ears -->',
+                  '<ellipse cx="28" cy="46" rx="22" ry="26" fill="#94a3b8" stroke="#2d3748" stroke-width="3.5"/>',
+                  '<ellipse cx="28" cy="46" rx="14" ry="18" fill="#fbcfe8"/>',
+                  '<ellipse cx="72" cy="46" rx="22" ry="26" fill="#94a3b8" stroke="#2d3748" stroke-width="3.5"/>',
+                  '<ellipse cx="72" cy="46" rx="14" ry="18" fill="#fbcfe8"/>',
+                  '<!-- Head -->',
+                  '<circle cx="50" cy="50" r="32" fill="#cbd5e1" stroke="#2d3748" stroke-width="3.5"/>',
+                  '<!-- Eyes -->',
+                  '<circle cx="40" cy="44" r="4.5" fill="#2d3748"/>',
+                  '<circle cx="39" cy="42" r="1.5" fill="#fff"/>',
+                  '<circle cx="60" cy="44" r="4.5" fill="#2d3748"/>',
+                  '<circle cx="59" cy="42" r="1.5" fill="#fff"/>',
+                  '<!-- Trunk -->',
+                  '<path d="M50 56 C46 68 44 78 54 80 C60 82 62 76 56 74" fill="none" stroke="#2d3748" stroke-width="5" stroke-linecap="round"/>',
+                '</svg>',
+              '</div>',
+            '</div>',
+            // Zebra (Medium)
+            '<div class="animal-item animal-zebra" id="animalZebra" title="Zebra">',
+              '<div class="animal-svg-wrap">',
+                '<svg viewBox="0 0 110 110">',
+                  '<!-- Ears -->',
+                  '<ellipse cx="38" cy="24" rx="7" ry="14" fill="#ffffff" stroke="#2d3748" stroke-width="3"/>',
+                  '<ellipse cx="72" cy="24" rx="7" ry="14" fill="#ffffff" stroke="#2d3748" stroke-width="3"/>',
+                  '<!-- Mane -->',
+                  '<path d="M55 18 C52 26 58 34 55 42" stroke="#2d3748" stroke-width="6" stroke-linecap="round"/>',
+                  '<!-- Head -->',
+                  '<ellipse cx="55" cy="58" rx="32" ry="38" fill="#ffffff" stroke="#2d3748" stroke-width="3.5"/>',
+                  '<!-- Stripes -->',
+                  '<path d="M30 46 L46 50 M26 58 L44 60 M78 46 L64 50 M84 58 L66 60" stroke="#2d3748" stroke-width="3.5" stroke-linecap="round"/>',
+                  '<!-- Eyes -->',
+                  '<circle cx="44" cy="52" r="4" fill="#2d3748"/>',
+                  '<circle cx="66" cy="52" r="4" fill="#2d3748"/>',
+                  '<!-- Muzzle -->',
+                  '<ellipse cx="55" cy="80" rx="16" ry="10" fill="#e2e8f0" stroke="#2d3748" stroke-width="3"/>',
+                  '<circle cx="50" cy="80" r="2" fill="#2d3748"/>',
+                  '<circle cx="60" cy="80" r="2" fill="#2d3748"/>',
+                '</svg>',
+              '</div>',
+            '</div>',
+            // Mouse (Tiny)
+            '<div class="animal-item animal-mouse" id="animalMouse" title="Mouse">',
+              '<div class="animal-svg-wrap">',
+                '<svg viewBox="0 0 70 70">',
+                  '<!-- Ears -->',
+                  '<circle cx="22" cy="24" r="14" fill="#cbd5e1" stroke="#2d3748" stroke-width="3"/>',
+                  '<circle cx="22" cy="24" r="8" fill="#fbcfe8"/>',
+                  '<circle cx="48" cy="24" r="14" fill="#cbd5e1" stroke="#2d3748" stroke-width="3"/>',
+                  '<circle cx="48" cy="24" r="8" fill="#fbcfe8"/>',
+                  '<!-- Head -->',
+                  '<ellipse cx="35" cy="44" rx="20" ry="18" fill="#e2e8f0" stroke="#2d3748" stroke-width="3"/>',
+                  '<!-- Eyes -->',
+                  '<circle cx="28" cy="40" r="3" fill="#2d3748"/>',
+                  '<circle cx="42" cy="40" r="3" fill="#2d3748"/>',
+                  '<!-- Pink Nose -->',
+                  '<circle cx="35" cy="50" r="3" fill="#f43f5e"/>',
+                  '<!-- Whiskers -->',
+                  '<line x1="16" y1="48" x2="26" y2="50" stroke="#2d3748" stroke-width="2"/>',
+                  '<line x1="54" y1="48" x2="44" y2="50" stroke="#2d3748" stroke-width="2"/>',
+                '</svg>',
+              '</div>',
+            '</div>',
+          '</div>'
+        ].join('');
 
-// ---- DRAG HELPER ----
-function makeDraggable(el, onMove, onDrop) {
-  let sx, sy, ox, oy, dragging = false;
-  function start(e) {
-    e.preventDefault();
-    dragging = true;
-    const pt = e.touches ? e.touches[0] : e;
-    sx = pt.clientX; sy = pt.clientY;
-    ox = el.offsetLeft; oy = el.offsetTop;
-    el.style.zIndex = 100;
-    el.style.transition = 'none';
-  }
-  function move(e) {
-    if (!dragging) return;
-    e.preventDefault();
-    const pt = e.touches ? e.touches[0] : e;
-    const dx = pt.clientX - sx, dy = pt.clientY - sy;
-    el.style.left = (ox + dx) + 'px';
-    el.style.top = (oy + dy) + 'px';
-    if (onMove) onMove(pt.clientX, pt.clientY);
-  }
-  function end(e) {
-    if (!dragging) return;
-    dragging = false;
-    el.style.zIndex = '';
-    el.style.transition = '';
-    const pt = e.changedTouches ? e.changedTouches[0] : e;
-    if (onDrop) onDrop(pt.clientX, pt.clientY);
-  }
-  el.addEventListener('mousedown', start);
-  el.addEventListener('touchstart', start, { passive: false });
-  window.addEventListener('mousemove', move);
-  window.addEventListener('touchmove', move, { passive: false });
-  window.addEventListener('mouseup', end);
-  window.addEventListener('touchend', end);
-}
-
-function hits(el, x, y) {
-  const r = el.getBoundingClientRect();
-  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
-}
-
-// =============================================
-// PUZZLE DEFINITIONS
-// =============================================
-
-const PUZZLES = [
-
-  // ---- 1: 1+2+3 ----
-  {
-    question: 'What is 1+2+3?',
-    hint: 'Look at the question itself... the answer is there!',
-    render(area) {
-      area.innerHTML = `
-        <div class="answer-grid">
-          <button class="answer-btn" data-v="5">5</button>
-          <button class="answer-btn" data-v="7">7</button>
-          <button class="answer-btn" data-v="9">9</button>
-          <button class="answer-btn" data-v="6wrong">6</button>
-        </div>
-        <p style="font-size:12px;color:#9ca3af;margin-top:8px;text-align:center;">Select the answer</p>
-      `;
-      // The real answer is to drag "6" from the question text
-      // But for simplicity the question text has a "6" that is clickable
-      dom.questionBox.innerHTML = `What is 1+2+<span id="q6" style="color:#ff6b35;font-size:28px;font-weight:900;cursor:pointer;text-decoration:underline wavy var(--primary);">6</span>-1?`;
-      $('q6').onclick = () => triggerWin(3);
-
-      area.querySelectorAll('.answer-btn').forEach(btn => {
-        btn.onclick = () => {
-          btn.classList.add('wrong');
-          setTimeout(() => btn.classList.remove('wrong'), 500);
+        // Listeners
+        document.getElementById('animalLion').onclick = function () {
+          onSolve();
         };
-      });
-    }
-  },
 
-  // ---- 2: Find the cat ----
-  {
-    question: 'Find the cat! 🐱',
-    hint: 'The cat might be hiding somewhere unexpected... try behind the bush!',
-    render(area) {
-      area.innerHTML = `
-        <div style="position:relative;width:280px;height:220px;">
-          <svg width="280" height="220" viewBox="0 0 280 220">
-            <!-- Sky -->
-            <rect width="280" height="220" fill="#c8f4fc" rx="16"/>
-            <!-- Ground -->
-            <rect y="160" width="280" height="60" fill="#86efac" rx="0"/>
-            <!-- Sun -->
-            <circle cx="240" cy="40" r="28" fill="#ffe66d"/>
-            <!-- Tree -->
-            <rect x="60" y="90" width="14" height="70" fill="#92400e"/>
-            <ellipse cx="67" cy="80" rx="30" ry="30" fill="#22c55e"/>
-            <!-- House -->
-            <rect x="160" y="120" width="80" height="60" fill="#fca5a5"/>
-            <polygon points="160,120 240,120 200,85" fill="#ef4444"/>
-            <rect x="188" y="148" width="24" height="32" fill="#92400e"/>
-            <!-- Bush (hiding cat) -->
-            <ellipse cx="130" cy="165" rx="45" ry="30" fill="#16a34a"/>
-            <ellipse cx="110" cy="168" rx="30" ry="22" fill="#15803d"/>
-            <ellipse cx="150" cy="168" rx="32" ry="22" fill="#15803d"/>
-            <!-- Cat (hidden, clickable) -->
-          </svg>
-          <!-- Cat behind bush -->
-          <div id="hiddenCat" style="position:absolute;bottom:28px;left:95px;font-size:30px;cursor:pointer;opacity:0;transition:opacity 0.3s" title="🐱">🐱</div>
-          <!-- Bush overlay -->
-          <div id="bushOverlay" style="position:absolute;bottom:14px;left:68px;width:120px;height:60px;cursor:pointer;border-radius:50%;background:transparent"></div>
-        </div>
-      `;
-      let tapCount = 0;
-      $('bushOverlay').onclick = () => {
-        tapCount++;
-        if (tapCount === 1) {
-          $('hiddenCat').style.opacity = '0.3';
-          dom.hintBubble.textContent = 'Something is there! Tap again!';
-          dom.hintBubble.classList.remove('hidden');
-        }
-        if (tapCount >= 3) {
-          $('hiddenCat').style.opacity = '1';
-          setTimeout(() => triggerWin(3), 400);
-        }
-      };
-    }
-  },
-
-  // ---- 3: Which is biggest? ----
-  {
-    question: 'Which one is the biggest?',
-    hint: 'Read the labels — not just what you see!',
-    render(area) {
-      area.innerHTML = `
-        <div style="display:flex;gap:16px;align-items:flex-end;justify-content:center;flex-wrap:wrap">
-          <div id="optSmall" style="text-align:center;cursor:pointer">
-            <div style="width:40px;height:40px;background:#fca5a5;border-radius:50%;margin:0 auto 6px;"></div>
-            <span style="font-size:14px;font-weight:800">small</span>
-          </div>
-          <div id="optBig" style="text-align:center;cursor:pointer">
-            <div style="width:80px;height:80px;background:#93c5fd;border-radius:50%;margin:0 auto 6px;"></div>
-            <span style="font-size:14px;font-weight:800">medium</span>
-          </div>
-          <div id="optBiggest" style="text-align:center;cursor:pointer">
-            <div style="width:60px;height:60px;background:#86efac;border-radius:50%;margin:0 auto 6px;"></div>
-            <span id="biggestLabel" style="font-size:28px;font-weight:900;color:#ff6b35">BIGGEST</span>
-          </div>
-        </div>
-      `;
-      $('optBiggest').onclick = () => triggerWin(3);
-      $('optSmall').onclick = $('optBig').onclick = () => {
-        area.style.animation = 'shake 0.4s';
-        setTimeout(() => area.style.animation = '', 400);
-      };
-    }
-  },
-
-  // ---- 4: Hatch the chick ----
-  {
-    question: 'Help the chick hatch! 🐣',
-    hint: 'Tap the egg... many times!',
-    render(area) {
-      let taps = 0;
-      area.innerHTML = `
-        <div id="eggWrap" style="text-align:center;cursor:pointer;user-select:none">
-          <div id="eggEmoji" style="font-size:90px;display:block;transition:transform 0.1s">🥚</div>
-          <div id="eggProgress" style="margin-top:12px;font-size:14px;font-weight:800;color:#9ca3af">Tap the egg!</div>
-          <div style="margin-top:8px;width:200px;height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-inline:auto">
-            <div id="eggBar" style="height:100%;width:0%;background:linear-gradient(90deg,#ffe66d,#ff6b35);border-radius:999px;transition:width 0.2s"></div>
-          </div>
-        </div>
-      `;
-      const emojis = ['🥚','🥚','🥚','🐣','🐣','🐥'];
-      $('eggWrap').onclick = () => {
-        taps++;
-        $('eggEmoji').style.transform = 'scale(0.85) rotate(-5deg)';
-        setTimeout(() => $('eggEmoji').style.transform = '', 100);
-        $('eggBar').style.width = `${Math.min(taps * 10, 100)}%`;
-        $('eggProgress').textContent = taps < 5 ? `Tap more! (${taps}/10)` : taps < 8 ? 'Almost there...' : 'Keep going!';
-        if (taps >= 3) $('eggEmoji').textContent = '🐣';
-        if (taps >= 10) { $('eggEmoji').textContent = '🐥'; setTimeout(() => triggerWin(3), 500); }
-      };
-    }
-  },
-
-  // ---- 5: Put numbers in order ----
-  {
-    question: 'Put the numbers in order: smallest first!',
-    hint: 'Tap the numbers from smallest to largest.',
-    render(area) {
-      const nums = [3, 1, 5, 2, 4];
-      let next = 1;
-      area.innerHTML = `<div class="number-slots" id="numRow"></div>
-        <p style="font-size:13px;color:#9ca3af;margin-top:10px">Tap them in order!</p>`;
-      nums.forEach(n => {
-        const btn = document.createElement('button');
-        btn.className = 'answer-btn';
-        btn.style.cssText = 'width:52px;height:52px;font-size:22px;padding:0;border-radius:14px';
-        btn.textContent = n;
-        btn.onclick = () => {
-          if (n === next) {
-            btn.classList.add('correct');
-            btn.style.background = '#f0fdf4';
-            btn.disabled = true;
-            next++;
-            if (next > 5) setTimeout(() => triggerWin(3), 400);
-          } else {
-            btn.classList.add('wrong');
-            setTimeout(() => btn.classList.remove('wrong'), 400);
-          }
-        };
-        $('numRow').appendChild(btn);
-      });
-    }
-  },
-
-  // ---- 6: What comes after 999? ----
-  {
-    question: 'What number comes after 999?',
-    hint: 'Count one more from 999...',
-    render(area) {
-      area.innerHTML = `
-        <input class="puzzle-input" id="numInput" type="number" placeholder="Your answer" inputmode="numeric">
-        <button class="puzzle-submit" id="numSubmit">Check ✓</button>
-      `;
-      $('numSubmit').onclick = () => {
-        if ($('numInput').value.trim() === '1000') {
-          triggerWin(3);
-        } else {
-          $('numInput').style.borderColor = '#ef4444';
-          setTimeout(() => $('numInput').style.borderColor = '', 500);
-        }
-      };
-      $('numInput').onkeydown = e => { if (e.key === 'Enter') $('numSubmit').click(); };
-    }
-  },
-
-  // ---- 7: Find the mistake ----
-  {
-    question: 'Find the mistake in this sentence:',
-    hint: 'Look at the question itself, not the numbers below!',
-    render(area) {
-      dom.questionBox.innerHTML = `Find the mistake in <span id="mistakeWord" style="color:#ff6b35;cursor:pointer;text-decoration:underline wavy orange">this</span> sentence:`;
-      area.innerHTML = `
-        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
-          ${[1,2,3,4,5,6,7,8,9].map(n => `<div style="width:40px;height:40px;background:#f3f4f6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;cursor:pointer" onclick="this.style.background='#fef2f2';this.style.color='#ef4444'">${n}</div>`).join('')}
-        </div>
-        <p style="font-size:13px;color:#9ca3af;margin-top:12px">The numbers look fine... look elsewhere!</p>
-      `;
-      $('mistakeWord').onclick = () => triggerWin(3);
-    }
-  },
-
-  // ---- 8: Turn off the lights ----
-  {
-    question: 'Turn OFF all the lights! 💡',
-    hint: 'Clicking a switch also toggles its neighbors!',
-    render(area) {
-      let lights = [true, false, true]; // on/off/on
-      function render() {
-        area.innerHTML = `<div class="light-grid" id="lightGrid"></div>`;
-        lights.forEach((on, i) => {
-          const sw = document.createElement('div');
-          sw.className = 'light-switch';
-          sw.innerHTML = `
-            <span class="bulb ${on?'on':'off'}">${on?'💡':'🔌'}</span>
-            <div class="switch-lever ${on?'on':''}"></div>
-          `;
-          sw.onclick = () => {
-            lights[i] = !lights[i];
-            if (i > 0) lights[i-1] = !lights[i-1];
-            if (i < lights.length-1) lights[i+1] = !lights[i+1];
-            render();
-            if (lights.every(l => !l)) setTimeout(() => triggerWin(3), 300);
+        ['animalElephant', 'animalZebra', 'animalMouse'].forEach(function (id) {
+          document.getElementById(id).onclick = function (e) {
+            onFail(e.clientX, e.clientY);
           };
-          $('lightGrid').appendChild(sw);
         });
       }
-      render();
-    }
-  },
+    },
 
-  // ---- 9: Save the man from shark ----
-  {
-    question: 'Save the man from the shark! 🦈',
-    hint: 'Drag the man UP — out of the water!',
-    render(area) {
-      area.innerHTML = `
-        <div style="position:relative;width:280px;height:220px;background:linear-gradient(180deg,#c8f4fc 50%,#0ea5e9 50%);border-radius:16px;overflow:visible">
-          <svg width="280" height="220" style="position:absolute;top:0;left:0">
-            <!-- Waves -->
-            <path d="M0,110 Q35,95 70,110 Q105,125 140,110 Q175,95 210,110 Q245,125 280,110 L280,220 L0,220 Z" fill="#0ea5e9"/>
-            <!-- Shark fin -->
-            <polygon id="sharkFin" points="180,100 200,130 160,130" fill="#374151"/>
-          </svg>
-          <!-- Man (draggable) -->
-          <div id="manEmoji" class="draggable" style="position:absolute;top:70px;left:110px;font-size:40px;cursor:grab;user-select:none">🧑</div>
-        </div>
-      `;
-      const man = $('manEmoji');
-      let startY;
-      makeDraggable(man, null, (cx, cy) => {
-        const area = dom.puzzleArea.getBoundingClientRect();
-        const relY = cy - area.top;
-        if (relY < area.height * 0.4) triggerWin(3);
-      });
-    }
-  },
+    // ========================================================================
+    // LEVEL 2: How to blossom this flower?
+    // Drag the dark rain clouds away to reveal the warm sun!
+    // ========================================================================
+    {
+      level: 2,
+      title: "How to blossom this flower?",
+      hint: "Plants need sunlight to bloom. Clear those gloomy clouds out of the way!",
+      explanation: "Sunshine gave the flower the energy it needed to bloom beautifully!",
+      render: function (stage, onSolve, onFail) {
+        stage.innerHTML = [
+          '<div style="position:relative; width:100%; height:360px; overflow:hidden;">',
+            // Sun (hidden behind clouds at top right)
+            '<div id="sunEl" style="position:absolute; top:20px; right:40px; width:76px; height:76px;">',
+              '<svg viewBox="0 0 100 100">',
+                '<circle cx="50" cy="50" r="30" fill="#facc15" stroke="#2d3748" stroke-width="4"/>',
+                // Sunbeams
+                '<g stroke="#f59e0b" stroke-width="4" stroke-linecap="round">',
+                  '<line x1="50" y1="8" x2="50" y2="15"/>',
+                  '<line x1="50" y1="85" x2="50" y2="92"/>',
+                  '<line x1="8" y1="50" x2="15" y2="50"/>',
+                  '<line x1="85" y1="50" x2="92" y2="50"/>',
+                  '<line x1="20" y1="20" x2="26" y2="26"/>',
+                  '<line x1="74" y1="74" x2="80" y2="80"/>',
+                  '<line x1="20" y1="80" x2="26" y2="74"/>',
+                  '<line x1="74" y1="26" x2="80" y2="20"/>',
+                '</g>',
+                // Cute face
+                '<circle cx="42" cy="48" r="3.5" fill="#2d3748"/>',
+                '<circle cx="58" cy="48" r="3.5" fill="#2d3748"/>',
+                '<path d="M44 56 Q50 63 56 56" stroke="#2d3748" stroke-width="3" fill="none" stroke-linecap="round"/>',
+              '</svg>',
+            '</div>',
+            // Cloud 1 (Draggable - on top of sun)
+            '<div id="cloud1" class="draggable-item" style="position:absolute; top:12px; right:15px; width:125px; height:70px;">',
+              '<svg viewBox="0 0 130 80">',
+                '<path d="M25 60 A22 22 0 0 1 35 25 A30 30 0 0 1 85 20 A26 26 0 0 1 115 50 A20 20 0 0 1 105 65 Z" fill="#94a3b8" stroke="#2d3748" stroke-width="4" stroke-linejoin="round"/>',
+              '</svg>',
+            '</div>',
+            // Cloud 2 (Draggable - overlapping)
+            '<div id="cloud2" class="draggable-item" style="position:absolute; top:35px; right:55px; width:115px; height:65px;">',
+              '<svg viewBox="0 0 120 70">',
+                '<path d="M20 50 A20 20 0 0 1 30 20 A26 26 0 0 1 75 16 A24 24 0 0 1 100 42 A18 18 0 0 1 95 55 Z" fill="#64748b" stroke="#2d3748" stroke-width="4" stroke-linejoin="round"/>',
+              '</svg>',
+            '</div>',
+            // Flower Pot & Stem
+            '<div id="flowerContainer" style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); width:140px; height:180px;">',
+              '<svg viewBox="0 0 140 180">',
+                // Pot
+                '<polygon points="35,110 105,110 95,170 45,170" fill="#f97316" stroke="#2d3748" stroke-width="4" stroke-linejoin="round"/>',
+                '<rect x="28" y="100" width="84" height="15" rx="4" fill="#ea580c" stroke="#2d3748" stroke-width="4"/>',
+                // Stem
+                '<path d="M70 100 Q65 60 70 30" stroke="#16a34a" stroke-width="6" fill="none" stroke-linecap="round"/>',
+                // Leaves
+                '<ellipse cx="54" cy="75" rx="14" ry="7" transform="rotate(-30 54 75)" fill="#22c55e" stroke="#2d3748" stroke-width="3"/>',
+                '<ellipse cx="86" cy="65" rx="14" ry="7" transform="rotate(30 86 65)" fill="#22c55e" stroke="#2d3748" stroke-width="3"/>',
+                // Bud / Bloom
+                '<g id="flowerBloomGroup">',
+                  '<!-- Drooping Bud -->',
+                  '<ellipse cx="70" cy="28" rx="12" ry="16" fill="#ec4899" stroke="#2d3748" stroke-width="3.5"/>',
+                  '<ellipse cx="70" cy="24" rx="7" ry="10" fill="#f43f5e"/>',
+                '</g>',
+              '</svg>',
+            '</div>',
+          '</div>'
+        ].join('');
 
-  // ---- 10: Which cup fills first? ----
-  {
-    question: 'Which cup will fill up first? 🥤',
-    hint: 'Follow the water path — some pipes are blocked!',
-    render(area) {
-      area.innerHTML = `
-        <svg width="280" height="200" viewBox="0 0 280 200">
-          <!-- Source -->
-          <rect x="120" y="10" width="40" height="20" fill="#93c5fd" rx="4"/>
-          <rect x="138" y="30" width="4" height="30" fill="#93c5fd"/>
-          <!-- Split -->
-          <rect x="80" y="60" width="122" height="4" fill="#93c5fd"/>
-          <!-- Left pipe -->
-          <rect x="80" y="60" width="4" height="50" fill="#93c5fd"/>
-          <!-- RIGHT pipe BLOCKED -->
-          <rect x="198" y="60" width="4" height="30" fill="#93c5fd"/>
-          <rect x="188" y="82" width="24" height="8" fill="#ef4444" rx="3"/>
-          <text x="182" y="78" font-size="10" fill="#ef4444" font-weight="bold">BLOCKED</text>
-          <!-- Cups -->
-          <path d="M55,120 L50,180 L110,180 L105,120 Z" fill="none" stroke="#6b7280" stroke-width="3"/>
-          <text x="75" y="200" font-size="12" text-anchor="middle" fill="#374151" font-weight="bold">A</text>
-          <path d="M170,120 L165,180 L225,180 L220,120 Z" fill="none" stroke="#6b7280" stroke-width="3"/>
-          <text x="195" y="200" font-size="12" text-anchor="middle" fill="#374151" font-weight="bold">B</text>
-        </svg>
-        <div class="answer-grid" style="max-width:220px">
-          <button class="answer-btn" id="cupA">Cup A</button>
-          <button class="answer-btn" id="cupB">Cup B</button>
-        </div>
-      `;
-      $('cupA').onclick = () => triggerWin(3);
-      $('cupB').onclick = () => {
-        $('cupB').classList.add('wrong');
-        setTimeout(() => $('cupB').classList.remove('wrong'), 500);
-      };
-    }
-  },
+        var cloud1Moved = false, cloud2Moved = false;
+        var sunEl = document.getElementById('sunEl');
+        var cloud1 = document.getElementById('cloud1');
+        var cloud2 = document.getElementById('cloud2');
 
-  // ---- 11: How many holes in the shirt? ----
-  {
-    question: 'How many holes does this shirt have? 👕',
-    hint: 'Don\'t forget the neck, waist, and arm holes!',
-    render(area) {
-      area.innerHTML = `
-        <svg width="200" height="200" viewBox="0 0 200 200">
-          <path d="M60,20 L30,60 L60,70 L60,180 L140,180 L140,70 L170,60 L140,20 Q110,35 100,35 Q90,35 60,20 Z" fill="#93c5fd" stroke="#3b82f6" stroke-width="3"/>
-          <!-- Hole in body -->
-          <ellipse cx="100" cy="120" rx="18" ry="12" fill="#fff" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4"/>
-        </svg>
-        <div class="answer-grid" style="max-width:280px">
-          ${[2,4,6,8].map(n=>`<button class="answer-btn" data-n="${n}">${n} holes</button>`).join('')}
-        </div>
-      `;
-      area.querySelectorAll('.answer-btn').forEach(btn => {
-        btn.onclick = () => {
-          if (btn.dataset.n === '8') { // neck(1)+waist(1)+2arms(2)+2 body holes = actually easier: collar, waist, 2 sleeves, 1 visible hole = 5... but answer is 8 (front+back of each = 8)
-            triggerWin(3);
-          } else {
-            btn.classList.add('wrong'); setTimeout(() => btn.classList.remove('wrong'), 400);
+        function checkSunExposed() {
+          var rSun = sunEl.getBoundingClientRect();
+          var rC1 = cloud1.getBoundingClientRect();
+          var rC2 = cloud2.getBoundingClientRect();
+
+          var overlap1 = !(rC1.right < rSun.left || rC1.left > rSun.right || rC1.bottom < rSun.top || rC1.top > rSun.bottom);
+          var overlap2 = !(rC2.right < rSun.left || rC2.left > rSun.right || rC2.bottom < rSun.top || rC2.top > rSun.bottom);
+
+          if (!overlap1 && !overlap2) {
+            // Sun is uncovered! Bloom the flower!
+            var bloom = document.getElementById('flowerBloomGroup');
+            bloom.innerHTML = [
+              '<circle cx="70" cy="24" r="26" fill="#f472b6" stroke="#2d3748" stroke-width="4"/>',
+              '<circle cx="70" cy="24" r="14" fill="#fde047" stroke="#2d3748" stroke-width="3.5"/>',
+              '<circle cx="66" cy="22" r="2" fill="#2d3748"/>',
+              '<circle cx="74" cy="22" r="2" fill="#2d3748"/>',
+              '<path d="M67 27 Q70 30 73 27" stroke="#2d3748" stroke-width="2" fill="none" stroke-linecap="round"/>'
+            ].join('');
+            Sound.pop();
+            setTimeout(function () {
+              onSolve();
+            }, 600);
           }
-        };
-      });
-    }
-  },
-
-  // ---- 12: What's heavier? ----
-  {
-    question: 'What\'s heavier: 1 kg of iron or 1 kg of feathers?',
-    hint: 'They both weigh exactly the same amount!',
-    render(area) {
-      area.innerHTML = `
-        <div style="display:flex;gap:60px;justify-content:center;align-items:center;font-size:50px">
-          <span>⚙️</span>
-          <span>🪶</span>
-        </div>
-        <div class="answer-grid" style="max-width:280px;margin-top:16px">
-          <button class="answer-btn">Iron ⚙️</button>
-          <button class="answer-btn">Feathers 🪶</button>
-          <button class="answer-btn" id="btnEqual" style="grid-column:span 2">They're Equal! ⚖️</button>
-        </div>
-      `;
-      $('btnEqual').onclick = () => triggerWin(3);
-      area.querySelectorAll('.answer-btn:not(#btnEqual)').forEach(btn => {
-        btn.onclick = () => { btn.classList.add('wrong'); setTimeout(() => btn.classList.remove('wrong'), 400); };
-      });
-    }
-  },
-
-  // ---- 13: Move the cloud to water the flower ----
-  {
-    question: 'Water the flower! 🌸',
-    hint: 'Drag the cloud over the flower!',
-    render(area) {
-      area.innerHTML = `
-        <div id="gardenArea" style="position:relative;width:280px;height:220px;background:linear-gradient(180deg,#bfdbfe 60%,#86efac 60%);border-radius:16px;overflow:hidden">
-          <div id="cloudDrag" class="draggable" style="position:absolute;top:20px;left:10px;font-size:52px;cursor:grab;user-select:none">☁️</div>
-          <div id="flowerEl" style="position:absolute;bottom:8px;left:120px;font-size:48px">🥀</div>
-          <div id="rainEl" style="position:absolute;display:none;font-size:20px">🌧️</div>
-        </div>
-      `;
-      const cloud = $('cloudDrag');
-      makeDraggable(cloud, null, (cx, cy) => {
-        const flower = $('flowerEl').getBoundingClientRect();
-        if (hits($('flowerEl'), cx, cy + 60) || Math.abs(cx - (flower.left + flower.width/2)) < 60) {
-          $('flowerEl').textContent = '🌸';
-          setTimeout(() => triggerWin(3), 500);
         }
-      });
-    }
-  },
 
-  // ---- 14: Park the car ----
-  {
-    question: 'Park the car in the empty space! 🚗',
-    hint: 'Drag the car to the marked parking spot!',
-    render(area) {
-      area.innerHTML = `
-        <div id="parkArea" style="position:relative;width:280px;height:200px;background:#9ca3af;border-radius:16px;overflow:hidden">
-          <!-- Road markings -->
-          <div style="position:absolute;bottom:0;width:100%;height:60px;background:#374151"></div>
-          <div style="position:absolute;bottom:14px;left:0;right:0;border-top:3px dashed #fff;opacity:0.5"></div>
-          <!-- Parking spots -->
-          <div id="spot1" style="position:absolute;top:10px;left:20px;width:70px;height:110px;border:3px solid #fff;border-radius:8px;display:flex;align-items:center;justify-content:center">🚙</div>
-          <div id="spot2" style="position:absolute;top:10px;left:105px;width:70px;height:110px;border:3px solid #ffe66d;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#ffe66d;font-weight:800">P</div>
-          <div id="spot3" style="position:absolute;top:10px;left:190px;width:70px;height:110px;border:3px solid #fff;border-radius:8px;display:flex;align-items:center;justify-content:center">🚕</div>
-          <!-- Player car -->
-          <div id="playerCar" class="draggable" style="position:absolute;bottom:8px;left:100px;font-size:40px;cursor:grab;user-select:none">🚗</div>
-        </div>
-      `;
-      const car = $('playerCar');
-      makeDraggable(car, null, (cx, cy) => {
-        if (hits($('spot2'), cx, cy)) {
-          car.style.cursor = 'default';
-          setTimeout(() => triggerWin(3), 300);
-        }
-      });
-    }
-  },
+        makeDraggable(cloud1, {
+          onEnd: function () { checkSunExposed(); }
+        });
+        makeDraggable(cloud2, {
+          onEnd: function () { checkSunExposed(); }
+        });
+      }
+    },
 
-  // ---- 15: Rock paper scissors ----
-  {
-    question: 'Beat the opponent! They showed: ✌️ Scissors',
-    hint: 'What beats scissors? Rock beats scissors!',
-    render(area) {
-      area.innerHTML = `
-        <div style="text-align:center;margin-bottom:16px">
-          <div style="font-size:14px;font-weight:800;color:#9ca3af;margin-bottom:4px">Opponent plays:</div>
-          <div style="font-size:72px">✌️</div>
-        </div>
-        <div class="rps-grid">
-          <button class="rps-btn" id="rock">🪨</button>
-          <button class="rps-btn" id="paper">📄</button>
-          <button class="rps-btn" id="scissors2">✂️</button>
-        </div>
-      `;
-      $('rock').onclick = () => triggerWin(3);
-      $('paper').onclick = $('scissors2').onclick = function() {
-        this.style.borderColor = '#ef4444';
-        this.style.background = '#fef2f2';
-        setTimeout(() => { this.style.borderColor = ''; this.style.background = ''; }, 500);
-      };
-    }
-  },
+    // ========================================================================
+    // LEVEL 3: Put the elephant into the fridge
+    // Tap the fridge door to open it, drag elephant in, close door!
+    // ========================================================================
+    {
+      level: 3,
+      title: "Put the elephant into the fridge.",
+      hint: "A closed fridge won't fit anything! Open the door first!",
+      explanation: "Open the door, put the elephant inside, and close it. Easy peasy!",
+      render: function (stage, onSolve, onFail) {
+        var fridgeOpen = false;
+        var elephantInside = false;
 
-  // ---- 16: Spell SHOP ----
-  {
-    question: 'Spell the word "SHOP" using the buttons below:',
-    hint: 'Tap: S → H → O → P in that order!',
-    render(area) {
-      let typed = '';
-      area.innerHTML = `
-        <div id="typedDisplay" style="font-size:36px;font-weight:900;letter-spacing:8px;color:var(--text);min-height:50px;text-align:center"></div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px">
-          ${['S','H','O','P','A','T','E','L'].map(c => `<button class="answer-btn" style="font-size:22px;padding:12px 0" data-c="${c}">${c}</button>`).join('')}
-        </div>
-      `;
-      area.querySelectorAll('.answer-btn').forEach(btn => {
-        btn.onclick = () => {
-          const c = btn.dataset.c;
-          const target = 'SHOP';
-          if (c === target[typed.length]) {
-            typed += c;
-            $('typedDisplay').textContent = typed;
-            if (typed === 'SHOP') setTimeout(() => triggerWin(3), 400);
+        stage.innerHTML = [
+          '<div style="position:relative; width:100%; height:360px; display:flex; align-items:center; justify-content:space-around;">',
+            // Fridge
+            '<div id="fridgeEl" style="position:relative; width:130px; height:230px; cursor:pointer;">',
+              '<svg viewBox="0 0 130 230" id="fridgeSvg">',
+                '<!-- Fridge Body Outer -->',
+                '<rect x="8" y="10" width="114" height="210" rx="14" fill="#e2e8f0" stroke="#2d3748" stroke-width="4.5"/>',
+                // Closed Door State
+                '<g id="fridgeClosedDoor">',
+                  // Top Freezer Door
+                  '<rect x="12" y="14" width="106" height="70" rx="10" fill="#f8fafc" stroke="#2d3748" stroke-width="3.5"/>',
+                  '<rect x="22" y="50" width="10" height="22" rx="3" fill="#94a3b8" stroke="#2d3748" stroke-width="2.5"/>',
+                  // Bottom Fridge Door
+                  '<rect x="12" y="88" width="106" height="128" rx="10" fill="#f8fafc" stroke="#2d3748" stroke-width="3.5"/>',
+                  '<rect x="22" y="100" width="10" height="35" rx="3" fill="#94a3b8" stroke="#2d3748" stroke-width="2.5"/>',
+                '</g>',
+                // Interior (shown when open)
+                '<g id="fridgeInterior" style="display:none;">',
+                  '<rect x="14" y="16" width="102" height="198" rx="8" fill="#cffafe"/>',
+                  '<line x1="14" y1="84" x2="116" y2="84" stroke="#0891b2" stroke-width="3"/>',
+                  '<line x1="14" y1="130" x2="116" y2="130" stroke="#0891b2" stroke-width="3"/>',
+                  '<line x1="14" y1="174" x2="116" y2="174" stroke="#0891b2" stroke-width="3"/>',
+                '</g>',
+              '</svg>',
+            '</div>',
+            // Elephant (Draggable)
+            '<div id="elephantEl" class="draggable-item" style="position:relative; width:100px; height:100px;">',
+              '<svg viewBox="0 0 100 100">',
+                '<ellipse cx="28" cy="46" rx="22" ry="26" fill="#94a3b8" stroke="#2d3748" stroke-width="3.5"/>',
+                '<ellipse cx="28" cy="46" rx="14" ry="18" fill="#fbcfe8"/>',
+                '<ellipse cx="72" cy="46" rx="22" ry="26" fill="#94a3b8" stroke="#2d3748" stroke-width="3.5"/>',
+                '<ellipse cx="72" cy="46" rx="14" ry="18" fill="#fbcfe8"/>',
+                '<circle cx="50" cy="50" r="32" fill="#cbd5e1" stroke="#2d3748" stroke-width="3.5"/>',
+                '<circle cx="40" cy="44" r="4.5" fill="#2d3748"/>',
+                '<circle cx="60" cy="44" r="4.5" fill="#2d3748"/>',
+                '<path d="M50 56 C46 68 44 78 54 80 C60 82 62 76 56 74" fill="none" stroke="#2d3748" stroke-width="5" stroke-linecap="round"/>',
+              '</svg>',
+            '</div>',
+          '</div>'
+        ].join('');
+
+        var fridgeEl = document.getElementById('fridgeEl');
+        var closedDoor = document.getElementById('fridgeClosedDoor');
+        var interior = document.getElementById('fridgeInterior');
+        var elephantEl = document.getElementById('elephantEl');
+
+        function toggleFridge() {
+          Sound.tap();
+          fridgeOpen = !fridgeOpen;
+          if (fridgeOpen) {
+            closedDoor.style.display = 'none';
+            interior.style.display = 'block';
           } else {
-            typed = '';
-            $('typedDisplay').textContent = '';
-            area.style.animation = 'shake 0.3s';
-            setTimeout(() => area.style.animation = '', 300);
+            closedDoor.style.display = 'block';
+            interior.style.display = 'none';
+
+            if (elephantInside) {
+              // Successfully trapped inside closed fridge!
+              Sound.pop();
+              setTimeout(function () {
+                onSolve();
+              }, 400);
+            }
           }
-        };
-      });
-    }
-  },
+        }
 
-  // ---- 17: What time is it now? ----
-  {
-    question: 'What time is it right now? ⏰',
-    hint: 'Look at your device\'s actual clock!',
-    render(area) {
-      const now = new Date();
-      const h = now.getHours() % 12 || 12;
-      const m = now.getMinutes();
-      const hStr = String(h).padStart(2,'0');
-      const mStr = String(m).padStart(2,'0');
-      const correct = `${hStr}:${mStr}`;
-      const fakeM1 = String((m + 15) % 60).padStart(2,'0');
-      const fakeM2 = String((m + 30) % 60).padStart(2,'0');
-      const fakeH = String((h + 3) % 12 || 12).padStart(2,'0');
-      area.innerHTML = `
-        <div style="font-size:14px;font-weight:800;color:#9ca3af;margin-bottom:8px">Select the correct time:</div>
-        <div class="answer-grid" style="max-width:280px">
-          <button class="answer-btn" data-t="${correct}">${hStr}:${mStr}</button>
-          <button class="answer-btn" data-t="wrong1">${hStr}:${fakeM1}</button>
-          <button class="answer-btn" data-t="wrong2">${fakeH}:${mStr}</button>
-          <button class="answer-btn" data-t="wrong3">${fakeH}:${fakeM2}</button>
-        </div>
-      `;
-      area.querySelectorAll('.answer-btn').forEach(btn => {
-        btn.onclick = () => {
-          if (btn.dataset.t === correct) { triggerWin(3); }
-          else { btn.classList.add('wrong'); setTimeout(() => btn.classList.remove('wrong'), 400); }
-        };
-      });
-    }
-  },
+        fridgeEl.onclick = toggleFridge;
 
-  // ---- 18: Make the cat happy ----
-  {
-    question: 'Make the cat happy! 😺',
-    hint: 'Pets love to be scratched! Rub the cat!',
-    render(area) {
-      let rubs = 0;
-      area.innerHTML = `
-        <div id="catArea" style="text-align:center;cursor:pointer">
-          <div id="catFace" style="font-size:90px;user-select:none;display:inline-block">😿</div>
-          <div id="catMsg" style="font-size:14px;font-weight:800;color:#9ca3af;margin-top:8px">Pet the cat!</div>
-          <div style="margin-top:8px;width:200px;height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-inline:auto">
-            <div id="happyBar" style="height:100%;width:0%;background:linear-gradient(90deg,#ffe66d,#ff6b35);border-radius:999px;transition:width 0.2s"></div>
-          </div>
-        </div>
-      `;
-      $('catArea').addEventListener('mousemove', rub);
-      $('catArea').addEventListener('touchmove', rub, {passive:true});
-      $('catArea').onclick = rub;
-      function rub() {
-        rubs = Math.min(rubs + 1, 20);
-        $('happyBar').style.width = `${rubs * 5}%`;
-        $('catFace').textContent = rubs < 5 ? '😿' : rubs < 10 ? '😾' : rubs < 15 ? '😺' : '😸';
-        $('catMsg').textContent = rubs < 5 ? 'Pet the cat!' : rubs < 10 ? 'More!' : rubs < 15 ? '😺 Getting happy!' : '😸 So happy!';
-        if (rubs >= 20) { $('catArea').removeEventListener('mousemove', rub); setTimeout(() => triggerWin(3), 300); }
-      }
-    }
-  },
-
-  // ---- 19: Pop all the balloons ----
-  {
-    question: 'Pop ALL the balloons! 🎈',
-    hint: 'There might be a hidden balloon somewhere on screen!',
-    render(area) {
-      let popped = 0;
-      const total = 6;
-      const colors = ['🔴','🟠','🟡','🟢','🔵','🟣'];
-      area.style.position = 'relative';
-      area.innerHTML = `<div id="balloonContainer" style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center"></div>`;
-      colors.forEach((c, i) => {
-        const b = document.createElement('div');
-        b.style.cssText = `font-size:52px;cursor:pointer;user-select:none;animation:balloonFloat ${2+i*0.3}s ease-in-out infinite;--float-dur:${2+i*0.3}s;--rot:${(i-3)*5}deg`;
-        b.textContent = c;
-        b.onclick = () => {
-          b.style.animation = 'none'; b.style.opacity = '0'; b.style.transform = 'scale(1.5)';
-          b.style.transition = 'all 0.2s'; b.style.pointerEvents = 'none';
-          popped++;
-          if (popped >= total) setTimeout(() => triggerWin(3), 400);
-        };
-        $('balloonContainer').appendChild(b);
-      });
-    }
-  },
-
-  // ---- 20: Count the stars ----
-  {
-    question: 'How many stars do you see? ⭐',
-    hint: 'Count very carefully — some are hiding in corners!',
-    render(area) {
-      area.innerHTML = `
-        <div style="position:relative;width:280px;height:160px;background:#1e1b4b;border-radius:16px;overflow:hidden">
-          <span style="position:absolute;top:20px;left:30px;font-size:28px">⭐</span>
-          <span style="position:absolute;top:50px;left:100px;font-size:20px">⭐</span>
-          <span style="position:absolute;top:10px;left:180px;font-size:32px">⭐</span>
-          <span style="position:absolute;top:80px;left:50px;font-size:24px">⭐</span>
-          <span style="position:absolute;top:70px;left:200px;font-size:18px">⭐</span>
-          <span style="position:absolute;top:120px;left:130px;font-size:14px;opacity:0.4">⭐</span>
-        </div>
-        <div class="answer-grid" style="max-width:280px;margin-top:12px">
-          ${[4,5,6,7].map(n=>`<button class="answer-btn" data-n="${n}">${n}</button>`).join('')}
-        </div>
-      `;
-      area.querySelectorAll('.answer-btn').forEach(btn => {
-        btn.onclick = () => {
-          if (btn.dataset.n === '6') triggerWin(3);
-          else { btn.classList.add('wrong'); setTimeout(() => btn.classList.remove('wrong'), 400); }
-        };
-      });
-    }
-  },
-
-  // ---- 21: Which path leads to the treasure? ----
-  {
-    question: 'Which path leads to the treasure? 💎',
-    hint: 'Trace the lines carefully!',
-    render(area) {
-      area.innerHTML = `
-        <svg width="280" height="200" viewBox="0 0 280 200">
-          <text x="40" y="22" font-size="18" text-anchor="middle">A</text>
-          <text x="140" y="22" font-size="18" text-anchor="middle">B</text>
-          <text x="240" y="22" font-size="18" text-anchor="middle">C</text>
-          <!-- Path A — goes to X -->
-          <path d="M40,25 C40,80 180,80 180,140 C180,165 140,170 120,180" stroke="#6b7280" stroke-width="3" fill="none"/>
-          <!-- Path B — goes to treasure -->
-          <path d="M140,25 C140,60 60,100 60,160 C60,175 90,180 100,180" stroke="#6b7280" stroke-width="3" fill="none"/>
-          <!-- Path C — loops back -->
-          <path d="M240,25 C240,80 200,100 200,160 C200,175 180,180 180,180" stroke="#6b7280" stroke-width="3" fill="none"/>
-          <!-- Endpoints -->
-          <text x="100" y="198" font-size="20" text-anchor="middle">💎</text>
-          <text x="120" y="198" font-size="20" text-anchor="middle">💀</text>
-          <text x="180" y="198" font-size="20" text-anchor="middle">💀</text>
-        </svg>
-        <div class="answer-grid" style="max-width:220px">
-          <button class="answer-btn" data-p="A">Path A</button>
-          <button class="answer-btn" data-p="B">Path B</button>
-          <button class="answer-btn" data-p="C">Path C</button>
-        </div>
-      `;
-      area.querySelectorAll('.answer-btn').forEach(btn => {
-        btn.onclick = () => {
-          if (btn.dataset.p === 'B') triggerWin(3);
-          else { btn.classList.add('wrong'); setTimeout(() => btn.classList.remove('wrong'), 400); }
-        };
-      });
-    }
-  },
-
-  // ---- 22: Don't tap the red button ----
-  {
-    question: 'DO NOT tap the red button! 🔴',
-    hint: 'The question says DON\'T tap the red one...',
-    render(area) {
-      area.innerHTML = `
-        <div style="display:flex;gap:24px;justify-content:center;align-items:center">
-          <button id="redBtn" style="width:90px;height:90px;border-radius:50%;background:#ef4444;border:5px solid #b91c1c;font-size:28px;cursor:pointer;box-shadow:0 6px 0 #991b1b;transition:all 0.15s;color:#fff;font-weight:900">🔴</button>
-          <button id="greenBtn" style="width:70px;height:70px;border-radius:50%;background:#22c55e;border:5px solid #15803d;font-size:22px;cursor:pointer;box-shadow:0 5px 0 #166534;color:#fff">🟢</button>
-        </div>
-        <p style="font-size:13px;color:#9ca3af;margin-top:16px;text-align:center">What will you do?</p>
-      `;
-      $('greenBtn').onclick = () => triggerWin(3);
-      $('redBtn').onclick = () => {
-        $('redBtn').style.transform = 'translateY(5px)';
-        $('redBtn').style.boxShadow = '0 1px 0 #991b1b';
-        setTimeout(() => { $('redBtn').style.transform = ''; $('redBtn').style.boxShadow = ''; }, 200);
-        area.querySelector('p').textContent = '😈 You were warned! Try the green one...';
-      };
-    }
-  },
-
-  // ---- 23: Make the equation correct ----
-  {
-    question: 'Make the equation correct by moving ONE number!',
-    hint: 'Try dragging the 5 somewhere... or look at the numbers differently!',
-    render(area) {
-      // 5 + 3 = 6 → move 5 → become 2+3=5? No. Answer: tap the 5 and drag it → 2+3=5 no
-      // Actual answer: drag the top of "5" to become "9" ... or tap "5" twice to become a "2"
-      // Simplify: show 5+3=6, user must tap "5" to cycle it → when it shows "3" then 3+3=6 ✓
-      let val = 5;
-      function update() {
-        $('eqLeft').textContent = val;
-        $('eqResult').style.color = (val + 3 === 6) ? '#22c55e' : '#ef4444';
-        if (val + 3 === 6) setTimeout(() => triggerWin(hintUsed ? 2 : 3), 400);
-      }
-      area.innerHTML = `
-        <div class="equation-area">
-          <div class="eq-token draggable" id="eqLeft" title="Tap to change" style="cursor:pointer;background:#fef9c3;border-color:#ca8a04">5</div>
-          <div class="eq-token">+</div>
-          <div class="eq-token">3</div>
-          <div class="eq-token">=</div>
-          <div class="eq-token" id="eqResult" style="color:#ef4444">6</div>
-        </div>
-        <p style="font-size:13px;color:#9ca3af;margin-top:12px;text-align:center">Tap the yellow number to change it!</p>
-      `;
-      $('eqLeft').onclick = () => { val = val > 1 ? val - 1 : 9; update(); };
-    }
-  },
-
-  // ---- 24: Feed the monster ----
-  {
-    question: 'Feed the hungry monster! 👾',
-    hint: 'Drag the food into the monster\'s mouth!',
-    render(area) {
-      area.innerHTML = `
-        <div id="feedArea" style="position:relative;width:280px;height:220px;background:#f0fdf4;border-radius:16px;overflow:visible">
-          <!-- Monster -->
-          <div style="position:absolute;top:10px;left:70px;text-align:center">
-            <div style="font-size:72px" id="monsterFace">👾</div>
-            <div id="monsterMouth" style="width:80px;height:30px;background:#1a0030;border-radius:0 0 40px 40px;margin:0 auto;position:relative;top:-10px"></div>
-          </div>
-          <!-- Food (draggable) -->
-          <div id="food1" class="draggable" style="position:absolute;bottom:20px;left:30px;font-size:44px;cursor:grab">🍕</div>
-          <div id="food2" class="draggable" style="position:absolute;bottom:20px;left:120px;font-size:44px;cursor:grab">🍔</div>
-          <div id="food3" class="draggable" style="position:absolute;bottom:20px;left:210px;font-size:44px;cursor:grab">🍟</div>
-        </div>
-      `;
-      let fed = 0;
-      ['food1','food2','food3'].forEach(id => {
-        const el = $(id);
-        makeDraggable(el, null, (cx, cy) => {
-          const mouth = $('monsterMouth').getBoundingClientRect();
-          const face = $('monsterFace').getBoundingClientRect();
-          if (cy < face.bottom + 20 && Math.abs(cx - (face.left + face.width/2)) < 60) {
-            el.style.opacity = '0'; el.style.pointerEvents = 'none';
-            fed++;
-            const faces = ['😮','😋','🤤'];
-            $('monsterFace').textContent = fed <= 3 ? faces[fed-1] || '🤤' : '😍';
-            if (fed >= 2) setTimeout(() => triggerWin(3), 400);
+        makeDraggable(elephantEl, {
+          onEnd: function () {
+            if (fridgeOpen && isOverlapping(elephantEl, fridgeEl)) {
+              elephantInside = true;
+              elephantEl.style.opacity = '0.6';
+              elephantEl.style.transform = 'scale(0.7)';
+              Sound.pop();
+            } else {
+              elephantInside = false;
+              elephantEl.style.opacity = '1';
+              elephantEl.style.transform = 'none';
+            }
           }
         });
-      });
+      }
+    },
+
+    // ========================================================================
+    // LEVEL 4: Which one is closest to us?
+    // Moon is directly beneath the prompt word "us"!
+    // ========================================================================
+    {
+      level: 4,
+      title: "Which one is closest to us?",
+      hint: "Read the question sentence carefully. Which object is closest to the word 'us'?",
+      explanation: "Look at the prompt text: the word 'us' is placed right above the Moon!",
+      render: function (stage, onSolve, onFail) {
+        stage.innerHTML = [
+          '<div style="position:relative; width:100%; height:340px; background:#0f172a; border-radius:20px; overflow:hidden; border:3px solid #2d3748;">',
+            // Stars in background
+            '<div style="position:absolute; top:25px; left:40px; color:#fef08a; font-size:14px;">✦</div>',
+            '<div style="position:absolute; top:80px; left:120px; color:#fef08a; font-size:18px;">✧</div>',
+            '<div style="position:absolute; top:40px; right:60px; color:#fef08a; font-size:12px;">✦</div>',
+            '<div style="position:absolute; bottom:60px; left:80px; color:#fef08a; font-size:16px;">✦</div>',
+
+            // Sun (far left)
+            '<div id="spaceSun" style="position:absolute; top:60px; left:25px; width:80px; height:80px; cursor:pointer;" title="Sun">',
+              '<svg viewBox="0 0 80 80">',
+                '<circle cx="40" cy="40" r="28" fill="#f97316" stroke="#ea580c" stroke-width="4"/>',
+                '<circle cx="40" cy="40" r="22" fill="#facc15"/>',
+              '</svg>',
+            '</div>',
+
+            // Earth (center bottom)
+            '<div id="spaceEarth" style="position:absolute; bottom:25px; left:50%; transform:translateX(-50%); width:90px; height:90px; cursor:pointer;" title="Earth">',
+              '<svg viewBox="0 0 90 90">',
+                '<circle cx="45" cy="45" r="38" fill="#0284c7" stroke="#0369a1" stroke-width="4"/>',
+                '<path d="M25 35 Q40 20 60 30 Q75 45 60 65 Q40 60 25 35 Z" fill="#22c55e"/>',
+                '<path d="M40 70 Q55 75 65 70" stroke="#22c55e" stroke-width="5" fill="none" stroke-linecap="round"/>',
+              '</svg>',
+            '</div>',
+
+            // Moon (top right - directly under the word 'us' in question above!)
+            '<div id="spaceMoon" style="position:absolute; top:15px; right:40px; width:75px; height:75px; cursor:pointer;" title="Moon">',
+              '<svg viewBox="0 0 75 75">',
+                '<circle cx="37" cy="37" r="30" fill="#fef08a" stroke="#ca8a04" stroke-width="3.5"/>',
+                '<circle cx="26" cy="30" r="5" fill="#fde047" opacity="0.6"/>',
+                '<circle cx="46" cy="45" r="7" fill="#fde047" opacity="0.6"/>',
+                '<circle cx="32" cy="50" r="4" fill="#fde047" opacity="0.6"/>',
+              '</svg>',
+            '</div>',
+          '</div>'
+        ].join('');
+
+        document.getElementById('spaceMoon').onclick = function () {
+          onSolve();
+        };
+
+        document.getElementById('spaceSun').onclick = function (e) {
+          onFail(e.clientX, e.clientY);
+        };
+
+        document.getElementById('spaceEarth').onclick = function (e) {
+          onFail(e.clientX, e.clientY);
+        };
+      }
+    },
+
+    // ========================================================================
+    // LEVEL 5: How many pizza slices do we have?
+    // Drag overlapping slices apart to count 9 in total! Enter 9 in keypad.
+    // ========================================================================
+    {
+      level: 5,
+      title: "How many pizza slices do we have?",
+      hint: "Move the slices around! Some are hiding beneath others!",
+      explanation: "Separating all the stacked slices revealed 9 slices in total!",
+      render: function (stage, onSolve, onFail) {
+        var inputVal = '';
+
+        stage.innerHTML = [
+          '<div style="width:100%; display:flex; flex-direction:column; align-items:center; gap:12px;">',
+            // Cutting Board / Plate with draggable slices
+            '<div id="pizzaPlate" style="position:relative; width:280px; height:180px; background:#fef3c7; border:3px solid #d97706; border-radius:24px; overflow:hidden;">',
+              // 9 Slices: 5 top, 4 hidden below
+              '<div class="draggable-item slice" style="position:absolute; top:20px; left:25px; width:65px; height:65px;">🍕</div>',
+              '<div class="draggable-item slice" style="position:absolute; top:20px; left:80px; width:65px; height:65px;">🍕</div>',
+              '<div class="draggable-item slice" style="position:absolute; top:20px; left:135px; width:65px; height:65px;">🍕</div>',
+              '<div class="draggable-item slice" style="position:absolute; top:20px; left:190px; width:65px; height:65px;">🍕</div>',
+              '<div class="draggable-item slice" style="position:absolute; top:80px; left:110px; width:65px; height:65px;">🍕</div>',
+              // Hidden underneath
+              '<div class="draggable-item slice" style="position:absolute; top:22px; left:28px; width:65px; height:65px; z-index:1;">🍕</div>',
+              '<div class="draggable-item slice" style="position:absolute; top:22px; left:83px; width:65px; height:65px; z-index:1;">🍕</div>',
+              '<div class="draggable-item slice" style="position:absolute; top:22px; left:138px; width:65px; height:65px; z-index:1;">🍕</div>',
+              '<div class="draggable-item slice" style="position:absolute; top:82px; left:113px; width:65px; height:65px; z-index:1;">🍕</div>',
+            '</div>',
+
+            // Keypad
+            '<div class="keypad-container">',
+              '<div class="keypad-display" id="pizzaDisplay">?</div>',
+              '<div class="keypad-grid">',
+                '<button class="keypad-btn" data-key="1">1</button>',
+                '<button class="keypad-btn" data-key="2">2</button>',
+                '<button class="keypad-btn" data-key="3">3</button>',
+                '<button class="keypad-btn" data-key="4">4</button>',
+                '<button class="keypad-btn" data-key="5">5</button>',
+                '<button class="keypad-btn" data-key="6">6</button>',
+                '<button class="keypad-btn" data-key="7">7</button>',
+                '<button class="keypad-btn" data-key="8">8</button>',
+                '<button class="keypad-btn" data-key="9">9</button>',
+                '<button class="keypad-btn btn-clear-key" id="btnKeyClear">C</button>',
+                '<button class="keypad-btn" data-key="0">0</button>',
+                '<button class="keypad-btn btn-submit-key" id="btnKeySubmit">OK</button>',
+              '</div>',
+            '</div>',
+          '</div>'
+        ].join('');
+
+        // Make all slices draggable
+        var slices = stage.querySelectorAll('.slice');
+        slices.forEach(function (s) {
+          s.style.fontSize = '44px';
+          makeDraggable(s);
+        });
+
+        var display = document.getElementById('pizzaDisplay');
+        stage.querySelectorAll('.keypad-btn[data-key]').forEach(function (btn) {
+          btn.onclick = function () {
+            Sound.tap();
+            if (inputVal.length < 3) {
+              inputVal += btn.dataset.key;
+              display.textContent = inputVal;
+            }
+          };
+        });
+
+        document.getElementById('btnKeyClear').onclick = function () {
+          Sound.tap();
+          inputVal = '';
+          display.textContent = '?';
+        };
+
+        document.getElementById('btnKeySubmit').onclick = function (e) {
+          if (inputVal === '9') {
+            onSolve();
+          } else {
+            onFail(e.clientX, e.clientY);
+            inputVal = '';
+            display.textContent = '?';
+          }
+        };
+      }
+    },
+
+    // ========================================================================
+    // LEVEL 6: I overtook the 2nd placed racer, what is my position?
+    // Options: 1st, 2nd, 3rd. Tapping 2nd wins!
+    // ========================================================================
+    {
+      level: 6,
+      title: "I overtook the 2nd placed racer, what is my position?",
+      hint: "If you pass the person in second place, you take their spot!",
+      explanation: "Passing the 2nd placed runner puts you in 2nd place, not 1st!",
+      render: function (stage, onSolve, onFail) {
+        stage.innerHTML = [
+          '<div style="width:100%; display:flex; flex-direction:column; align-items:center; gap:24px;">',
+            // Race Track Visual
+            '<div style="position:relative; width:100%; max-width:320px; height:120px; background:#475569; border-radius:18px; border:3px solid #2d3748; overflow:hidden; display:flex; align-items:center; justify-content:space-around;">',
+              '<div style="position:absolute; width:100%; height:4px; border-top:3px dashed #fff; opacity:0.6;"></div>',
+              '<div style="font-size:38px; transform:scaleX(-1);">🏎️</div>',
+              '<div style="font-size:38px; transform:scaleX(-1);">🚙</div>',
+              '<div style="font-size:38px; transform:scaleX(-1);">🚗</div>',
+            '</div>',
+
+            // Answer Buttons
+            '<div style="display:flex; gap:14px; width:100%; max-width:320px;">',
+              '<button class="btn-bubble" id="pos1st" style="flex:1; height:60px; font-size:22px; background:#ffffff;">1st</button>',
+              '<button class="btn-bubble" id="pos2nd" style="flex:1; height:60px; font-size:22px; background:#ffffff;">2nd</button>',
+              '<button class="btn-bubble" id="pos3rd" style="flex:1; height:60px; font-size:22px; background:#ffffff;">3rd</button>',
+            '</div>',
+          '</div>'
+        ].join('');
+
+        document.getElementById('pos2nd').onclick = function () {
+          onSolve();
+        };
+
+        document.getElementById('pos1st').onclick = function (e) {
+          onFail(e.clientX, e.clientY);
+        };
+
+        document.getElementById('pos3rd').onclick = function (e) {
+          onFail(e.clientX, e.clientY);
+        };
+      }
+    },
+
+    // ========================================================================
+    // LEVEL 7: Slide left to unlock.
+    // The lock knob must be dragged to the LEFT!
+    // ========================================================================
+    {
+      level: 7,
+      title: "Slide left to unlock.",
+      hint: "Most phones slide right, but this prompt explicitly says slide LEFT!",
+      explanation: "You actually slid to the left! Unlocked!",
+      render: function (stage, onSolve, onFail) {
+        stage.innerHTML = [
+          '<div style="width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; height:300px; gap:20px;">',
+            '<div style="font-size:68px;" id="lockIcon">🔒</div>',
+            // Slider Track
+            '<div id="slideTrack" style="position:relative; width:280px; height:64px; background:#e2e8f0; border:3.5px solid #2d3748; border-radius:999px; display:flex; align-items:center;">',
+              '<div style="position:absolute; width:100%; text-align:center; font-weight:700; color:#64748b; font-size:15px; pointer-events:none;">&lt;&lt; SLIDE TO UNLOCK</div>',
+              // Knob starting on right
+              '<div id="slideKnob" class="draggable-item" style="position:absolute; right:6px; width:52px; height:52px; border-radius:50%; background:#ff6b35; border:3px solid #2d3748; display:grid; place-items:center; color:#fff; font-size:20px; box-shadow:0 3px 0 #2d3748;">',
+                '◀',
+              '</div>',
+            '</div>',
+          '</div>'
+        ].join('');
+
+        var knob = document.getElementById('slideKnob');
+        var track = document.getElementById('slideTrack');
+
+        makeDraggable(knob, {
+          constrainY: true,
+          minY: 3,
+          maxY: 3,
+          onMove: function (el, x) {
+            if (x < 30) {
+              // Reached left end!
+              document.getElementById('lockIcon').textContent = '🔓';
+              Sound.pop();
+              setTimeout(function () {
+                onSolve();
+              }, 400);
+            }
+          }
+        });
+      }
+    },
+
+    // ========================================================================
+    // LEVEL 8: Feed the cat please, he is hungry!
+    // Drag fish treats box into the cat bowl!
+    // ========================================================================
+    {
+      level: 8,
+      title: "Feed the cat please, he is hungry!",
+      hint: "Look at the shelf! Drag that delicious fish down to his empty food bowl!",
+      explanation: "Tom enjoyed his meal! Look at those happy heart eyes!",
+      render: function (stage, onSolve, onFail) {
+        stage.innerHTML = [
+          '<div style="position:relative; width:100%; height:340px;">',
+            // Shelf with fish treats
+            '<div style="position:absolute; top:30px; right:30px; width:120px; height:12px; background:#92400e; border:2.5px solid #2d3748; border-radius:4px;"></div>',
+            // Fish treat (draggable)
+            '<div id="catFish" class="draggable-item" style="position:absolute; top:4px; right:60px; font-size:42px; cursor:grab;" title="Fish">🐟</div>',
+
+            // Cat sitting on rug
+            '<div id="catBody" style="position:absolute; bottom:30px; left:50px; text-align:center;">',
+              '<div id="catFace" style="font-size:74px;">😾</div>',
+              '<div style="width:100px; height:14px; background:#fbcfe8; border-radius:50%; border:2px solid #2d3748; margin-top:-8px;"></div>',
+            '</div>',
+
+            // Empty Bowl
+            '<div id="catBowl" style="position:absolute; bottom:25px; left:165px; width:70px; height:34px; background:#38bdf8; border:3px solid #2d3748; border-radius:0 0 35px 35px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff;">',
+              'FOOD',
+            '</div>',
+          '</div>'
+        ].join('');
+
+        var fish = document.getElementById('catFish');
+        var bowl = document.getElementById('catBowl');
+        var catFace = document.getElementById('catFace');
+
+        makeDraggable(fish, {
+          onEnd: function () {
+            if (isOverlapping(fish, bowl)) {
+              fish.style.display = 'none';
+              catFace.textContent = '😻';
+              bowl.textContent = '🐟';
+              Sound.pop();
+              setTimeout(function () {
+                onSolve();
+              }, 600);
+            }
+          }
+        });
+      }
+    },
+
+    // ========================================================================
+    // LEVEL 9: Where is the green ball?
+    // Drag blue ball onto yellow ball -> merges into green ball!
+    // ========================================================================
+    {
+      level: 9,
+      title: "Where is the green ball?",
+      hint: "Remember your art classes: what happens when you mix Blue and Yellow?",
+      explanation: "Blue + Yellow = Green! Color theory saves the day!",
+      render: function (stage, onSolve, onFail) {
+        stage.innerHTML = [
+          '<div style="position:relative; width:100%; height:340px; display:flex; align-items:center; justify-content:space-around;">',
+            // Yellow Ball
+            '<div id="ballYellow" style="position:absolute; left:60px; top:130px; width:80px; height:80px; border-radius:50%; background:#facc15; border:3.5px solid #2d3748; box-shadow:0 6px 0 #2d3748; display:grid; place-items:center;">',
+              '<span style="font-size:24px;">🟡</span>',
+            '</div>',
+            // Blue Ball (Draggable)
+            '<div id="ballBlue" class="draggable-item" style="position:absolute; right:60px; top:130px; width:80px; height:80px; border-radius:50%; background:#3b82f6; border:3.5px solid #2d3748; box-shadow:0 6px 0 #2d3748; display:grid; place-items:center;">',
+              '<span style="font-size:24px;">🔵</span>',
+            '</div>',
+          '</div>'
+        ].join('');
+
+        var bYellow = document.getElementById('ballYellow');
+        var bBlue = document.getElementById('ballBlue');
+
+        makeDraggable(bBlue, {
+          onEnd: function () {
+            if (isOverlapping(bBlue, bYellow)) {
+              bBlue.style.display = 'none';
+              bYellow.style.background = '#22c55e';
+              bYellow.innerHTML = '<span style="font-size:24px;">🟢</span>';
+              bYellow.style.cursor = 'pointer';
+              Sound.pop();
+              bYellow.onclick = function () {
+                onSolve();
+              };
+            }
+          }
+        });
+      }
+    },
+
+    // ========================================================================
+    // LEVEL 10: What is unusual in this picture?
+    // Tap the hand with 6 fingers!
+    // ========================================================================
+    {
+      level: 10,
+      title: "What is unusual in this picture?",
+      hint: "Inspect the boy's hands carefully. Count his fingers!",
+      explanation: "He has 6 fingers on his right hand! Great eye!",
+      render: function (stage, onSolve, onFail) {
+        stage.innerHTML = [
+          '<div style="width:100%; display:flex; justify-content:center; align-items:center; height:340px;">',
+            '<svg viewBox="0 0 200 240" width="200" height="240">',
+              // Boy Body
+              '<rect x="70" y="110" width="60" height="90" rx="12" fill="#3b82f6" stroke="#2d3748" stroke-width="4"/>',
+              // Normal Left Hand (5 fingers)
+              '<g id="normalHand" style="cursor:pointer;">',
+                '<circle cx="35" cy="110" r="18" fill="#fde047" stroke="#2d3748" stroke-width="3.5"/>',
+                '<line x1="28" y1="94" x2="28" y2="102" stroke="#2d3748" stroke-width="3"/>',
+                '<line x1="34" y1="92" x2="34" y2="102" stroke="#2d3748" stroke-width="3"/>',
+                '<line x1="40" y1="94" x2="40" y2="102" stroke="#2d3748" stroke-width="3"/>',
+                '<line x1="46" y1="98" x2="46" y2="104" stroke="#2d3748" stroke-width="3"/>',
+              '</g>',
+              // Abnormal Right Hand (6 fingers!)
+              '<g id="sixFingersHand" style="cursor:pointer;">',
+                '<circle cx="165" cy="110" r="22" fill="#fde047" stroke="#2d3748" stroke-width="3.5"/>',
+                '<line x1="150" y1="90" x2="150" y2="100" stroke="#2d3748" stroke-width="3.2"/>',
+                '<line x1="156" y1="87" x2="156" y2="99" stroke="#2d3748" stroke-width="3.2"/>',
+                '<line x1="162" y1="86" x2="162" y2="99" stroke="#2d3748" stroke-width="3.2"/>',
+                '<line x1="168" y1="87" x2="168" y2="99" stroke="#2d3748" stroke-width="3.2"/>',
+                '<line x1="174" y1="90" x2="174" y2="100" stroke="#2d3748" stroke-width="3.2"/>',
+                '<line x1="180" y1="95" x2="178" y2="103" stroke="#2d3748" stroke-width="3.2"/>',
+              '</g>',
+              // Head
+              '<circle cx="100" cy="70" r="35" fill="#fde047" stroke="#2d3748" stroke-width="4"/>',
+              // Eyes & Smile
+              '<circle cx="90" cy="65" r="4" fill="#2d3748"/>',
+              '<circle cx="110" cy="65" r="4" fill="#2d3748"/>',
+              '<path d="M92 78 Q100 88 108 78" stroke="#2d3748" stroke-width="3.5" fill="none" stroke-linecap="round"/>',
+              // Party Hat
+              '<polygon points="100,10 80,45 120,45" fill="#ff6b35" stroke="#2d3748" stroke-width="3.5"/>',
+            '</svg>',
+          '</div>'
+        ].join('');
+
+        document.getElementById('sixFingersHand').onclick = function () {
+          onSolve();
+        };
+
+        document.getElementById('normalHand').onclick = function (e) {
+          onFail(e.clientX, e.clientY);
+        };
+      }
+    },
+
+    // ========================================================================
+    // LEVEL 11: Turn it off! Too dangerous!
+    // Pull the plug out of the wall outlet!
+    // ========================================================================
+    {
+      level: 11,
+      title: "Turn it off! Too dangerous!",
+      hint: "Don't press the toaster! Pull the plug out from the wall socket!",
+      explanation: "Pulling the plug stopped the electrical fire! Safe now!",
+      render: function (stage, onSolve, onFail) {
+        stage.innerHTML = [
+          '<div style="position:relative; width:100%; height:340px;">',
+            // Toaster sparking
+            '<div style="position:absolute; left:40px; top:120px; width:120px; height:100px;">',
+              '<svg viewBox="0 0 120 100">',
+                '<rect x="10" y="25" width="100" height="65" rx="14" fill="#cbd5e1" stroke="#2d3748" stroke-width="4"/>',
+                '<rect x="25" y="10" width="70" height="20" rx="4" fill="#92400e" stroke="#2d3748" stroke-width="3"/>',
+                '<circle cx="105" cy="55" r="5" fill="#ef4444"/>',
+                '<!-- Sparks -->',
+                '<text x="40" y="15" font-size="20">⚡</text>',
+                '<text x="80" y="20" font-size="20">🔥</text>',
+              '</svg>',
+            '</div>',
+
+            // Wall Socket on right
+            '<div style="position:absolute; right:35px; top:140px; width:65px; height:85px; background:#ffffff; border:3px solid #2d3748; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;">',
+              '<div style="width:12px; height:4px; background:#2d3748; border-radius:2px;"></div>',
+              '<div style="width:12px; height:4px; background:#2d3748; border-radius:2px;"></div>',
+            '</div>',
+
+            // Power Cord & Plug (Draggable)
+            '<div id="powerPlug" class="draggable-item" style="position:absolute; right:42px; top:152px; width:45px; height:45px; cursor:grab;" title="Drag Plug">',
+              '<span style="font-size:32px;">🔌</span>',
+            '</div>',
+          '</div>'
+        ].join('');
+
+        var plug = document.getElementById('powerPlug');
+        makeDraggable(plug, {
+          onMove: function (el, x) {
+            // If pulled left away from socket
+            if (x < 170) {
+              Sound.pop();
+              onSolve();
+            }
+          }
+        });
+      }
+    },
+
+    // ========================================================================
+    // LEVEL 12: Help Tom jump to the other side!
+    // Drag the right cliff closer to the left cliff!
+    // ========================================================================
+    {
+      level: 12,
+      title: "Help Tom jump to the other side!",
+      hint: "Can't jump that far? Drag the right cliff closer to close the gap!",
+      explanation: "You brought the cliffs together so Tom could just walk across!",
+      render: function (stage, onSolve, onFail) {
+        stage.innerHTML = [
+          '<div style="position:relative; width:100%; height:340px; overflow:hidden;">',
+            // Left Cliff
+            '<div style="position:absolute; left:0; bottom:0; width:110px; height:180px; background:#78350f; border:3px solid #2d3748; border-radius:0 16px 0 0;">',
+              '<div style="height:25px; background:#22c55e; border-bottom:3px solid #2d3748;"></div>',
+            '</div>',
+
+            // Tom the Cat
+            '<div id="cliffTom" style="position:absolute; left:35px; bottom:180px; font-size:48px; cursor:pointer;" title="Tom">',
+              '🐱',
+            '</div>',
+
+            // Right Cliff (Draggable)
+            '<div id="rightCliff" class="draggable-item" style="position:absolute; right:0; bottom:0; width:120px; height:180px; background:#78350f; border:3px solid #2d3748; border-radius:16px 0 0 0; cursor:grab;">',
+              '<div style="height:25px; background:#22c55e; border-bottom:3px solid #2d3748;"></div>',
+              '<div style="position:absolute; top:-40px; right:35px; font-size:36px;">🍗</div>',
+            '</div>',
+          '</div>'
+        ].join('');
+
+        var rightCliff = document.getElementById('rightCliff');
+        var tom = document.getElementById('cliffTom');
+        var gapClosed = false;
+
+        makeDraggable(rightCliff, {
+          constrainY: true,
+          minY: 160,
+          maxY: 160,
+          onMove: function (el, x) {
+            if (x < 140) {
+              gapClosed = true;
+            }
+          }
+        });
+
+        tom.onclick = function (e) {
+          if (gapClosed) {
+            tom.style.transition = 'left 0.5s ease';
+            tom.style.left = '160px';
+            Sound.pop();
+            setTimeout(function () {
+              onSolve();
+            }, 600);
+          } else {
+            onFail(e.clientX, e.clientY);
+          }
+        };
+      }
+    },
+
+    // ========================================================================
+    // LEVEL 13: Catch 5 falling red apples!
+    // Slide the basket to catch 5 apples.
+    // ========================================================================
+    {
+      level: 13,
+      title: "Catch 5 falling red apples!",
+      hint: "Tap the tree to make apples drop, then slide the basket to catch them!",
+      explanation: "All 5 apples caught in the basket! Tasty apple pie incoming!",
+      render: function (stage, onSolve, onFail) {
+        var caught = 0;
+        var gameRunning = true;
+
+        stage.innerHTML = [
+          '<div style="position:relative; width:100%; height:360px; overflow:hidden;">',
+            // Tree Canopy at top
+            '<div id="appleTree" style="position:absolute; top:10px; left:50%; transform:translateX(-50%); width:260px; height:100px; background:#22c55e; border:3.5px solid #2d3748; border-radius:50px; display:flex; align-items:center; justify-content:center; gap:16px; font-size:28px; cursor:pointer;">',
+              '🍎 🍎 🍎 🍎 🍎',
+            '</div>',
+
+            // Basket (draggable left/right)
+            '<div id="appleBasket" class="draggable-item" style="position:absolute; bottom:15px; left:120px; width:70px; height:50px; background:#d97706; border:3px solid #2d3748; border-radius:0 0 20px 20px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:13px;">',
+              '🧺 <span id="catchCount">0/5</span>',
+            '</div>',
+          '</div>'
+        ].join('');
+
+        var basket = document.getElementById('appleBasket');
+        var catchCount = document.getElementById('catchCount');
+
+        makeDraggable(basket, {
+          constrainY: true,
+          minY: 295,
+          maxY: 295
+        });
+
+        // Spawn falling apple loop
+        function spawnApple() {
+          if (!gameRunning) return;
+          var apple = document.createElement('div');
+          apple.textContent = '🍎';
+          apple.style.position = 'absolute';
+          apple.style.fontSize = '32px';
+          apple.style.top = '110px';
+          apple.style.left = (40 + Math.random() * 200) + 'px';
+          apple.style.pointerEvents = 'none';
+          stage.firstChild.appendChild(apple);
+
+          var topY = 110;
+          var fallSpeed = 3 + Math.random() * 2;
+          var anim = setInterval(function () {
+            if (!gameRunning) {
+              clearInterval(anim);
+              if (apple.parentNode) apple.parentNode.removeChild(apple);
+              return;
+            }
+            topY += fallSpeed;
+            apple.style.top = topY + 'px';
+
+            if (isOverlapping(apple, basket)) {
+              clearInterval(anim);
+              if (apple.parentNode) apple.parentNode.removeChild(apple);
+              caught++;
+              Sound.pop();
+              catchCount.textContent = caught + '/5';
+              if (caught >= 5) {
+                gameRunning = false;
+                onSolve();
+              }
+            } else if (topY > 360) {
+              clearInterval(anim);
+              if (apple.parentNode) apple.parentNode.removeChild(apple);
+            }
+          }, 20);
+        }
+
+        var spawnInterval = setInterval(spawnApple, 1100);
+        spawnApple();
+
+        // Cleanup on level leave
+        stage._cleanup = function () {
+          gameRunning = false;
+          clearInterval(spawnInterval);
+        };
+      }
+    },
+
+    // ========================================================================
+    // LEVEL 14: 4 + 5 × 5 – 2 = ?
+    // PEMDAS order: 5*5=25, 4+25=29, 29-2=27
+    // ========================================================================
+    {
+      level: 14,
+      title: "4 + 5 × 5 – 2 = ?",
+      hint: "Remember the order of operations (PEMDAS): multiplication comes before addition and subtraction!",
+      explanation: "5 × 5 = 25. Then 4 + 25 = 29. Finally 29 – 2 = 27!",
+      render: function (stage, onSolve, onFail) {
+        var inputVal = '';
+
+        stage.innerHTML = [
+          '<div style="width:100%; display:flex; flex-direction:column; align-items:center; gap:20px;">',
+            // Chalkboard Equation
+            '<div style="background:#1e293b; border:4px solid #78350f; border-radius:18px; padding:18px 24px; box-shadow:0 6px 0 #2d3748;">',
+              '<span style="color:#ffffff; font-size:26px; font-weight:700; letter-spacing:1px;">4 + 5 × 5 – 2 = <span id="mathDisplay" style="color:#facc15;">?</span></span>',
+            '</div>',
+
+            // Keypad
+            '<div class="keypad-container">',
+              '<div class="keypad-grid">',
+                '<button class="keypad-btn" data-key="1">1</button>',
+                '<button class="keypad-btn" data-key="2">2</button>',
+                '<button class="keypad-btn" data-key="3">3</button>',
+                '<button class="keypad-btn" data-key="4">4</button>',
+                '<button class="keypad-btn" data-key="5">5</button>',
+                '<button class="keypad-btn" data-key="6">6</button>',
+                '<button class="keypad-btn" data-key="7">7</button>',
+                '<button class="keypad-btn" data-key="8">8</button>',
+                '<button class="keypad-btn" data-key="9">9</button>',
+                '<button class="keypad-btn btn-clear-key" id="btnMathClear">C</button>',
+                '<button class="keypad-btn" data-key="0">0</button>',
+                '<button class="keypad-btn btn-submit-key" id="btnMathSubmit">OK</button>',
+              '</div>',
+            '</div>',
+          '</div>'
+        ].join('');
+
+        var display = document.getElementById('mathDisplay');
+        stage.querySelectorAll('.keypad-btn[data-key]').forEach(function (btn) {
+          btn.onclick = function () {
+            Sound.tap();
+            if (inputVal.length < 3) {
+              inputVal += btn.dataset.key;
+              display.textContent = inputVal;
+            }
+          };
+        });
+
+        document.getElementById('btnMathClear').onclick = function () {
+          Sound.tap();
+          inputVal = '';
+          display.textContent = '?';
+        };
+
+        document.getElementById('btnMathSubmit').onclick = function (e) {
+          if (inputVal === '27') {
+            onSolve();
+          } else {
+            onFail(e.clientX, e.clientY);
+            inputVal = '';
+            display.textContent = '?';
+          }
+        };
+      }
+    },
+
+    // ========================================================================
+    // LEVEL 15: Don't tap the red button!
+    // Resist touching for 3 seconds to win!
+    // ========================================================================
+    {
+      level: 15,
+      title: "DO NOT tap the red button!",
+      hint: "It literally says: do NOT tap the button! Just wait!",
+      explanation: "You had the patience to resist! True master of self control!",
+      render: function (stage, onSolve, onFail) {
+        var timerSeconds = 3;
+        var interval = null;
+
+        stage.innerHTML = [
+          '<div style="width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; height:340px; gap:20px;">',
+            '<div style="font-size:18px; font-weight:700; color:#64748b;" id="resistTimer">Waiting... 3s</div>',
+            // Big tempting red button
+            '<button id="bigRedBtn" class="btn-bubble" style="width:130px; height:130px; border-radius:50%; background:#ef4444; border:5px solid #2d3748; font-size:42px; box-shadow:0 8px 0 #b91c1c, 0 12px 28px rgba(239, 68, 68, 0.4); color:#fff;">',
+              '🔴',
+            '</button>',
+            '<div style="font-size:14px; font-weight:700; color:#ef4444;">⚠️ DO NOT PRESS ⚠️</div>',
+          '</div>'
+        ].join('');
+
+        var btn = document.getElementById('bigRedBtn');
+        var timerDisplay = document.getElementById('resistTimer');
+
+        btn.onclick = function (e) {
+          Sound.wrong();
+          onFail(e.clientX, e.clientY);
+          timerSeconds = 3;
+          timerDisplay.textContent = 'Oops! Resetting to 3s...';
+        };
+
+        interval = setInterval(function () {
+          timerSeconds--;
+          if (timerSeconds > 0) {
+            timerDisplay.textContent = 'Waiting... ' + timerSeconds + 's';
+          } else {
+            clearInterval(interval);
+            timerDisplay.textContent = 'Good job! 🎉';
+            onSolve();
+          }
+        }, 1000);
+
+        stage._cleanup = function () {
+          clearInterval(interval);
+        };
+      }
     }
-  },
 
-  // ---- 25: Final — What's missing? ----
-  {
-    question: 'What letter is missing from the alphabet?',
-    hint: 'It\'s the one letter NOT shown below!',
-    render(area) {
-      const alpha = 'ABCDEFGHIJKLMNOPRSTUVWXYZ'; // Q missing!
-      area.innerHTML = `
-        <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:280px;font-size:16px;font-weight:800;color:var(--text)">
-          ${alpha.split('').map(c=>`<span style="width:24px;text-align:center">${c}</span>`).join('')}
-        </div>
-        <input class="puzzle-input" id="missingInput" type="text" placeholder="?" maxlength="1" style="max-width:120px;font-size:36px;margin-top:16px">
-        <button class="puzzle-submit" id="missingSubmit">Check!</button>
-      `;
-      $('missingSubmit').onclick = () => {
-        if ($('missingInput').value.toUpperCase() === 'Q') triggerWin(3);
-        else { $('missingInput').style.borderColor = '#ef4444'; setTimeout(() => $('missingInput').style.borderColor = '', 500); }
-      };
-    }
-  },
+  ];
 
-]; // end PUZZLES
+  // ==========================================================================
+  // GAME STATE & MANAGER
+  // ==========================================================================
+  var STORAGE_KEY = 'ciel_braintest_save_v1';
+  var state = {
+    unlockedLevels: 1,
+    levelStars: {}
+  };
 
-// =============================================
-// LEVEL MANAGEMENT
-// =============================================
-
-function startLevel(idx) {
-  currentLevel = idx;
-  hintUsed = false;
-  dom.winOverlay.classList.add('hidden');
-  dom.hintBubble.classList.add('hidden');
-  dom.levelBadge.textContent = `Level ${idx + 1}`;
-
-  // Reset question box to default
-  dom.questionBox.textContent = PUZZLES[idx].question;
-
-  // Clear puzzle area
-  dom.puzzleArea.innerHTML = '';
-
-  // Render puzzle
-  PUZZLES[idx].render(dom.puzzleArea);
-}
-
-// =============================================
-// EVENT BINDINGS
-// =============================================
-
-dom.btnPlay.onclick = () => {
-  buildLevelGrid();
-  startLevel(state.progress < TOTAL ? state.progress : 0);
-  showScreen('screenGame');
-};
-
-dom.btnLevelSelect.onclick = () => { buildLevelGrid(); showScreen('screenLevels'); };
-dom.btnLevelsBack.onclick = () => showScreen('screenMenu');
-dom.btnGameBack.onclick = () => { showScreen('screenMenu'); updateMenuProgress(); };
-
-dom.btnMenuHelp.onclick = () => dom.modalHelp.classList.remove('hidden');
-dom.btnHelpClose.onclick = () => dom.modalHelp.classList.add('hidden');
-
-dom.btnMenuExit.onclick = () => {
-  if (confirm('Exit Brain Test?\nYour progress is saved!')) {
-    try { window.parent.postMessage({ action: 'exit_game' }, '*'); } catch(e) {}
-    try { window.history.back(); } catch(e) {}
-    setTimeout(() => window.close(), 300);
+  function loadState() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        state = JSON.parse(saved);
+      }
+    } catch (e) {}
   }
-};
 
-dom.btnHint.onclick = () => {
-  hintUsed = true;
-  showHint(PUZZLES[currentLevel].hint);
-};
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {}
+  }
 
-dom.btnNext.onclick = () => {
-  if (currentLevel < TOTAL - 1) startLevel(currentLevel + 1);
-  else { dom.winOverlay.classList.add('hidden'); showScreen('screenMenu'); }
-};
-dom.btnReplay.onclick = () => startLevel(currentLevel);
+  loadState();
 
-// =============================================
-// BOOT
-// =============================================
+  var currentLevelIdx = 0;
+  var currentPuzzle = null;
 
-loadState();
-updateMenuProgress();
-showScreen('screenMenu');
+  // DOM Elements
+  var screenMenu = document.getElementById('screenMenu');
+  var screenLevels = document.getElementById('screenLevels');
+  var screenGame = document.getElementById('screenGame');
+
+  var levelTitle = document.getElementById('levelTitle');
+  var questionBox = document.getElementById('questionBox');
+  var puzzleStage = document.getElementById('puzzleStage');
+  var wrongBadge = document.getElementById('wrongBadge');
+
+  var modalHint = document.getElementById('modalHint');
+  var hintText = document.getElementById('hintText');
+  var btnCloseHint = document.getElementById('btnCloseHint');
+
+  var modalWin = document.getElementById('modalWin');
+  var winExplanation = document.getElementById('winExplanation');
+  var btnNextLevel = document.getElementById('btnNextLevel');
+  var btnReplay = document.getElementById('btnReplay');
+
+  var modalHelp = document.getElementById('modalHelp');
+  var btnCloseHelp = document.getElementById('btnCloseHelp');
+
+  var levelGrid = document.getElementById('levelGrid');
+  var menuProgressText = document.getElementById('menuProgressText');
+  var menuProgFill = document.getElementById('menuProgFill');
+
+  // Navigation
+  function showScreen(screen) {
+    [screenMenu, screenLevels, screenGame].forEach(function (s) {
+      s.classList.remove('active');
+    });
+    screen.classList.add('active');
+  }
+
+  function updateMenuProgress() {
+    var maxLvl = PUZZLES.length;
+    var unlocked = Math.min(state.unlockedLevels, maxLvl);
+    menuProgressText.textContent = 'Level ' + unlocked + ' of ' + maxLvl;
+    menuProgFill.style.width = ((unlocked / maxLvl) * 100) + '%';
+  }
+
+  function renderLevelGrid() {
+    levelGrid.innerHTML = '';
+    PUZZLES.forEach(function (p, i) {
+      var card = document.createElement('button');
+      var isCompleted = i + 1 < state.unlockedLevels;
+      var isCurrent = i + 1 === state.unlockedLevels;
+      var isLocked = i + 1 > state.unlockedLevels;
+
+      card.className = 'lvl-card' + (isCompleted ? ' completed' : isCurrent ? ' current' : ' locked');
+
+      if (isLocked) {
+        card.innerHTML = '🔒';
+        card.disabled = true;
+      } else {
+        var stars = state.levelStars[p.level] || 3;
+        card.innerHTML = [
+          '<span>' + p.level + '</span>',
+          isCompleted ? '<span class="lvl-stars">' + '⭐'.repeat(stars) + '</span>' : ''
+        ].join('');
+
+        card.onclick = function () {
+          Sound.tap();
+          loadLevel(i);
+          showScreen(screenGame);
+        };
+      }
+      levelGrid.appendChild(card);
+    });
+  }
+
+  // Wrong Tap Feedback animation
+  function showWrongFeedback(clientX, clientY) {
+    Sound.wrong();
+    if (!clientX || !clientY) return;
+
+    var frame = document.getElementById('gameFrame').getBoundingClientRect();
+    var x = clientX - frame.left;
+    var y = clientY - frame.top;
+
+    wrongBadge.style.left = x + 'px';
+    wrongBadge.style.top = y + 'px';
+    wrongBadge.classList.remove('hidden');
+
+    // Retrigger animation
+    wrongBadge.style.animation = 'none';
+    void wrongBadge.offsetWidth;
+    wrongBadge.style.animation = 'wrongPop 0.45s ease-out forwards';
+
+    setTimeout(function () {
+      wrongBadge.classList.add('hidden');
+    }, 450);
+  }
+
+  // Load a Puzzle Level
+  function loadLevel(idx) {
+    if (idx < 0) idx = 0;
+    if (idx >= PUZZLES.length) idx = 0;
+
+    currentLevelIdx = idx;
+    currentPuzzle = PUZZLES[idx];
+
+    // Cleanup previous level if needed
+    if (puzzleStage._cleanup) {
+      puzzleStage._cleanup();
+      puzzleStage._cleanup = null;
+    }
+
+    // Hide modals
+    modalHint.classList.add('hidden');
+    modalWin.classList.add('hidden');
+
+    // Update Header & Prompt
+    levelTitle.textContent = 'Level ' + currentPuzzle.level;
+    questionBox.textContent = currentPuzzle.title;
+
+    // Render Stage
+    puzzleStage.innerHTML = '';
+    currentPuzzle.render(puzzleStage, handleLevelSolved, showWrongFeedback);
+  }
+
+  // Win Level Handler
+  function handleLevelSolved() {
+    Sound.correct();
+    Confetti.launch(70);
+
+    // Update save state
+    if (currentPuzzle.level >= state.unlockedLevels) {
+      state.unlockedLevels = currentPuzzle.level + 1;
+    }
+    state.levelStars[currentPuzzle.level] = 3;
+    saveState();
+    updateMenuProgress();
+
+    // Show Win Modal
+    winExplanation.textContent = currentPuzzle.explanation;
+    modalWin.classList.remove('hidden');
+  }
+
+  // ==========================================================================
+  // EVENT LISTENERS
+  // ==========================================================================
+
+  // Menu Buttons
+  document.getElementById('btnPlay').onclick = function () {
+    Sound.tap();
+    loadLevel(state.unlockedLevels - 1);
+    showScreen(screenGame);
+  };
+
+  document.getElementById('btnLevelSelect').onclick = function () {
+    Sound.tap();
+    renderLevelGrid();
+    showScreen(screenLevels);
+  };
+
+  document.getElementById('btnMenuHelp').onclick = function () {
+    Sound.tap();
+    modalHelp.classList.remove('hidden');
+  };
+
+  document.getElementById('btnCloseHelp').onclick = function () {
+    Sound.tap();
+    modalHelp.classList.add('hidden');
+  };
+
+  document.getElementById('btnMenuExit').onclick = function () {
+    Sound.tap();
+    if (confirm('Exit Brain Test? Your progress is saved!')) {
+      try { window.parent.postMessage({ action: 'exit_game' }, '*'); } catch (e) {}
+      try { window.history.back(); } catch (e) {}
+      setTimeout(function () { window.close(); }, 300);
+    }
+  };
+
+  // Levels Back Button
+  document.getElementById('btnLevelsBack').onclick = function () {
+    Sound.tap();
+    showScreen(screenMenu);
+    updateMenuProgress();
+  };
+
+  // Gameplay Header Buttons
+  document.getElementById('btnGameBack').onclick = function () {
+    Sound.tap();
+    if (puzzleStage._cleanup) {
+      puzzleStage._cleanup();
+      puzzleStage._cleanup = null;
+    }
+    showScreen(screenMenu);
+    updateMenuProgress();
+  };
+
+  document.getElementById('btnResetLevel').onclick = function () {
+    Sound.tap();
+    loadLevel(currentLevelIdx);
+  };
+
+  document.getElementById('btnSoundToggle').onclick = function () {
+    var on = Sound.toggle();
+    document.getElementById('soundIcon').textContent = on ? '🔊' : '🔇';
+    Sound.tap();
+  };
+
+  document.getElementById('btnHint').onclick = function () {
+    Sound.tap();
+    if (currentPuzzle) {
+      hintText.textContent = currentPuzzle.hint;
+      modalHint.classList.remove('hidden');
+    }
+  };
+
+  document.getElementById('btnCloseHint').onclick = function () {
+    Sound.tap();
+    modalHint.classList.add('hidden');
+  };
+
+  // Win Modal Actions
+  btnNextLevel.onclick = function () {
+    Sound.tap();
+    if (currentLevelIdx + 1 < PUZZLES.length) {
+      loadLevel(currentLevelIdx + 1);
+    } else {
+      // Completed all levels!
+      modalWin.classList.add('hidden');
+      renderLevelGrid();
+      showScreen(screenLevels);
+    }
+  };
+
+  btnReplay.onclick = function () {
+    Sound.tap();
+    loadLevel(currentLevelIdx);
+  };
+
+  // ==========================================================================
+  // INITIALIZATION
+  // ==========================================================================
+  updateMenuProgress();
+  showScreen(screenMenu);
+
+})();
