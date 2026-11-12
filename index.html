@@ -57,6 +57,10 @@
           <span class="btn-icon">🔄</span>
         </button>
 
+        <button class="dojo-btn icon-only" id="btnFullscreen" title="Toggle Fullscreen">
+          <span class="btn-icon" id="fsIcon">⛶</span>
+        </button>
+
         <button class="dojo-btn icon-only" id="btnSettings" title="Dojo Settings">
           <span class="btn-icon">⚙️</span>
         </button>
@@ -87,6 +91,9 @@
       <div class="menu-btn-row">
         <button class="menu-action-btn" id="btnMenuSettings">
           <span>⚙️ Settings</span>
+        </button>
+        <button class="menu-action-btn" id="btnMenuFullscreen">
+          <span id="menuFsIcon">⛶ Fullscreen</span>
         </button>
         <button class="menu-action-btn" id="btnMenuRules">
           <span>📜 Rules</span>
@@ -157,6 +164,17 @@
           </div>
           <label class="switch">
             <input type="checkbox" id="settingSfx" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">⛶ Fullscreen Mode</span>
+            <span class="setting-desc">Play in borderless fullscreen</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="settingFullscreen">
             <span class="slider"></span>
           </label>
         </div>
