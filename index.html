@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Happy Glass | CIEL WebGames</title>
+  <meta name="description" content="Play the original Happy Glass online! Draw lines to guide water droplets and make the sad little glass happy again.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>🥛</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/happy-glass.css">
+</head>
+<body>
+  <!-- CIEL Games loading screen -->
+  <script src="ciel-loader.js"></script>
+
+  <!-- Main Game Frame Viewport -->
+  <div class="game-viewport">
+    
+    <!-- Graph Paper Background Grid -->
+    <div class="graph-paper-bg"></div>
+
+    <!-- Top Header Control Panel (Exact Poki / Lion Studios Style) -->
+    <div class="top-header-panel">
+      <div class="header-actions-bar">
+        <!-- Level Progress Badge -->
+        <div class="level-badge-wrap">
+          <span class="level-num" id="levelNum">1</span>
+          <span class="level-text">Level</span>
+        </div>
+
+        <!-- ✏️ Skins / Pencil Button -->
+        <button class="header-tool-btn" id="btnPencil" title="Pencil & Settings">
+          <span>✏️</span>
+        </button>
+
+        <!-- 🏠 Home / Reset to Level 1 -->
+        <button class="header-tool-btn" id="btnHome" title="Home">
+          <span>🏠</span>
+        </button>
+
+        <!-- 🧠 Brain / Level Select -->
+        <button class="header-tool-btn" id="btnBrain" title="Level Select">
+          <span>🧠</span>
+        </button>
+
+        <!-- 💡 Hint Button with Gift Tag -->
+        <button class="header-tool-btn hint-btn" id="btnHint" title="Show Hint">
+          <span>💡</span>
+          <span class="gift-tag">🎁</span>
+        </button>
+
+        <!-- 🔄 Quick Restart Level -->
+        <button class="header-tool-btn" id="btnRestart" title="Restart Level">
+          <span>🔄</span>
+        </button>
+
+        <!-- ⛶ Fullscreen Toggle Button -->
+        <button class="header-tool-btn" id="btnFullscreen" title="Toggle Fullscreen">
+          <span id="fsIcon">⛶</span>
+        </button>
+
+        <!-- 🚪 Exit Game Button -->
+        <button class="header-tool-btn exit-tool-btn" id="btnExit" title="Exit Game">
+          <span>🚪</span>
+        </button>
+      </div>
+
+      <!-- Ink Gauge & 3 Stars Meter -->
+      <div class="ink-meter-container">
+        <div class="ink-bar-track">
+          <div class="ink-bar-fill" id="inkBarFill"></div>
+          <div class="ink-star-divider d1"></div>
+          <div class="ink-star-divider d2"></div>
+        </div>
+        <div class="ink-stars-row">
+          <span class="star-icon" id="star1">⭐</span>
+          <span class="star-icon" id="star2">⭐</span>
+          <span class="star-icon" id="star3">⭐</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Physics & Drawing Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Confetti Overlay Canvas -->
+    <canvas id="confettiCanvas"></canvas>
+
+    <!-- ================= MODAL: WIN / LEVEL COMPLETE ================= -->
+    <div class="modal-overlay hidden" id="winModal" style="display: none;">
+      <div class="modal-card win-card">
+        <h2 class="win-title">HAPPY GLASS!</h2>
+        <p class="win-subtitle">Level Completed!</p>
+
+        <div class="win-stars-display" id="winStars">
+          <span class="win-star">⭐</span>
+          <span class="win-star">⭐</span>
+          <span class="win-star">⭐</span>
+        </div>
+
+        <div class="win-actions">
+          <button class="hg-btn secondary" id="btnReplayWin">
+            <span>🔄 Replay</span>
+          </button>
+          <button class="hg-btn" id="btnNextLevel">
+            <span>Next Level ▶</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MODAL: LEVEL SELECT ================= -->
+    <div class="modal-overlay hidden" id="levelSelectModal" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">🧠 Select Level</h3>
+          <button class="close-x-btn" id="btnCloseLevels">✕</button>
+        </div>
+
+        <div class="level-grid" id="levelGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MODAL: SETTINGS & SKINS ================= -->
+    <div class="modal-overlay hidden" id="settingsModal" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">⚙️ Game Settings</h3>
+          <button class="close-x-btn" id="btnCloseSettings">✕</button>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-name">🔊 Sound Effects</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingSfx" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-name">⛶ Fullscreen Mode</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingFullscreen">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-name">✏️ Ink Color</span>
+          <div class="pen-color-row" id="penColorPicker">
+            <button class="pen-color-btn active" data-color="#263238" style="--c: #263238;" title="Black Ink"></button>
+            <button class="pen-color-btn" data-color="#1976d2" style="--c: #1976d2;" title="Blue Ink"></button>
+            <button class="pen-color-btn" data-color="#e91e63" style="--c: #e91e63;" title="Pink Ink"></button>
+            <button class="pen-color-btn" data-color="#43a047" style="--c: #43a047;" title="Green Ink"></button>
+          </div>
+        </div>
+
+        <div style="margin-top: 18px; display: flex; gap: 10px;">
+          <button class="hg-btn danger" id="btnResetProgress" style="width: 100%;">
+            <span>🗑️ Reset All Progress</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SCREEN: MAIN MENU ================= -->
+    <section class="menu-overlay" id="mainMenuScreen">
+      <div class="menu-content-wrap">
+        <div class="menu-mascot-wrap">
+          <svg class="happy-glass-mascot" viewBox="0 0 120 140" width="110" height="130">
+            <!-- Glass Body -->
+            <path d="M18 10 L28 130 Q30 136 38 136 L82 136 Q90 136 92 130 L102 10 Z" fill="rgba(255,255,255,0.85)" stroke="#263238" stroke-width="4.5" stroke-linejoin="round"/>
+            <!-- Water Fill inside -->
+            <path d="M22 65 L28 130 Q30 134 38 134 L82 134 Q90 134 92 130 L98 65 Q60 74 22 65 Z" fill="#29b6f6"/>
+            <ellipse cx="60" cy="65" rx="38" ry="4.5" fill="#81d4fa"/>
+            <!-- Happy Face -->
+            <!-- Eyes ^ ^ -->
+            <path d="M40 86 Q46 76 52 86" fill="none" stroke="#263238" stroke-width="3.5" stroke-linecap="round"/>
+            <path d="M68 86 Q74 76 80 86" fill="none" stroke="#263238" stroke-width="3.5" stroke-linecap="round"/>
+            <!-- Cheeks -->
+            <circle cx="34" cy="94" r="5" fill="#ff70a6" opacity="0.6"/>
+            <circle cx="86" cy="94" r="5" fill="#ff70a6" opacity="0.6"/>
+            <!-- Big Open Smile -->
+            <path d="M48 96 Q60 114 72 96 Z" fill="#e53935" stroke="#263238" stroke-width="3" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+        <h1 class="game-brand-title">
+          <span class="word-happy">HAPPY</span>
+          <span class="word-glass">GLASS</span>
+        </h1>
+        <p class="brand-tagline">Draw Physics Puzzle</p>
+
+        <div class="menu-stats-pill">
+          <span>⭐ TOTAL STARS:</span>
+          <strong id="menuTotalStars">0 / 60</strong>
+        </div>
+
+        <div class="menu-buttons-stack">
+          <button class="hg-menu-btn btn-play" id="btnMenuPlay">
+            <span class="btn-icon">▶</span>
+            <span>PLAY</span>
+          </button>
+          
+          <button class="hg-menu-btn btn-levels" id="btnMenuLevels">
+            <span class="btn-icon">🧠</span>
+            <span>LEVELS</span>
+          </button>
+
+          <div class="menu-sub-row">
+            <button class="hg-menu-btn btn-sub" id="btnMenuSettings">
+              <span class="btn-icon">⚙️</span>
+              <span>Settings</span>
+            </button>
+            <button class="hg-menu-btn btn-sub" id="btnMenuFullscreen">
+              <span class="btn-icon" id="menuFsIcon">⛶</span>
+              <span>Fullscreen</span>
+            </button>
+            <button class="hg-menu-btn btn-sub btn-exit-action" id="btnMenuExit">
+              <span class="btn-icon">🚪</span>
+              <span>Exit</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MODAL: EXIT CONFIRMATION ================= -->
+    <div class="modal-overlay hidden" id="exitModal" style="display: none;">
+      <div class="modal-card" style="max-width: 380px; text-align: center;">
+        <div style="font-size: 46px; margin-bottom: 12px;">🚪</div>
+        <h3 class="modal-title" style="margin-bottom: 10px;">EXIT GAME?</h3>
+        <p style="color: #546e7a; font-size: 14px; margin-bottom: 22px; line-height: 1.5;">
+          Are you sure you want to exit? Your level progress and stars are safely saved.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button class="hg-btn secondary" id="btnCancelExit" style="flex: 1;">
+            <span>STAY</span>
+          </button>
+          <button class="hg-btn danger" id="btnConfirmExit" style="flex: 1;">
+            <span>YES, EXIT</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Game Logic Engine -->
+  <script src="js/happy-glass.js"></script>
+</body>
+</html>
