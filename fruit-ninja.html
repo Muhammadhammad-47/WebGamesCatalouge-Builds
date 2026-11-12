@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Fruit Ninja - Dojo Arcade | CIEL Games</title>
+  <meta name="description" content="Play Fruit Ninja online in your browser! Slice delicious juicy fruits with your blade, dodge explosive bombs, and score epic combos.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>🍉</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Shojumaru&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/fruit-ninja.css">
+</head>
+<body>
+  <!-- CIEL Games loading screen (official loader) -->
+  <script src="ciel-loader.js"></script>
+
+  <!-- Main Game Frame Viewport -->
+  <div class="game-viewport">
+    
+    <!-- TOP NAVIGATION BAR -->
+    <header class="top-nav">
+      <!-- Left: Back Button & Score -->
+      <div class="nav-group">
+        <button class="dojo-btn" id="btnBack" title="Main Menu">
+          <span class="btn-icon">⛩️</span>
+          <span>Dojo</span>
+        </button>
+
+        <div class="score-badge">
+          <span class="score-icon">🍉</span>
+          <div class="score-details">
+            <span class="score-label">Score</span>
+            <span class="score-val" id="scoreVal">0</span>
+          </div>
+        </div>
+
+        <div class="best-badge">
+          <span>BEST</span>
+          <span class="best-val" id="bestVal">0</span>
+        </div>
+      </div>
+
+      <!-- Right: Strikes (X X X) & Controls -->
+      <div class="nav-group">
+        <div class="strikes-container" title="Strikes (Missed Fruit)">
+          <span class="strike-x" id="strike1">✕</span>
+          <span class="strike-x" id="strike2">✕</span>
+          <span class="strike-x" id="strike3">✕</span>
+        </div>
+
+        <button class="dojo-btn icon-only" id="btnSound" title="Toggle Sound">
+          <span class="btn-icon">🔊</span>
+        </button>
+
+        <button class="dojo-btn icon-only" id="btnRestart" title="Restart Game">
+          <span class="btn-icon">🔄</span>
+        </button>
+
+        <button class="dojo-btn icon-only" id="btnSettings" title="Dojo Settings">
+          <span class="btn-icon">⚙️</span>
+        </button>
+
+        <button class="dojo-btn icon-only" id="btnExit" title="Exit Game">
+          <span class="btn-icon">🚪</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- GAME CANVAS (Plank background, blade trail, juicy fruits) -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- ================= SCREEN: MAIN MENU ================= -->
+    <section class="overlay-screen" id="menuScreen">
+      <div class="logo-wrap">
+        <h1 class="title-fruit">FRUIT</h1>
+        <h2 class="title-ninja">NINJA</h2>
+        <p class="title-sub">Juicy Dojo Arcade</p>
+      </div>
+
+      <div class="slice-target-wrap" id="menuTargetWrap" role="button" tabindex="0">
+        <div class="target-glow-ring"></div>
+        <canvas id="menuWatermelonCanvas" width="120" height="120" class="target-canvas"></canvas>
+        <button class="slice-prompt" id="btnSliceToPlay">⚔️ SLICE TO PLAY ⚔️</button>
+      </div>
+
+      <div class="menu-btn-row">
+        <button class="menu-action-btn" id="btnMenuSettings">
+          <span>⚙️ Settings</span>
+        </button>
+        <button class="menu-action-btn" id="btnMenuRules">
+          <span>📜 Rules</span>
+        </button>
+        <button class="menu-action-btn exit-btn" id="btnMenuExit">
+          <span>🚪 Exit</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ================= SCREEN: GAME OVER ================= -->
+    <section class="overlay-screen hidden" id="gameOverScreen">
+      <div class="game-over-box">
+        <h2 class="go-title">ROUND OVER</h2>
+        
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-label">Final Score</div>
+            <div class="stat-num" id="goScore">0</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Best Score</div>
+            <div class="stat-num highlight" id="goBest">0</div>
+          </div>
+        </div>
+
+        <div class="stat-item" style="margin-bottom: 8px;">
+          <div class="stat-label">Fruits Sliced</div>
+          <div class="stat-num" id="goSliced" style="font-size: 20px; color: #fff;">0</div>
+        </div>
+
+        <div class="go-actions">
+          <button class="dojo-btn btn-large" id="btnPlayAgain">
+            <span>⚔️ PLAY AGAIN</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MODAL: HOW TO PLAY ================= -->
+    <div class="modal-overlay hidden" id="hintModal" style="display: none;">
+      <div class="modal-card">
+        <h3>⛩️ DOJO RULES</h3>
+        <ul>
+          <li>🍉 <strong>Slice Fruit:</strong> Drag mouse or swipe across fruits to slice them into juicy halves!</li>
+          <li>⚡ <strong>Combos:</strong> Slice 3 or more fruits in a single swipe for massive Combo Bonus points!</li>
+          <li>💣 <strong>Dodge Bombs:</strong> Slicing a bomb causes an instant explosion and ends the round!</li>
+          <li>❌ <strong>Strikes:</strong> Don't let fruit drop unsliced! 3 missed fruits = Game Over.</li>
+        </ul>
+        <button class="dojo-btn" id="btnCloseHint" style="width: 100%; margin-top: 10px;">
+          <span>UNDERSTOOD</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= MODAL: SETTINGS ================= -->
+    <div class="modal-overlay hidden" id="settingsModal" style="display: none;">
+      <div class="modal-card settings-card">
+        <div class="modal-header">
+          <h3>⚙️ DOJO SETTINGS</h3>
+          <button class="close-x-btn" id="btnCloseSettingsX">✕</button>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">🔊 Sound Effects</span>
+            <span class="setting-desc">Swords, splatters & explosions</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="settingSfx" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">⚔️ Blade Aura Color</span>
+            <span class="setting-desc">Choose your Katana blade aura</span>
+          </div>
+          <div class="blade-color-picker" id="bladeColorPicker">
+            <button class="blade-color-btn active" data-color="cyan" title="Cyan Katana" style="--c: #00e5ff;"></button>
+            <button class="blade-color-btn" data-color="gold" title="Dragon Gold" style="--c: #f5b041;"></button>
+            <button class="blade-color-btn" data-color="crimson" title="Crimson Sakura" style="--c: #ff3838;"></button>
+            <button class="blade-color-btn" data-color="emerald" title="Jade Emerald" style="--c: #2ecc71;"></button>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">✨ Juice Splats</span>
+            <span class="setting-desc">Leave fruit juice stains on wall</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="settingSplats" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-actions">
+          <button class="dojo-btn danger" id="btnResetScore">
+            <span>🗑️ Reset Best</span>
+          </button>
+          <button class="dojo-btn success" id="btnCloseSettings">
+            <span>SAVE & CLOSE</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MODAL: EXIT CONFIRM ================= -->
+    <div class="modal-overlay hidden" id="exitModal" style="display: none;">
+      <div class="modal-card" style="max-width: 380px; text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 12px;">🚪</div>
+        <h3 style="margin-bottom: 10px;">EXIT DOJO?</h3>
+        <p style="color: #cca485; font-size: 14px; margin-bottom: 22px;">
+          Are you sure you want to leave the game? Your high score is safely saved.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button class="dojo-btn" id="btnCancelExit" style="flex: 1; padding: 10px;">
+            <span>STAY</span>
+          </button>
+          <button class="dojo-btn danger" id="btnConfirmExit" style="flex: 1; padding: 10px;">
+            <span>YES, EXIT</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Game Logic Engine -->
+  <script src="js/fruit-ninja.js"></script>
+</body>
+</html>
