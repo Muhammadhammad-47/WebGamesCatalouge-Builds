@@ -1325,8 +1325,12 @@
   const viewport = document.querySelector('.game-viewport') || canvas;
 
   viewport.addEventListener('mousedown', (e) => {
-    // If not clicking a regular control button, start slice
-    if (e.target && e.target.closest('#btnSound, #btnRestart, #btnBack, #btnHint, #btnCloseHint, #btnPlayAgain')) {
+    // If clicking a button, input, or control, do not start slice
+    if (e.target && e.target.closest('button, input, label, a, .modal-card, .menu-action-btn, .dojo-btn, #btnSliceToPlay, #menuTargetWrap, .switch')) {
+      return;
+    }
+    // Also don't start slice if any modal overlay is active
+    if (document.querySelector('.modal-overlay:not(.hidden)')) {
       return;
     }
     startSlice(e);
@@ -1335,7 +1339,10 @@
   window.addEventListener('mouseup', endSlice);
 
   viewport.addEventListener('touchstart', (e) => {
-    if (e.target && e.target.closest('#btnSound, #btnRestart, #btnBack, #btnHint, #btnCloseHint, #btnPlayAgain')) {
+    if (e.target && e.target.closest('button, input, label, a, .modal-card, .menu-action-btn, .dojo-btn, #btnSliceToPlay, #menuTargetWrap, .switch')) {
+      return;
+    }
+    if (document.querySelector('.modal-overlay:not(.hidden)')) {
       return;
     }
     e.preventDefault();
@@ -1352,17 +1359,15 @@
   window.addEventListener('touchend', endSlice);
   window.addEventListener('touchcancel', endSlice);
 
-  // Direct Click / Tap handlers on "SLICE TO PLAY"
+  // Direct Click handlers on "SLICE TO PLAY"
   const btnSliceToPlay = document.getElementById('btnSliceToPlay');
   const menuTargetWrap = document.getElementById('menuTargetWrap');
 
   if (btnSliceToPlay) {
     btnSliceToPlay.addEventListener('click', triggerMenuSlice);
-    btnSliceToPlay.addEventListener('touchend', triggerMenuSlice);
   }
   if (menuTargetWrap) {
     menuTargetWrap.addEventListener('click', triggerMenuSlice);
-    menuTargetWrap.addEventListener('touchend', triggerMenuSlice);
   }
 
   // ==========================================================================
@@ -1408,11 +1413,9 @@
 
   if (btnMenuRules) {
     btnMenuRules.addEventListener('click', openHintModal);
-    btnMenuRules.addEventListener('touchend', openHintModal);
   }
 
   closeHintBtn.addEventListener('click', closeHintModal);
-  closeHintBtn.addEventListener('touchend', closeHintModal);
 
   hintModal.addEventListener('click', (e) => {
     if (e.target === hintModal) {
@@ -1429,6 +1432,7 @@
     AudioEngine.playClick();
     if (settingSfx) settingSfx.checked = AudioEngine.isEnabled();
     if (settingSplats) settingSplats.checked = enableSplats;
+    if (settingFullscreen) settingFullscreen.checked = isFullscreen();
     updateBladeColorButtons();
     settingsModal.classList.remove('hidden');
     settingsModal.style.display = 'grid';
@@ -1573,6 +1577,69 @@
       if (e.target === exitModal) closeExitModal(e);
     });
   }
+
+  // ==========================================================================
+  // FULLSCREEN ENGINE
+  // ==========================================================================
+  const btnFullscreen = document.getElementById('btnFullscreen');
+  const btnMenuFullscreen = document.getElementById('btnMenuFullscreen');
+  const settingFullscreen = document.getElementById('settingFullscreen');
+
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+
+  function toggleFullscreen() {
+    try {
+      if (isFullscreen()) {
+        const exitFn = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+        if (exitFn) exitFn.call(document);
+      } else {
+        const docEl = document.documentElement;
+        const reqFn = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+        if (reqFn) {
+          reqFn.call(docEl, { navigationUI: 'hide' }).catch(() => {});
+        }
+      }
+    } catch (e) {
+      console.warn('Fullscreen not supported:', e);
+    }
+  }
+
+  function updateFullscreenUI() {
+    const full = isFullscreen();
+    const fsIcon = document.getElementById('fsIcon');
+    const menuFsIcon = document.getElementById('menuFsIcon');
+    if (fsIcon) fsIcon.textContent = full ? '🗗' : '⛶';
+    if (menuFsIcon) menuFsIcon.textContent = full ? '🗗 Windowed' : '⛶ Fullscreen';
+    if (settingFullscreen) settingFullscreen.checked = full;
+    setTimeout(resizeCanvas, 80);
+  }
+
+  if (btnFullscreen) {
+    btnFullscreen.addEventListener('click', () => {
+      AudioEngine.playClick();
+      toggleFullscreen();
+    });
+  }
+
+  if (btnMenuFullscreen) {
+    btnMenuFullscreen.addEventListener('click', () => {
+      AudioEngine.playClick();
+      toggleFullscreen();
+    });
+  }
+
+  if (settingFullscreen) {
+    settingFullscreen.addEventListener('change', () => {
+      AudioEngine.playClick();
+      toggleFullscreen();
+    });
+  }
+
+  document.addEventListener('fullscreenchange', updateFullscreenUI);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
+  document.addEventListener('mozfullscreenchange', updateFullscreenUI);
 
   btnPlayAgain.addEventListener('click', () => {
     AudioEngine.playClick();
