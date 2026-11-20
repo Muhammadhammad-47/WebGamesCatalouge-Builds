@@ -853,3 +853,116 @@ input:checked + .slider:before {
     height: 110px;
   }
 }
+
+/* ==========================================================================
+   LEVEL START TOAST NOTIFICATION & JUICY GAME FLOW ENHANCEMENTS
+   ========================================================================== */
+.level-toast {
+  position: absolute;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.96);
+  border: 3px solid #3b82f6;
+  border-radius: 50px;
+  padding: 10px 26px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 12px 32px rgba(59, 130, 246, 0.35);
+  backdrop-filter: blur(14px);
+  z-index: 45;
+  pointer-events: none;
+  animation: toastSlide 2.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes toastSlide {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-28px) scale(0.92); }
+  12% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  82% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.96); }
+}
+
+.level-toast.hidden {
+  display: none;
+}
+
+.level-toast-icon {
+  font-size: 26px;
+  animation: toastIconPop 1.6s ease-in-out infinite;
+}
+
+@keyframes toastIconPop {
+  0%, 100% { transform: scale(1) rotate(0); }
+  50% { transform: scale(1.18) rotate(12deg); }
+}
+
+.level-toast-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1e3a8a;
+  line-height: 1.15;
+}
+
+.level-toast-sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1;
+}
+
+/* Next Level Glow on Win Screen */
+#btnNextLevel, #btnWinNext {
+  animation: nextBtnPulse 1.8s infinite;
+}
+
+@keyframes nextBtnPulse {
+  0% { box-shadow: 0 4px 14px rgba(76, 175, 80, 0.4); transform: scale(1); }
+  50% { box-shadow: 0 10px 28px rgba(76, 175, 80, 0.75); transform: scale(1.04); }
+  100% { box-shadow: 0 4px 14px rgba(76, 175, 80, 0.4); transform: scale(1); }
+}
+
+/* Glassmorphism HUD enhancement */
+.top-hud {
+  padding: 12px 20px;
+}
+
+.hud-btn {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  border: 2px solid #cbd5e1;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transition: transform 0.16s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.hud-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.14);
+  background: #ffffff;
+}
+
+.hud-btn:active {
+  transform: translateY(1px);
+}
+
+.pigeon-counter-badge {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef08a 100%);
+  border: 3px solid #f59e0b;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.32);
+  backdrop-filter: blur(10px);
+}
+
+/* Level Card Selection Glow */
+.level-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.level-card:not(.locked):hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  border-color: #3b82f6;
+}
+

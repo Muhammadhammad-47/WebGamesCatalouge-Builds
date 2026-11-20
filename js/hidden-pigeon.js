@@ -594,6 +594,14 @@
   // Particle & Floating Text Systems
   let floatingFx = [];
   let featherParticles = [];
+  let sparkleParticles = [];
+
+  // Pan inertia / coasting velocity
+  let velX = 0, velY = 0;
+  let lastDragX = 0, lastDragY = 0;
+
+  // Praise phrases on spotting pigeons
+  const PRAISES = ['Spotted! 🕊️', 'Eagle Eye! 🎯', 'Great Find! ✨', 'Gotcha! 🕊️', 'Sharp Eyes! 🔍', 'Found It! 🌟'];
 
   // ==========================================================================
   // INITIALIZATION
@@ -612,6 +620,7 @@
     loadLevel(0);
     renderLevelSelectGrid();
     setupMascot();
+    updateMenuPlayButton();
 
     const unlockAudio = () => {
       AudioEngine.init();
@@ -636,6 +645,35 @@
     requestAnimationFrame(render);
   }
 
+  function showLevelToast(title, sub) {
+    const toast = document.getElementById('levelToast');
+    const tTitle = document.getElementById('toastTitle');
+    const tSub = document.getElementById('toastSub');
+    if (!toast) return;
+
+    if (tTitle) tTitle.textContent = title;
+    if (tSub) tSub.textContent = sub;
+
+    toast.classList.remove('hidden');
+    toast.style.animation = 'none';
+    void toast.offsetWidth;
+    toast.style.animation = 'toastSlide 2.6s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+
+    setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 2700);
+  }
+
+  function updateMenuPlayButton() {
+    const btn = document.getElementById('btnMenuPlay') || document.getElementById('btnPlay');
+    if (!btn) return;
+    const unlocked = parseInt(localStorage.getItem('hp_unlocked') || '1', 10);
+    const labelSpan = btn.querySelector('span:last-child');
+    if (labelSpan) {
+      labelSpan.textContent = unlocked > 1 ? `CONTINUE (LVL ${unlocked})` : 'PLAY NOW';
+    }
+  }
+
   // ==========================================================================
   // LEVEL SETUP & SPAWNING
   // ==========================================================================
@@ -649,6 +687,9 @@
     activeHintPigeon = null;
     floatingFx = [];
     featherParticles = [];
+    sparkleParticles = [];
+    velX = 0;
+    velY = 0;
     levelStartTime = Date.now();
 
     currentPigeons = level.pigeons.map(p => ({
@@ -667,6 +708,7 @@
 
     updateHUD();
     fitToScreen();
+    showLevelToast(`Level ${level.id}: ${level.name}`, `Find ${level.totalPigeons} hidden pigeons!`);
     AudioEngine.startMusic();
   }
 
@@ -696,7 +738,7 @@
   }
 
   // ==========================================================================
-  // PARTICLES (Hand-Drawn Feathers & Floating Scores)
+  // PARTICLES (Hand-Drawn Feathers, Golden Sparkles & Floating Scores)
   // ==========================================================================
   function spawnFeatherBurst(cx, cy) {
     const count = 16;
@@ -715,19 +757,37 @@
         color: i % 3 === 0 ? '#eceff1' : (i % 3 === 1 ? '#cfd8dc' : '#90a4ae')
       });
     }
+
+    // Burst of 10 golden sparkle stars
+    for (let s = 0; s < 10; s++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = Math.random() * 3.6 + 1.8;
+      sparkleParticles.push({
+        x: cx,
+        y: cy,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd - 2.0,
+        rot: Math.random() * Math.PI,
+        vRot: (Math.random() - 0.5) * 0.25,
+        scale: Math.random() * 0.5 + 0.5,
+        alpha: 1.0,
+        color: s % 2 === 0 ? '#fde047' : '#fbbf24'
+      });
+    }
   }
 
-  function spawnFloatingScore(cx, cy) {
+  function spawnFloatingScore(cx, cy, customText) {
     floatingFx.push({
       x: cx,
-      y: cy - 10,
-      vy: -2.0,
+      y: cy - 12,
+      vy: -2.2,
       alpha: 1.0,
-      text: '+1 🕊️'
+      text: customText || '+1 🕊️'
     });
   }
 
   function updateFloatingFx() {
+    // Feathers
     for (let i = featherParticles.length - 1; i >= 0; i--) {
       const f = featherParticles[i];
       f.x += f.vx;
@@ -739,15 +799,29 @@
       if (f.alpha <= 0) featherParticles.splice(i, 1);
     }
 
+    // Sparkles
+    for (let i = sparkleParticles.length - 1; i >= 0; i--) {
+      const sp = sparkleParticles[i];
+      sp.x += sp.vx;
+      sp.y += sp.vy;
+      sp.vy += 0.06;
+      sp.vx *= 0.97;
+      sp.rot += sp.vRot;
+      sp.alpha -= 0.026;
+      if (sp.alpha <= 0) sparkleParticles.splice(i, 1);
+    }
+
+    // Floating text
     for (let i = floatingFx.length - 1; i >= 0; i--) {
       const fx = floatingFx[i];
       fx.y += fx.vy;
-      fx.alpha -= 0.02;
+      fx.alpha -= 0.018;
       if (fx.alpha <= 0) floatingFx.splice(i, 1);
     }
   }
 
   function drawFloatingFx() {
+    // Draw Feathers
     featherParticles.forEach(f => {
       ctx.save();
       ctx.globalAlpha = Math.max(0, f.alpha);
@@ -770,12 +844,38 @@
       ctx.restore();
     });
 
+    // Draw Golden Sparkle Stars
+    sparkleParticles.forEach(sp => {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, sp.alpha);
+      ctx.translate(sp.x, sp.y);
+      ctx.rotate(sp.rot);
+      ctx.scale(sp.scale, sp.scale);
+      ctx.fillStyle = sp.color;
+      ctx.beginPath();
+      for (let i = 0; i < 4; i++) {
+        ctx.lineTo(Math.cos((i * Math.PI) / 2) * 8, Math.sin((i * Math.PI) / 2) * 8);
+        ctx.lineTo(Math.cos((i * Math.PI) / 2 + Math.PI / 4) * 3, Math.sin((i * Math.PI) / 2 + Math.PI / 4) * 3);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // Draw Floating Text
     floatingFx.forEach(fx => {
       ctx.save();
       ctx.globalAlpha = Math.max(0, fx.alpha);
-      ctx.font = 'bold 22px Nunito, sans-serif';
+      ctx.font = '800 24px Nunito, sans-serif';
       ctx.fillStyle = '#ffb300';
-      ctx.strokeStyle = '#263238';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 4.0;
+      ctx.textAlign = 'center';
+      ctx.strokeText(fx.text, fx.x, fx.y);
+      ctx.fillText(fx.text, fx.x, fx.y);
+      ctx.restore();
+    });
+  }
       ctx.lineWidth = 3.5;
       ctx.textAlign = 'center';
       ctx.strokeText(fx.text, fx.x, fx.y);
