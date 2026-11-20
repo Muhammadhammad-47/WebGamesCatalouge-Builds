@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Hidden Pigeon | CIEL WebGames</title>
+  <meta name="description" content="Play Hidden Pigeon online! Explore charming European scenic settings and spot all the sneaky hidden pigeons in this relaxing seek-and-find puzzle game.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>🕊️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/hidden-pigeon.css">
+</head>
+<body>
+  <!-- CIEL Games loading screen (official loader) -->
+  <script src="ciel-loader.js"></script>
+
+  <!-- Main Game Frame Viewport (Full Screen) -->
+  <div class="game-viewport">
+
+    <!-- 2D Canvas Layer (Pan/Zoom Scenic World) -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Confetti Overlay Canvas -->
+    <canvas id="confettiCanvas"></canvas>
+
+    <!-- TOP NAVIGATION HUD -->
+    <header class="top-hud">
+      <!-- Left: Home & Level Info -->
+      <div class="hud-group">
+        <button class="hud-btn" id="btnHome" title="Main Menu">
+          <span>🏠</span>
+          <span>Home</span>
+        </button>
+
+        <div class="level-badge">
+          <span class="level-badge-num" id="levelBadgeNum">Level 1</span>
+          <span class="level-badge-name" id="levelBadgeName">Venetian Piazza</span>
+        </div>
+      </div>
+
+      <!-- Center: Pigeon Counter -->
+      <div class="pigeon-counter-badge" id="pigeonCounterBadge" title="Pigeons Spotted / Total">
+        <span class="pigeon-counter-icon">🕊️</span>
+        <div>
+          <div class="pigeon-counter-text" id="pigeonCounterText">0 / 10</div>
+          <div class="pigeon-counter-label">Pigeons Found</div>
+        </div>
+      </div>
+
+      <!-- Right: Hint, Settings, Fullscreen -->
+      <div class="hud-group">
+        <button class="hud-btn hint-btn" id="btnHint" title="Find a hidden pigeon">
+          <span>💡</span>
+          <span>Hint</span>
+          <div class="hint-cooldown-fill" id="hintCooldownFill"></div>
+        </button>
+
+        <button class="hud-btn icon-only" id="btnSettings" title="Sound & Settings">
+          <span>⚙️</span>
+        </button>
+
+        <button class="hud-btn icon-only" id="btnFullscreen" title="Toggle Fullscreen">
+          <span id="fsIcon">⛶</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ZOOM CONTROLS (Bottom Right) -->
+    <div class="zoom-controls">
+      <button class="zoom-btn" id="btnZoomIn" title="Zoom In">+</button>
+      <button class="zoom-btn" id="btnZoomOut" title="Zoom Out">−</button>
+      <button class="zoom-btn" id="btnZoomFit" title="Reset View / Fit to Screen" style="font-size: 15px;">🔍</button>
+    </div>
+
+    <!-- ================= SCREEN: MAIN MENU ================= -->
+    <section class="overlay-screen" id="menuScreen">
+      <div class="menu-card">
+        <!-- Cute Animated Pigeon Mascot -->
+        <div class="mascot-pigeon-wrap" id="mascotPigeon" title="Click me to coo!">
+          <div class="mascot-coo-bubble">Coo-coo! 🎵</div>
+          <svg viewBox="0 0 100 100" width="100%" height="100%" style="overflow: visible; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.18));">
+            <!-- Feet -->
+            <circle cx="42" cy="85" r="4" fill="#ff8a80"/>
+            <circle cx="58" cy="85" r="4" fill="#ff8a80"/>
+            <!-- Body -->
+            <ellipse cx="50" cy="55" rx="30" ry="24" fill="#78909c" stroke="#37474f" stroke-width="3"/>
+            <!-- Tail -->
+            <polygon points="24,54 6,62 8,72 26,66" fill="#37474f"/>
+            <!-- Iridescent Neck -->
+            <path d="M 60,34 Q 68,44 64,52 Q 54,54 50,46 Z" fill="url(#pigeonNeckGrad)"/>
+            <!-- Head -->
+            <circle cx="68" cy="36" r="18" fill="#90a4ae" stroke="#37474f" stroke-width="3"/>
+            <!-- Cute Eye -->
+            <circle cx="74" cy="33" r="6" fill="#ffffff"/>
+            <circle cx="75" cy="33" r="3.5" fill="#212121"/>
+            <circle cx="76.5" cy="31.5" r="1.5" fill="#ffffff"/>
+            <!-- Beak -->
+            <polygon points="84,34 96,37 84,41" fill="#ff9800" stroke="#e65100" stroke-width="2"/>
+            <!-- Wing -->
+            <ellipse cx="46" cy="53" rx="20" ry="13" transform="rotate(-15 46 53)" fill="#546e7a" stroke="#263238" stroke-width="2.5"/>
+            <!-- French Beret -->
+            <ellipse cx="68" cy="20" rx="14" ry="6" fill="#212121"/>
+            <circle cx="68" cy="16" r="2" fill="#212121"/>
+            <!-- Gradients -->
+            <defs>
+              <linearGradient id="pigeonNeckGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ab47bc"/>
+                <stop offset="100%" stop-color="#26a69a"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+
+        <h1 class="menu-title-main">
+          <span class="word-hidden">HIDDEN</span>
+          <span class="word-pigeon">PIGEON</span>
+        </h1>
+        <p class="menu-subtitle">Relaxing Seek & Find European Adventure</p>
+
+        <div class="menu-stats-pill">
+          <span>⭐ TOTAL STARS:</span>
+          <strong id="menuTotalStars">0 / 15</strong>
+        </div>
+
+        <div class="menu-actions-stack">
+          <button class="menu-play-btn" id="btnMenuPlay">
+            <span>▶</span>
+            <span>PLAY NOW</span>
+          </button>
+
+          <button class="menu-sub-btn" id="btnMenuLevels">
+            <span>🗺️</span>
+            <span>Select Level</span>
+          </button>
+
+          <div class="menu-sub-row">
+            <button class="menu-sub-btn" id="btnMenuSettings">
+              <span>⚙️</span>
+              <span>Settings</span>
+            </button>
+            <button class="menu-sub-btn" id="btnMenuFullscreen">
+              <span id="menuFsIcon">⛶</span>
+              <span>Fullscreen</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MODAL: SOUND & SETTINGS ================= -->
+    <div class="modal-overlay hidden" id="settingsModal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3 class="modal-title">⚙️ Sound & Settings</h3>
+          <button class="close-x-btn" id="btnCloseSettings">✕</button>
+        </div>
+
+        <!-- Music Toggle -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-name">🎵 Background Music</span>
+            <span class="setting-desc">Acoustic European cafe waltz</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="settingMusic" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- SFX Toggle -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-name">🔊 Sound Effects</span>
+            <span class="setting-desc">Pigeon coos, wing flutters & chimes</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="settingSfx" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Fullscreen Toggle -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-name">⛶ Fullscreen Mode</span>
+            <span class="setting-desc">Play in borderless fullscreen</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="settingFullscreen">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button class="modal-btn danger" id="btnResetProgress">
+            <span>🗑️ Reset Stars & Progress</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MODAL: LEVEL SELECT ================= -->
+    <div class="modal-overlay hidden" id="levelSelectModal">
+      <div class="modal-box" style="max-width: 500px;">
+        <div class="modal-header">
+          <h3 class="modal-title">🗺️ Select Level</h3>
+          <button class="close-x-btn" id="btnCloseLevels">✕</button>
+        </div>
+
+        <div class="level-grid" id="levelGrid">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MODAL: WIN / LEVEL COMPLETED ================= -->
+    <div class="modal-overlay hidden" id="winModal">
+      <div class="modal-box win-box">
+        <div class="win-mascot-badge">🕊️</div>
+        <h2 class="win-title">LEVEL COMPLETE!</h2>
+        <p class="win-subtitle">All sneaky pigeons have been found!</p>
+
+        <div class="win-stars-row" id="winStars">
+          <span class="win-star-item active">⭐</span>
+          <span class="win-star-item active">⭐</span>
+          <span class="win-star-item active">⭐</span>
+        </div>
+
+        <div class="win-stats-list">
+          <div class="win-stat-col">
+            <span class="win-stat-label">Pigeons Found</span>
+            <span class="win-stat-val" id="winPigeons">10 / 10</span>
+          </div>
+          <div class="win-stat-col">
+            <span class="win-stat-label">Time Taken</span>
+            <span class="win-stat-val" id="winTime">32s</span>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="modal-btn secondary" id="btnReplayWin">
+            <span>🔄 Replay</span>
+          </button>
+          <button class="modal-btn primary" id="btnNextLevel">
+            <span>▶ Next Level</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MODAL: RETURN TO HOME ================= -->
+    <div class="modal-overlay hidden" id="exitModal">
+      <div class="modal-box" style="text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 10px;">🏠</div>
+        <h3 class="modal-title" style="margin-bottom: 8px;">Return to Menu?</h3>
+        <p style="color: #607d8b; font-size: 15px; margin-bottom: 22px; line-height: 1.4;">
+          Are you sure you want to return to the Main Menu? You can resume anytime!
+        </p>
+        <div class="modal-actions">
+          <button class="modal-btn secondary" id="btnCancelExit">
+            <span>Keep Playing</span>
+          </button>
+          <button class="modal-btn primary" id="btnConfirmExit">
+            <span>Yes, Menu</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Main Game Engine Script -->
+  <script src="js/hidden-pigeon.js"></script>
+</body>
+</html>
