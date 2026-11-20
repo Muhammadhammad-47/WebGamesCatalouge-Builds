@@ -633,10 +633,16 @@
     window.addEventListener('keydown', unlockAudio);
 
     // Hide loading screen if CIEL loader finished
-    setTimeout(() => {
+    const dismissLoader = () => {
       const loader = document.getElementById('ciel-loader') || document.querySelector('.ciel-loader-overlay');
-      if (loader) loader.style.display = 'none';
-    }, 450);
+      if (loader) {
+        loader.classList.add('cl-done');
+        loader.style.pointerEvents = 'none';
+        loader.style.display = 'none';
+      }
+    };
+    setTimeout(dismissLoader, 450);
+    window.addEventListener('ciel-loader:done', dismissLoader);
 
     // Start Main Render Loop
     requestAnimationFrame(render);
@@ -2130,7 +2136,7 @@
     }
 
     // Main Menu Buttons
-    const btnPlay = document.getElementById('btnPlay');
+    const btnPlay = document.getElementById('btnMenuPlay') || document.getElementById('btnPlay');
     if (btnPlay) {
       btnPlay.addEventListener('click', () => {
         AudioEngine.playClick();
@@ -2140,7 +2146,7 @@
       });
     }
 
-    const btnLevels = document.getElementById('btnLevels');
+    const btnLevels = document.getElementById('btnMenuLevels') || document.getElementById('btnLevels');
     if (btnLevels) {
       btnLevels.addEventListener('click', () => {
         AudioEngine.playClick();
@@ -2165,6 +2171,14 @@
       });
     }
 
+    const btnMenuFullscreen = document.getElementById('btnMenuFullscreen');
+    if (btnMenuFullscreen) {
+      btnMenuFullscreen.addEventListener('click', () => {
+        AudioEngine.playClick();
+        toggleFullscreen();
+      });
+    }
+
     // Modals Close & Action buttons
     setupModals();
   }
@@ -2185,8 +2199,10 @@
     // Settings Modal
     const btnCloseSettings = document.getElementById('btnCloseSettings');
     const settingsModal = document.getElementById('settingsModal');
-    const toggleSfx = document.getElementById('toggleSfx');
-    const toggleMusic = document.getElementById('toggleMusic');
+    const toggleSfx = document.getElementById('settingSfx') || document.getElementById('toggleSfx');
+    const toggleMusic = document.getElementById('settingMusic') || document.getElementById('toggleMusic');
+    const settingFullscreen = document.getElementById('settingFullscreen');
+    const btnResetProgress = document.getElementById('btnResetProgress');
 
     if (btnCloseSettings && settingsModal) {
       btnCloseSettings.addEventListener('click', () => {
@@ -2208,6 +2224,27 @@
       toggleMusic.addEventListener('change', () => {
         AudioEngine.setMusic(toggleMusic.checked);
         AudioEngine.playClick();
+      });
+    }
+
+    if (settingFullscreen) {
+      settingFullscreen.addEventListener('change', () => {
+        AudioEngine.playClick();
+        toggleFullscreen();
+      });
+    }
+
+    if (btnResetProgress) {
+      btnResetProgress.addEventListener('click', () => {
+        AudioEngine.playClick();
+        if (confirm('Reset all game progress and stars?')) {
+          localStorage.removeItem('hp_level_stars');
+          localStorage.removeItem('hp_unlocked');
+          levelProgress = {};
+          renderLevelSelectGrid();
+          loadLevel(0);
+          if (settingsModal) settingsModal.classList.add('hidden');
+        }
       });
     }
 
@@ -2310,8 +2347,8 @@
   }
 
   function renderLevelSelectGrid() {
-    const grid = document.getElementById('levelsGrid');
-    const starText = document.getElementById('levelsTotalStars');
+    const grid = document.getElementById('levelGrid') || document.getElementById('levelsGrid');
+    const starText = document.getElementById('menuTotalStars') || document.getElementById('levelsTotalStars');
     if (!grid) return;
 
     grid.innerHTML = '';
