@@ -18,33 +18,39 @@
   <!-- Main Game Frame Viewport (Full Screen) -->
   <div class="game-viewport">
 
-    <!-- Background Snow Layer -->
+    <!-- Layer 0: Background Room Canvas (Christmas Tree, Lights, Fireplace, Rug) -->
+    <canvas id="bgCanvas"></canvas>
+
+    <!-- Layer 1: Background Snow Canvas -->
     <canvas id="snowCanvas"></canvas>
 
-    <!-- 2D Canvas Layer (Presents Pile & Physics) -->
+    <!-- Layer 2: Main Game Canvas (Presents Pile & Physics) -->
     <canvas id="gameCanvas"></canvas>
 
-    <!-- Confetti & Paper Ripping Particle Overlay -->
+    <!-- Layer 3: Confetti & Paper Ripping Particle Overlay -->
     <canvas id="fxCanvas"></canvas>
 
     <!-- ================= TOP NAVIGATION HUD ================= -->
     <header class="top-hud">
-      <!-- Left: Home & Sound -->
+      <!-- Left: Pure Icon Buttons (Home, Sound, Restart) -->
       <div class="hud-group">
-        <button class="hud-btn" id="btnHome" title="Main Menu">
-          <span>🏠</span>
-          <span>Home</span>
+        <button class="hud-btn icon-only" id="btnHome" title="Main Menu" aria-label="Home">
+          <span class="btn-icon">🏠</span>
         </button>
 
-        <button class="hud-btn icon-only" id="btnSound" title="Toggle Sound">
-          <span id="soundIcon">🔊</span>
+        <button class="hud-btn icon-only" id="btnSound" title="Toggle Sound" aria-label="Toggle Sound">
+          <span class="btn-icon" id="soundIcon">🔊</span>
+        </button>
+
+        <button class="hud-btn icon-only" id="btnRestart" title="Restart Game" aria-label="Restart">
+          <span class="btn-icon">🔄</span>
         </button>
       </div>
 
-      <!-- Center: TARGET TO FIND (The core challenge) -->
+      <!-- Center: TARGET TO FIND (Spotlight Holiday Tag) -->
       <div class="target-display-card" id="targetCard" title="Find the present with this silhouette!">
         <div class="target-preview-box" id="targetPreviewBox">
-          <canvas id="targetCanvas" width="60" height="60"></canvas>
+          <canvas id="targetCanvas" width="68" height="68"></canvas>
           <div class="target-sparkle">✨</div>
         </div>
         <div class="target-label-group">
@@ -66,8 +72,8 @@
           <span class="streak-badge" id="streakBadge">x2</span>
         </div>
 
-        <button class="hud-btn icon-only" id="btnFullscreen" title="Toggle Fullscreen">
-          <span id="fsIcon">⛶</span>
+        <button class="hud-btn icon-only" id="btnFullscreen" title="Toggle Fullscreen" aria-label="Fullscreen">
+          <span class="btn-icon" id="fsIcon">⛶</span>
         </button>
       </div>
     </header>
@@ -81,57 +87,111 @@
     <!-- ================= SCREEN: MAIN MENU ================= -->
     <section class="overlay-screen" id="menuScreen">
       <div class="menu-card">
-        <!-- Interactive Animated Mascot Present -->
+        <!-- Holiday Pine Garland Trim on Card -->
+        <div class="menu-garland">
+          <span class="garland-light l-red"></span>
+          <span class="garland-light l-gold"></span>
+          <span class="garland-light l-green"></span>
+          <span class="garland-light l-blue"></span>
+          <span class="garland-light l-gold"></span>
+          <span class="garland-light l-red"></span>
+        </div>
+
+        <!-- Interactive Animated Mascot Present with Santa Hat -->
         <div class="mascot-box" id="mascotBox" title="Click me for a surprise!">
           <div class="mascot-coo-bubble">Unwrap me! 🎁</div>
-          <svg viewBox="0 0 100 100" width="100%" height="100%" style="overflow: visible; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.22));">
-            <!-- Gift Box Base -->
-            <rect x="15" y="35" width="70" height="55" rx="10" fill="#dc2626" stroke="#991b1b" stroke-width="3"/>
+          <svg viewBox="0 0 120 120" width="100%" height="100%" style="overflow: visible; filter: drop-shadow(0 12px 24px rgba(0,0,0,0.3));">
+            <!-- Box Body Drop Shadow -->
+            <ellipse cx="60" cy="106" rx="42" ry="10" fill="rgba(0,0,0,0.2)"/>
+            
+            <!-- Gift Box Base with 3D Bevel -->
+            <rect x="22" y="44" width="76" height="58" rx="12" fill="url(#boxGrad)" stroke="#7f1d1d" stroke-width="3"/>
             <!-- Box Lid -->
-            <rect x="10" y="25" width="80" height="18" rx="6" fill="#ef4444" stroke="#991b1b" stroke-width="3"/>
+            <rect x="16" y="32" width="88" height="20" rx="8" fill="url(#lidGrad)" stroke="#7f1d1d" stroke-width="3"/>
+
             <!-- Golden Cross Ribbon -->
-            <rect x="44" y="25" width="12" height="65" fill="#facc15" stroke="#ca8a04" stroke-width="2"/>
-            <rect x="15" y="56" width="70" height="12" fill="#facc15" stroke="#ca8a04" stroke-width="2"/>
-            <!-- Ornate Golden Bow -->
-            <path d="M 50,26 C 35,10 20,20 42,26 C 20,28 32,4 50,22 C 68,4 80,28 58,26 C 80,20 65,10 50,26 Z" fill="#fde047" stroke="#ca8a04" stroke-width="2.5"/>
-            <!-- Cute Cartoon Eyes on Box -->
-            <circle cx="38" cy="50" r="5" fill="#ffffff"/>
-            <circle cx="39" cy="50" r="3" fill="#1e293b"/>
-            <circle cx="40" cy="48.5" r="1.2" fill="#ffffff"/>
-            <circle cx="62" cy="50" r="5" fill="#ffffff"/>
-            <circle cx="63" cy="50" r="3" fill="#1e293b"/>
-            <circle cx="64" cy="48.5" r="1.2" fill="#ffffff"/>
-            <!-- Little Smile -->
-            <path d="M 46,62 Q 50,67 54,62" stroke="#7f1d1d" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <rect x="52" y="32" width="16" height="70" fill="url(#ribbonGrad)" stroke="#ca8a04" stroke-width="2"/>
+            <rect x="22" y="66" width="76" height="14" fill="url(#ribbonGrad)" stroke="#ca8a04" stroke-width="2"/>
+
+            <!-- Ornate Fluffy Golden Bow -->
+            <path d="M 60,34 C 42,12 24,24 50,33 C 25,36 38,4 60,28 C 82,4 95,36 70,33 C 96,24 78,12 60,34 Z" fill="url(#bowGrad)" stroke="#ca8a04" stroke-width="2.5"/>
+            <circle cx="60" cy="33" r="6" fill="#fef08a" stroke="#ca8a04" stroke-width="2"/>
+
+            <!-- Cute Mascot Eyes -->
+            <circle cx="44" cy="58" r="6" fill="#ffffff"/>
+            <circle cx="45" cy="58" r="3.8" fill="#0f172a"/>
+            <circle cx="46.5" cy="56" r="1.5" fill="#ffffff"/>
+
+            <circle cx="76" cy="58" r="6" fill="#ffffff"/>
+            <circle cx="77" cy="58" r="3.8" fill="#0f172a"/>
+            <circle cx="78.5" cy="56" r="1.5" fill="#ffffff"/>
+
+            <!-- Rosy Cheeks -->
+            <ellipse cx="36" cy="67" rx="5" ry="3" fill="#fca5a5" opacity="0.6"/>
+            <ellipse cx="84" cy="67" rx="5" ry="3" fill="#fca5a5" opacity="0.6"/>
+
+            <!-- Cute Happy Smile -->
+            <path d="M 54,69 Q 60,76 66,69" stroke="#7f1d1d" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+            <!-- Gradients Definition -->
+            <defs>
+              <linearGradient id="boxGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ef4444"/>
+                <stop offset="100%" stop-color="#b91c1c"/>
+              </linearGradient>
+              <linearGradient id="lidGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#f87171"/>
+                <stop offset="100%" stop-color="#dc2626"/>
+              </linearGradient>
+              <linearGradient id="ribbonGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#fef08a"/>
+                <stop offset="50%" stop-color="#facc15"/>
+                <stop offset="100%" stop-color="#eab308"/>
+              </linearGradient>
+              <linearGradient id="bowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#fef9c3"/>
+                <stop offset="50%" stop-color="#fde047"/>
+                <stop offset="100%" stop-color="#ca8a04"/>
+              </linearGradient>
+            </defs>
           </svg>
         </div>
 
-        <h1 class="menu-title">
-          <span class="title-gift">GIFT</span>
-          <span class="title-wrapped">WRAPPED</span>
-        </h1>
-        <p class="menu-subtitle">Festive Holiday Silhouette Match Challenge</p>
-
-        <div class="high-score-banner">
-          <span>🏆 BEST HIGH SCORE:</span>
-          <strong id="menuBestScore">0</strong>
+        <!-- Grand Snowy Title -->
+        <div class="menu-title-container">
+          <h1 class="menu-title">
+            <span class="title-gift">GIFT</span>
+            <span class="title-wrapped">WRAPPED</span>
+          </h1>
+          <p class="menu-subtitle">Holiday Silhouette Match Challenge</p>
         </div>
 
-        <div class="menu-buttons-col">
+        <!-- High Score Golden Plaque -->
+        <div class="high-score-plaque">
+          <span class="trophy-icon">🏆</span>
+          <span class="trophy-label">BEST SCORE:</span>
+          <strong class="trophy-val" id="menuBestScore">0</strong>
+        </div>
+
+        <!-- Centerpiece 3D Play Button -->
+        <div class="menu-action-area">
           <button class="btn-play-primary" id="btnPlay">
-            <span>🎁</span>
-            <span>PLAY GAME</span>
+            <span class="play-icon-glow">▶</span>
+            <span class="play-text">PLAY GAME</span>
           </button>
 
-          <div class="menu-sub-row">
-            <button class="btn-sub-menu" id="btnHowTo">
-              <span>❓</span>
-              <span>How to Play</span>
+          <!-- Row of Sleek Icon Buttons: How to Play, Settings, Sound -->
+          <div class="menu-icon-actions-row">
+            <button class="icon-action-btn" id="btnHowTo" title="How to Play" aria-label="How to Play">
+              <span class="action-icon">❓</span>
             </button>
 
-            <button class="btn-sub-menu" id="btnSettings">
-              <span>⚙️</span>
-              <span>Settings</span>
+            <button class="icon-action-btn" id="btnMenuSound" title="Toggle Sound" aria-label="Toggle Sound">
+              <span class="action-icon" id="menuSoundIcon">🔊</span>
+            </button>
+
+            <button class="icon-action-btn" id="btnSettings" title="Settings" aria-label="Settings">
+              <span class="action-icon">⚙️</span>
             </button>
           </div>
         </div>
@@ -143,41 +203,41 @@
       <div class="modal-box">
         <div class="modal-header">
           <h3 class="modal-title">🎁 How to Play</h3>
-          <button class="close-x-btn" id="btnCloseHowTo">✕</button>
+          <button class="close-x-btn" id="btnCloseHowTo" title="Close">✕</button>
         </div>
 
-        <p style="color: #475569; font-size: 14px; line-height: 1.5; margin-bottom: 12px;">
-          Look at the target toy shown at the top. The presents below are wrapped tightly matching the <strong>exact silhouette</strong> of the item inside!
+        <p class="modal-body-p">
+          Spot the matching gift shown on the top tag! Every present is wrapped tightly to the <strong>exact silhouette</strong> of the item inside!
         </p>
 
         <div class="how-to-grid">
           <div class="how-to-card">
-            <span>🎻 ↔ 🍾</span>
+            <span class="trick-emojis">🎻 ↔ 🍾</span>
             <strong>Violin vs Wine</strong>
-            <div>Look for the waist curves & neck!</div>
+            <p>Look for the waist curves & scroll!</p>
           </div>
           <div class="how-to-card">
-            <span>🧦 ↔ ⛸️</span>
+            <span class="trick-emojis">🧦 ↔ ⛸️</span>
             <strong>Sock vs Skate</strong>
-            <div>Ice skate has the metal blade!</div>
+            <p>Ice skate has the metal blade runner!</p>
           </div>
           <div class="how-to-card">
-            <span>🤖 ↔ 🧸</span>
+            <span class="trick-emojis">🤖 ↔ 🧸</span>
             <strong>Robot vs Bear</strong>
-            <div>Robot has antenna & boxy head!</div>
+            <p>Robot has antenna & boxy head!</p>
           </div>
           <div class="how-to-card">
-            <span>🚗 ↔ 🚂</span>
+            <span class="trick-emojis">🚗 ↔ 🚂</span>
             <strong>Car vs Train</strong>
-            <div>Train has smokestack & cab!</div>
+            <p>Train has chimney smokestack & cab!</p>
           </div>
         </div>
 
-        <p style="color: #15803d; font-size: 13px; font-weight: 700; line-height: 1.4; margin-bottom: 16px;">
+        <div class="modal-tip-banner">
           ⏱️ Timer starts at 20s. Correct finds add <strong>+5 seconds</strong>! Wrong clicks cost <strong>-3 seconds</strong>!
-        </p>
+        </div>
 
-        <button class="btn-play-primary" id="btnGotIt" style="height: 48px; font-size: 17px;">
+        <button class="btn-modal-action" id="btnGotIt">
           <span>👍</span>
           <span>GOT IT!</span>
         </button>
@@ -188,13 +248,13 @@
     <div class="modal-overlay hidden" id="settingsModal">
       <div class="modal-box">
         <div class="modal-header">
-          <h3 class="modal-title">⚙️ Sound & Settings</h3>
-          <button class="close-x-btn" id="btnCloseSettings">✕</button>
+          <h3 class="modal-title">⚙️ Settings</h3>
+          <button class="close-x-btn" id="btnCloseSettings" title="Close">✕</button>
         </div>
 
         <div class="setting-row">
           <div class="setting-info">
-            <span class="setting-name">Holiday Music</span>
+            <span class="setting-name">Holiday Music 🎵</span>
             <span class="setting-desc">Festive Jingle Bells waltz chiptune</span>
           </div>
           <label class="switch">
@@ -205,7 +265,7 @@
 
         <div class="setting-row">
           <div class="setting-info">
-            <span class="setting-name">Sound Effects</span>
+            <span class="setting-name">Sound Effects 🔊</span>
             <span class="setting-desc">Paper tearing, bell chimes & buzzer</span>
           </div>
           <label class="switch">
@@ -214,13 +274,13 @@
           </label>
         </div>
 
-        <div class="setting-row" style="margin-top: 14px; padding-top: 14px; border-top: 2px dashed #e2e8f0;">
+        <div class="setting-row" style="margin-top: 14px; padding-top: 14px; border-top: 2px dashed #cbd5e1;">
           <div class="setting-info">
-            <span class="setting-name">High Score</span>
-            <span class="setting-desc">Clear saved personal best</span>
+            <span class="setting-name">Clear High Score 🏆</span>
+            <span class="setting-desc">Reset your saved record</span>
           </div>
-          <button class="btn-sub-menu" id="btnResetScore" style="flex: none; padding: 0 16px; height: 38px;">
-            Reset Score
+          <button class="icon-pill-btn" id="btnResetScore">
+            <span>Reset</span>
           </button>
         </div>
       </div>
@@ -231,7 +291,7 @@
       <div class="modal-box gameover-box">
         <div class="gameover-icon">⏱️</div>
         <h2 class="modal-title" style="font-size: 32px; color: #dc2626; margin-bottom: 4px;">TIME'S UP!</h2>
-        <p style="color: #64748b; font-size: 15px; font-weight: 700;">Great holiday wrapping hunt!</p>
+        <p style="color: #64748b; font-size: 15px; font-weight: 700;">Great holiday gift hunt!</p>
 
         <div class="gameover-stats">
           <div class="stat-item">
@@ -252,15 +312,14 @@
           </div>
         </div>
 
-        <div class="menu-buttons-col">
-          <button class="btn-play-primary" id="btnPlayAgain">
+        <div class="modal-buttons-row">
+          <button class="btn-play-primary" id="btnPlayAgain" style="flex: 2; height: 52px; font-size: 18px;">
             <span>🔄</span>
             <span>PLAY AGAIN</span>
           </button>
 
-          <button class="btn-sub-menu" id="btnMenuFromOver" style="height: 48px;">
+          <button class="hud-btn icon-only" id="btnMenuFromOver" title="Main Menu" style="width: 52px; height: 52px; font-size: 24px;">
             <span>🏠</span>
-            <span>Main Menu</span>
           </button>
         </div>
       </div>
@@ -268,15 +327,15 @@
 
     <!-- ================= MODAL: CONFIRM RETURN HOME ================= -->
     <div class="modal-overlay hidden" id="homeModal">
-      <div class="modal-box" style="text-align: center;">
+      <div class="modal-box" style="text-align: center; max-width: 400px;">
         <div style="font-size: 44px; margin-bottom: 8px;">🏠</div>
         <h3 class="modal-title" style="margin-bottom: 6px;">Return to Menu?</h3>
         <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">
-          Your current round will end. Are you sure you want to return to the Main Menu?
+          Your current round will end. Return to the main screen?
         </p>
 
-        <div class="menu-sub-row">
-          <button class="btn-sub-menu" id="btnCancelHome">
+        <div class="modal-buttons-row">
+          <button class="btn-modal-cancel" id="btnCancelHome">
             <span>Keep Playing</span>
           </button>
           <button class="btn-play-primary" id="btnConfirmHome" style="flex: 1; height: 46px; font-size: 16px;">
