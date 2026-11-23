@@ -293,11 +293,11 @@
       startX: 120,
       startY: 450,
       platforms: [
-        { x: 0, y: 520, w: 400, h: 80 },
-        { x: 420, y: 460, w: 220, h: 140 },
-        { x: 680, y: 390, w: 200, h: 210 },
-        { x: 920, y: 310, w: 240, h: 290 },
-        { x: 1200, y: 240, w: 320, h: 360 }
+        { x: 0, y: 520, w: 420, h: 220 },
+        { x: 420, y: 460, w: 260, h: 280 },
+        { x: 680, y: 390, w: 240, h: 350 },
+        { x: 920, y: 310, w: 280, h: 430 },
+        { x: 1200, y: 240, w: 320, h: 500 }
       ],
       spikes: [],
       springs: [],
@@ -729,7 +729,7 @@
       this.deadTimer = 0;
     }
 
-    update(dt, level, sound, fx) {
+    update(dt, level, sound, fx, inputLeft = false, inputRight = false) {
       if (this.isDead) {
         this.deadTimer -= dt;
         if (this.deadTimer <= 0) {
@@ -739,102 +739,162 @@
         return;
       }
 
-      // 1. Gravity & Friction
-      const GRAVITY = 940;
-      this.vy += GRAVITY * dt;
-      this.vx *= 0.985;
-      this.vy *= 0.995;
+      // Physics sub-stepping for ultra-stable non-penetrating collision & leverage
+      const SUB_STEPS = 4;
+      const sdt = dt / SUB_STEPS;
+      const GRAVITY = 960;
 
-      // 2. Rotate Pickaxe
-      const MAX_ANG_VEL = 9.5;
-      this.axeAngularVel = Math.max(-MAX_ANG_VEL, Math.min(MAX_ANG_VEL, this.axeAngularVel));
-      this.axeAngle += this.axeAngularVel * dt;
-      this.axeAngularVel *= 0.90; // angular damping
+      for (let step = 0; step < SUB_STEPS; step++) {
+        // 1. Process Rotational Input (Snap & Smooth Torque)
+        if (inputRight) {
+          if (this.axeAngularVel < 3.0) this.axeAngularVel = 3.0;
+          this.axeAngularVel += 90 * sdt;
+        } else if (inputLeft) {
+          if (this.axeAngularVel > -3.0) this.axeAngularVel = -3.0;
+          this.axeAngularVel -= 90 * sdt;
+        }
+        const MAX_ANG_VEL = 17.5;
+        this.axeAngularVel = Math.max(-MAX_ANG_VEL, Math.min(MAX_ANG_VEL, this.axeAngularVel));
+        this.axeAngularVel *= Math.pow(0.95, sdt / 0.016);
+        this.axeAngle += this.axeAngularVel * sdt;
 
-      // 3. Move Pot
-      this.x += this.vx * dt;
-      this.y += this.vy * dt;
+        // 2. Linear motion (Pot)
+        this.vy += GRAVITY * sdt;
+        this.vx *= Math.pow(0.986, sdt / 0.016);
+        this.vy *= Math.pow(0.996, sdt / 0.016);
+        this.x += this.vx * sdt;
+        this.y += this.vy * sdt;
 
-      // 4. Pot vs Terrain Collision (Circular Body)
-      for (const p of level.platforms) {
-        // Clamp pot center to platform box
-        const nearestX = Math.max(p.x, Math.min(this.x, p.x + p.w));
-        const nearestY = Math.max(p.y, Math.min(this.y, p.y + p.h));
-        const dx = this.x - nearestX;
-        const dy = this.y - nearestY;
-        const distSq = dx * dx + dy * dy;
+        // 3. Pot vs Terrain Collision (Circular Body)
+        for (const p of level.platforms) {
+          const nearestX = Math.max(p.x, Math.min(this.x, p.x + p.w));
+          const nearestY = Math.max(p.y, Math.min(this.y, p.y + p.h));
+          const dx = this.x - nearestX;
+          const dy = this.y - nearestY;
+          const distSq = dx * dx + dy * dy;
 
-        if (distSq < this.radius * this.radius) {
-          const dist = Math.sqrt(distSq) || 0.001;
-          const overlap = this.radius - dist;
-          const nx = dx / dist;
-          const ny = dy / dist;
+          if (distSq < this.radius * this.radius) {
+            const dist = Math.sqrt(distSq) || 0.001;
+            const overlap = this.radius - dist;
+            const nx = dx / dist;
+            const ny = dy / dist;
 
-          // Push pot out of solid rock
-          this.x += nx * overlap;
-          this.y += ny * overlap;
+            this.x += nx * overlap;
+            this.y += ny * overlap;
 
-          // Normal & Tangential impulse
-          const velDotNormal = this.vx * nx + this.vy * ny;
-          if (velDotNormal < 0) {
-            this.vx -= (1 + 0.25) * velDotNormal * nx;
-            this.vy -= (1 + 0.25) * velDotNormal * ny;
+            const velDotNormal = this.vx * nx + this.vy * ny;
+            if (velDotNormal < 0) {
+              this.vx -= (1 + 0.15) * velDotNormal * nx;
+              this.vy -= (1 + 0.15) * velDotNormal * ny;
+              this.vx *= 0.88; // ground rolling friction
 
-            // Rolling ground friction
-            this.vx *= 0.88;
+              if (Math.abs(velDotNormal) > 140) {
+                sound.playHit(Math.min(1.0, Math.abs(velDotNormal) / 500));
+                fx.spawnDust(nearestX, nearestY);
+              }
+            }
+          }
+        }
 
-            if (Math.abs(velDotNormal) > 120) {
-              sound.playHit(Math.min(1.0, Math.abs(velDotNormal) / 500));
-              fx.spawnDust(nearestX, nearestY);
+        // 4. Rigid Pickaxe Head & Shaft vs Terrain (NON-PENETRATION & VAULT LEVERAGE)
+        let hx = this.x + Math.cos(this.axeAngle) * this.axeLength;
+        let hy = this.y + Math.sin(this.axeAngle) * this.axeLength;
+
+        for (const p of level.platforms) {
+          // Check collision with platform top surface and corners
+          const margin = 2;
+          if (hx >= p.x - margin && hx <= p.x + p.w + margin && hy >= p.y - margin && hy <= p.y + p.h + margin) {
+            const penTop = hy - p.y;
+            const penLeft = hx - p.x;
+            const penRight = (p.x + p.w) - hx;
+            const penBottom = (p.y + p.h) - hy;
+            const minPen = Math.min(penTop, penLeft, penRight, penBottom);
+
+            if (minPen === penTop && penTop > 0) {
+              // Pickaxe touching platform top!
+              // 1. Fulcrum position constraint: NEVER allow axe to penetrate below surface!
+              this.y -= penTop;
+              hy = p.y;
+
+              // 2. Active leverage vault: rotation pushes pot UP and FORWARD
+              if (this.axeAngularVel > 0) {
+                // Clockwise (D) -> vault forward & lift into air
+                const forwardBoost = Math.abs(this.axeAngularVel) * 360 * sdt;
+                const upwardBoost = -Math.abs(this.axeAngularVel) * 280 * sdt;
+                this.vx += forwardBoost;
+                this.vy = Math.min(this.vy, upwardBoost * 4);
+              } else if (this.axeAngularVel < 0) {
+                // Counter-clockwise (A) -> vault backward & lift
+                const backwardBoost = -Math.abs(this.axeAngularVel) * 360 * sdt;
+                const upwardBoost = -Math.abs(this.axeAngularVel) * 280 * sdt;
+                this.vx += backwardBoost;
+                this.vy = Math.min(this.vy, upwardBoost * 4);
+              }
+
+              // Sound & sparks
+              if (Math.random() < 0.22) {
+                sound.playHit(0.35);
+                fx.spawnSparks(hx, hy, 0, -1);
+              }
+
+              this.axeAngularVel *= 0.84;
+
+              // Solid rotational limit: clamp axe angle so head sits strictly on or above surface
+              const maxSin = Math.max(-1, Math.min(1, (p.y - this.y) / this.axeLength));
+              const clampedAngle = Math.asin(maxSin);
+              if (Math.sin(this.axeAngle) > maxSin) {
+                this.axeAngle = this.axeAngle > Math.PI / 2 ? Math.PI - clampedAngle : clampedAngle;
+              }
+            } else if (minPen === penLeft && penLeft > 0) {
+              // Pickaxe touching left vertical wall (scaling cliff)
+              this.x -= penLeft;
+              hx = p.x;
+
+              if (this.axeAngularVel > 0) {
+                // Clockwise against wall launches climber UP and over the ledge!
+                this.vy = Math.min(this.vy, -200) - Math.abs(this.axeAngularVel) * 360 * sdt;
+                this.vx += Math.abs(this.axeAngularVel) * 120 * sdt;
+              } else if (this.axeAngularVel < 0) {
+                this.vy = Math.min(this.vy, -160) - Math.abs(this.axeAngularVel) * 240 * sdt;
+                this.vx -= Math.abs(this.axeAngularVel) * 80 * sdt;
+              }
+
+              if (Math.random() < 0.25) {
+                sound.playHit(0.35);
+                fx.spawnSparks(hx, hy, -1, 0);
+              }
+              this.axeAngularVel *= 0.84;
+            } else if (minPen === penRight && penRight > 0) {
+              this.x += penRight;
+              hx = p.x + p.w;
+              if (this.axeAngularVel < 0) {
+                this.vy = Math.min(this.vy, -200) - Math.abs(this.axeAngularVel) * 360 * sdt;
+                this.vx -= Math.abs(this.axeAngularVel) * 120 * sdt;
+              }
+              this.axeAngularVel *= 0.84;
+            }
+          }
+
+          // Ledge Grab / Corner Hooking: Top-Left Corner (p.x, p.y)
+          // When pickaxe blade crosses over the corner, hook and pull up!
+          const cornerDist = Math.hypot(this.x - p.x, this.y - p.y);
+          if (cornerDist < this.axeLength + 14 && this.y > p.y - 12) {
+            if (hx >= p.x - 4 && hx <= p.x + 40 && hy >= p.y - 14 && hy <= p.y + 18) {
+              if (this.axeAngularVel > 0) {
+                // Pull pot over ledge!
+                this.vy -= Math.abs(this.axeAngularVel) * 460 * sdt;
+                this.vx += Math.abs(this.axeAngularVel) * 360 * sdt;
+                if (Math.random() < 0.3) {
+                  sound.playHit(0.4);
+                  fx.spawnSparks(p.x, p.y, 0, -1);
+                }
+              }
             }
           }
         }
       }
 
-      // 5. Pickaxe Head vs Terrain Collision (LEVERAGE IMPULSE PHYSICS)
-      const head = this.getHeadPos();
-      for (const p of level.platforms) {
-        // Check if pickaxe head penetrates platform
-        if (head.x >= p.x && head.x <= p.x + p.w && head.y >= p.y && head.y <= p.y + p.h) {
-          // Calculate shallowest penetration face
-          const leftPen = head.x - p.x;
-          const rightPen = (p.x + p.w) - head.x;
-          const topPen = head.y - p.y;
-          const btmPen = (p.y + p.h) - head.y;
-          const minPen = Math.min(leftPen, rightPen, topPen, btmPen);
-
-          let nx = 0, ny = 0;
-          if (minPen === topPen) { ny = -1; }
-          else if (minPen === leftPen) { nx = -1; }
-          else if (minPen === rightPen) { nx = 1; }
-          else { ny = 1; }
-
-          // Tangential lever velocity at head contact point: V_head = V_pot + (w x r)
-          const rx = head.x - this.x;
-          const ry = head.y - this.y;
-          const vHeadX = this.vx - this.axeAngularVel * ry;
-          const vHeadY = this.vy + this.axeAngularVel * rx;
-
-          // Reactive vaulting impulse pushed directly onto the pot!
-          const normalVel = vHeadX * nx + vHeadY * ny;
-          if (normalVel < 0) {
-            const impulseMag = -normalVel * 1.35;
-            this.vx += nx * impulseMag;
-            this.vy += ny * impulseMag;
-
-            // Pivot friction: transfer rotation into forward drive!
-            this.vx += Math.sign(this.axeAngularVel) * Math.abs(this.axeAngularVel) * 14 * dt * 60;
-
-            sound.playHit(Math.min(1.0, impulseMag / 400));
-            fx.spawnSparks(head.x, head.y, nx, ny);
-
-            // Rebound the pickaxe angular velocity so it hooks/vaults without passing through
-            this.axeAngularVel *= -0.3;
-          }
-        }
-      }
-
-      // 6. Spring Boosters
+      // 5. Spring Boosters
       for (const s of level.springs) {
         const dx = Math.abs(this.x - s.x);
         const dy = Math.abs(this.y - s.y);
@@ -845,7 +905,7 @@
         }
       }
 
-      // 7. Checkpoints
+      // 6. Checkpoints
       level.checkpoints.forEach((cp, idx) => {
         const dist = Math.hypot(this.x - cp.x, this.y - cp.y);
         if (dist < 46 && !cp.reached) {
@@ -1864,18 +1924,18 @@
         this.elapsedLevelTime = (performance.now() - this.levelStartTime) / 1000;
         this.hudTimer.textContent = this.formatTime(this.elapsedLevelTime);
 
-        // Player 1 Input (A / D)
+        // Player 1 Input (A / D or Left / Right in 1P mode)
         if (this.p1) {
-          if (this.keys['KeyA'] || this.keys['KeyQ']) this.p1.axeAngularVel -= 28 * dt;
-          if (this.keys['KeyD']) this.p1.axeAngularVel += 28 * dt;
-          this.p1.update(dt, this.activeLevel, this.sound, this.fx);
+          const p1Left = !!(this.keys['KeyA'] || this.keys['KeyQ'] || (this.gameMode === '1P' && this.keys['ArrowLeft']));
+          const p1Right = !!(this.keys['KeyD'] || (this.gameMode === '1P' && this.keys['ArrowRight']));
+          this.p1.update(dt, this.activeLevel, this.sound, this.fx, p1Left, p1Right);
         }
 
         // Player 2 Input (ArrowLeft / ArrowRight)
         if (this.p2) {
-          if (this.keys['ArrowLeft']) this.p2.axeAngularVel -= 28 * dt;
-          if (this.keys['ArrowRight']) this.p2.axeAngularVel += 28 * dt;
-          this.p2.update(dt, this.activeLevel, this.sound, this.fx);
+          const p2Left = !!(this.keys['ArrowLeft']);
+          const p2Right = !!(this.keys['ArrowRight']);
+          this.p2.update(dt, this.activeLevel, this.sound, this.fx, p2Left, p2Right);
         }
 
         // Smooth Camera Follow
@@ -2156,8 +2216,8 @@
 
   // Launch on DOM ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => new StickmanClimbGame());
+    document.addEventListener('DOMContentLoaded', () => { window.game = new StickmanClimbGame(); });
   } else {
-    new StickmanClimbGame();
+    window.game = new StickmanClimbGame();
   }
 })();
