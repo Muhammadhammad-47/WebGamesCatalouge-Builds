@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CIEL WebGames | Master Game Catalogue</title>
+  <meta name="description" content="All WebGL and HTML5 games in the CIEL WebGames repository with instant play links, GitHub branch source, and live previews.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>🎮</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;800;900&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: rgba(22, 30, 49, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: #f97316;
+      --brand-orange: #f97316;
+      --brand-blue: #0ea5e9;
+      --brand-green: #22c55e;
+      --brand-purple: #a855f7;
+      --brand-gold: #facc15;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-display: 'Fredoka', 'Nunito', system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 10%, #1e1b4b 0%, #090d16 65%, #030712 100%);
+      font-family: var(--font-display);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      padding-bottom: 50px;
+    }
+
+    /* Ambient background glowing orbs */
+    .glow-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.35;
+    }
+    .orb-1 { width: 450px; height: 450px; background: #ea580c; top: -100px; left: -100px; }
+    .orb-2 { width: 500px; height: 500px; background: #3b82f6; top: 30%; right: -150px; }
+    .orb-3 { width: 400px; height: 400px; background: #8b5cf6; bottom: -50px; left: 20%; }
+
+    .container {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header & Branding */
+    header {
+      padding: 36px 0 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+    }
+
+    .brand-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(249, 115, 22, 0.15);
+      border: 1.5px solid rgba(249, 115, 22, 0.4);
+      padding: 6px 16px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #fb923c;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .header-title {
+      font-size: clamp(32px, 5vw, 54px);
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 20%, #fdba74 70%, #f97316 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      line-height: 1.15;
+    }
+
+    .header-subtitle {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 680px;
+      line-height: 1.5;
+      font-weight: 600;
+    }
+
+    /* Global Stats Bar */
+    .stats-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .stat-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #cbd5e1;
+    }
+    .stat-chip b {
+      color: #ffffff;
+      font-weight: 900;
+    }
+
+    /* Search & Filter Toolbar */
+    .toolbar-wrapper {
+      position: sticky;
+      top: 14px;
+      z-index: 20;
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 14px 18px;
+      margin: 20px 0 32px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .search-input-box {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      font-size: 18px;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    .search-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1.5px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 12px 16px 12px 44px;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      outline: none;
+      transition: all 0.2s ease;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    .search-input:focus {
+      border-color: var(--brand-orange);
+      background: rgba(255, 255, 255, 0.09);
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+    }
+    .search-input::placeholder {
+      color: #64748b;
+    }
+
+    .source-toggle {
+      display: flex;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      flex-shrink: 0;
+    }
+    .toggle-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .toggle-btn.active {
+      background: #f97316;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(249, 115, 22, 0.35);
+    }
+
+    /* Category Filter Pills */
+    .category-pills {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    .category-pills::-webkit-scrollbar {
+      display: none;
+    }
+
+    .cat-pill {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      padding: 7px 15px;
+      border-radius: 9999px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .cat-pill:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-1px);
+    }
+    .cat-pill.active {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      border-color: #ea580c;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);
+    }
+
+    /* Games Grid */
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 20px;
+    }
+
+    /* Game Card */
+    .game-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+    .game-card:hover {
+      transform: translateY(-5px);
+      border-color: var(--card-hover-border);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45), 0 0 20px rgba(249, 115, 22, 0.18);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .card-emoji-box {
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+      box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.15);
+    }
+
+    .card-meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .card-badges-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+
+    .badge-tag {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .badge-puzzle { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .badge-arcade { background: rgba(249, 115, 22, 0.2); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.3); }
+    .badge-action { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-casual { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); }
+    .badge-sports { background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); }
+    .badge-featured { background: rgba(250, 204, 21, 0.2); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.4); }
+
+    .card-title {
+      font-size: 19px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.25;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-branch {
+      font-size: 12px;
+      color: #64748b;
+      font-family: monospace;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .card-desc {
+      font-size: 13.5px;
+      color: #cbd5e1;
+      line-height: 1.45;
+      margin: 8px 0 18px;
+      font-weight: 500;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 38px;
+    }
+
+    /* Card Action Buttons */
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-play {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      color: #ffffff;
+      text-decoration: none;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 14px;
+      box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-play:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(249, 115, 22, 0.5);
+    }
+    .btn-play:active {
+      transform: translateY(1px);
+    }
+
+    .btn-icon-action {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    .btn-icon-action:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      transform: translateY(-2px);
+    }
+
+    /* In-Page Game Preview Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.2s ease;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 1100px;
+      height: 85vh;
+      background: #0f172a;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 24px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+    }
+
+    .modal-header {
+      padding: 14px 20px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-title-text {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .modal-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .modal-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+    .modal-btn-close {
+      background: #ef4444;
+      border-color: #dc2626;
+    }
+    .modal-btn-close:hover {
+      background: #dc2626;
+    }
+
+    .game-iframe {
+      width: 100%;
+      flex: 1;
+      border: none;
+      background: #000000;
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #0f172a;
+      border: 1.5px solid #22c55e;
+      color: #22c55e;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      display: none;
+      animation: slideUp 0.25s ease;
+    }
+    .toast.show {
+      display: block;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Empty state */
+    .empty-state {
+      grid-column: 1 / -1;
+      padding: 60px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 16px;
+      font-weight: 600;
+      display: none;
+    }
+
+    @media (max-width: 640px) {
+      .header-title { font-size: 28px; }
+      .games-grid { grid-template-columns: 1fr; }
+      .toolbar-wrapper { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Orbs -->
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+  <div class="glow-orb orb-3"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand-pill">
+        <span>⚡</span> CIEL WebGames Ecosystem
+      </div>
+      <h1 class="header-title">
+        <span>🎮</span> Game Catalogue Directory
+      </h1>
+      <p class="header-subtitle">
+        Direct browser links to all 45+ WebGL, HTML5 canvas, and physics games in this repository. Play live on GitHub Pages or locally on port 8082.
+      </p>
+
+      <div class="stats-bar">
+        <div class="stat-chip">🕹️ Total Games: <b id="statTotalCount">45</b></div>
+        <div class="stat-chip">🌐 Host: <b id="statHost">GitHub Pages</b></div>
+        <div class="stat-chip">⭐ Featured: <b>Stickman Climb 2, Gift Wrapped, Hidden Pigeon</b></div>
+      </div>
+    </header>
+
+    <!-- Toolbar: Search, Source Switcher, Categories -->
+    <div class="toolbar-wrapper">
+      <div class="search-row">
+        <div class="search-input-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" class="search-input" placeholder="Search games by name, category, or branch...">
+        </div>
+
+        <!-- Mode Toggle: GitHub Pages vs Localhost -->
+        <div class="source-toggle">
+          <button class="toggle-btn active" id="btnModePages" title="Play via GitHub Pages">GitHub Pages</button>
+          <button class="toggle-btn" id="btnModeLocal" title="Play via Localhost 8082">Localhost</button>
+        </div>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="category-pills" id="categoryPills">
+        <button class="cat-pill active" data-cat="all">All Games (<span id="countAll">45</span>)</button>
+        <button class="cat-pill" data-cat="featured">⭐ Featured</button>
+        <button class="cat-pill" data-cat="action">🔥 Action & Physics</button>
+        <button class="cat-pill" data-cat="puzzle">🧩 Puzzle & Logic</button>
+        <button class="cat-pill" data-cat="arcade">🕹️ Arcade</button>
+        <button class="cat-pill" data-cat="casual">🎈 Casual & ASMR</button>
+        <button class="cat-pill" data-cat="simulation">🏪 Tycoon & Simulation</button>
+        <button class="cat-pill" data-cat="sports">⚽ Sports & Racing</button>
+      </div>
+    </div>
+
+    <!-- Games Cards Grid -->
+    <div class="games-grid" id="gamesGrid">
+      <!-- Populated dynamically via JavaScript below -->
+      <div class="empty-state" id="emptyState">
+        <span>🔍</span> No games found matching your search.
+      </div>
+    </div>
+  </div>
+
+  <!-- In-Page Embedded Game Preview Modal -->
+  <div class="modal-overlay" id="gameModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span id="modalEmoji" style="font-size: 24px;">🎮</span>
+          <span class="modal-title-text" id="modalTitle">Game Title</span>
+        </div>
+        <div class="modal-actions">
+          <a href="#" target="_blank" class="modal-btn" id="modalNewTabBtn">
+            <span>↗</span> Open In New Tab
+          </a>
+          <button class="modal-btn modal-btn-close" id="modalCloseBtn">
+            <span>✕</span> Close
+          </button>
+        </div>
+      </div>
+      <iframe class="game-iframe" id="modalIframe" src="about:blank" allow="autoplay; fullscreen; camera; focus"></iframe>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toastMessage">Link copied to clipboard!</div>
+
+  <!-- Catalogue Data & Controller -->
+  <script>
+    const GITHUB_PAGES_BASE = "https://muhammadhammad-47.github.io/WebGamesCatalouge-Builds";
+    const GITHUB_REPO_BASE = "https://github.com/Muhammadhammad-47/WebGamesCatalouge-Builds";
+    const LOCAL_BASE = "http://localhost:8082";
+
+    // Master list of all games in repository
+    const GAMES = [
+      {
+        id: "StickmanClimb2",
+        title: "Stickman Climb 2",
+        emoji: "⛏️",
+        category: "action",
+        branch: "StickmanClimb2",
+        path: "StickmanClimb2/",
+        featured: true,
+        desc: "Precision pickaxe climbing physics! Swing high, vault ledges, compress spring pads, collect coins, and race 2-Player split mode."
+      },
+      {
+        id: "GiftWrapped",
+        title: "Gift Wrapped",
+        emoji: "🎁",
+        category: "arcade",
+        branch: "GiftWrapped",
+        path: "GiftWrapped/",
+        featured: true,
+        desc: "Addictive Poki-styled holiday gift wrapping! Measure ribbon, fold decorative paper, and master gift packing combos."
+      },
+      {
+        id: "HiddenPigeon",
+        title: "Hidden Pigeon",
+        emoji: "🕊️",
+        category: "puzzle",
+        branch: "HiddenPigeon",
+        path: "HiddenPigeon/",
+        featured: true,
+        desc: "Hand-drawn illustrated hidden-object search! Find naturally camouflaged pigeons across daytime streets and glowing night levels."
+      },
+      {
+        id: "Nutbolts",
+        title: "Nuts and Bolts Screwing Puzzle",
+        emoji: "🔩",
+        category: "puzzle",
+        branch: "Nutbolts",
+        path: "Nutbolts/",
+        featured: true,
+        desc: "Unscrew bolts, untangle metal brackets, and let wooden plates fall in this brain-teasing tactile physics puzzle."
+      },
+      {
+        id: "BusStop",
+        title: "Bus Stop Jam",
+        emoji: "🚌",
+        category: "puzzle",
+        branch: "BusStop",
+        path: "BusStop/",
+        featured: true,
+        desc: "Fast-paced queue management! Sort crowded passengers into matching color-coded buses before parking gridlock."
+      },
+      {
+        id: "Trafficjam",
+        title: "Traffic Jam 3D",
+        emoji: "🚗",
+        category: "puzzle",
+        branch: "Trafficjam",
+        path: "Trafficjam/",
+        featured: false,
+        desc: "Un-gridlock the highway! Maneuver cars out of parking traps and chaotic traffic jams in strategic order."
+      },
+      {
+        id: "BubbelShooter",
+        title: "Bubble Shooter 3D",
+        emoji: "🫧",
+        category: "casual",
+        branch: "BubbelShooter",
+        path: "BubbelShooter/",
+        featured: false,
+        desc: "Match and pop vibrant colored bubbles with bounce trick-shots in this classic relaxing arcade puzzler."
+      },
+      {
+        id: "PopItGame",
+        title: "Pop It ASMR Fidget",
+        emoji: "🔘",
+        category: "casual",
+        branch: "PopItGame",
+        path: "PopItGame/",
+        featured: false,
+        desc: "Ultra-satisfying bubble popping toy simulator with haptic pops, vibrant shapes, and calming ASMR sounds."
+      },
+      {
+        id: "FruitNinja",
+        title: "Fruit Ninja: Dojo Arcade",
+        emoji: "🍉",
+        category: "action",
+        branch: "FruitNinja",
+        path: "FruitNinja/",
+        featured: true,
+        desc: "Slice and dice flying watermelons, pineapples, and bananas with blazing katana combos while dodging bombs."
+      },
+      {
+        id: "EvilGame",
+        title: "Level Devil",
+        emoji: "😈",
+        category: "action",
+        branch: "EvilGame",
+        path: "EvilGame/",
+        featured: true,
+        desc: "The infamous troll platformer! Vanishing floors, moving spikes, and deceptive traps around every step."
+      },
+      {
+        id: "DoodleJump",
+        title: "Doodle Jump",
+        emoji: "🦘",
+        category: "arcade",
+        branch: "DoodleJump",
+        path: "DoodleJump/",
+        featured: false,
+        desc: "Bounce endlessly through outer space on springs, jetpacks, and moving platforms while dodging black holes."
+      },
+      {
+        id: "DunkShot",
+        title: "Dunk Shot",
+        emoji: "🏀",
+        category: "sports",
+        branch: "DunkShot",
+        path: "DunkShot/",
+        featured: false,
+        desc: "Aim, stretch, and slingshot basketballs from net to net in an endless swish combo climbing journey."
+      },
+      {
+        id: "DressUpDunk",
+        title: "Dress Up Duck",
+        emoji: "🦆",
+        category: "casual",
+        branch: "DressUpDunk",
+        path: "DressUpDunk/",
+        featured: false,
+        desc: "Quirky duck styling makeover! Dress your feathered mascot in stylish hats, glasses, and colorful costumes."
+      },
+      {
+        id: "BrainTricks",
+        title: "Brain Test: Tricky Puzzles",
+        emoji: "🧠",
+        category: "puzzle",
+        branch: "BrainTricks",
+        path: "BrainTricks/",
+        featured: false,
+        desc: "Subversive logic brainteasers that force you to think outside the box with interactive puzzle solutions."
+      },
+      {
+        id: "OnLineDraw",
+        title: "One Line Draw",
+        emoji: "✏️",
+        category: "puzzle",
+        branch: "OnLineDraw",
+        path: "OnLineDraw/",
+        featured: false,
+        desc: "Connect every vertex of geometric wireframes in a single continuous brushstroke without retracing steps."
+      },
+      {
+        id: "TileTrio",
+        title: "Tile Trio",
+        emoji: "🀄",
+        category: "puzzle",
+        branch: "TileTrio",
+        path: "TileTrio/",
+        featured: false,
+        desc: "Match-3 Mahjong tile slot clearing! Select matching tiles into your tray to clear layered pyramid puzzles."
+      },
+      {
+        id: "blockyblast",
+        title: "Blocky Blast Puzzle",
+        emoji: "🧱",
+        category: "puzzle",
+        branch: "blockyblast",
+        path: "blockyblast/",
+        featured: false,
+        desc: "Classic 8x8 block grid placement! Fit tetromino blocks into rows and columns to trigger satisfying chain clears."
+      },
+      {
+        id: "FruitSwap",
+        title: "Fruit Swap Match",
+        emoji: "🍓",
+        category: "puzzle",
+        branch: "FruitSwap",
+        path: "FruitSwap/",
+        featured: false,
+        desc: "Juicy candy-style fruit swap match-3 puzzle with exploding booster fruits and sweet combo cascades."
+      },
+      {
+        id: "CosmosLine",
+        title: "Cosmos Lines",
+        emoji: "🌌",
+        category: "puzzle",
+        branch: "CosmosLine",
+        path: "CosmosLine/",
+        featured: false,
+        desc: "Connect celestial planetary lines across glowing galaxies without overlapping stellar orbits."
+      },
+      {
+        id: "RazeRotator",
+        title: "Maze Rotator 3D",
+        emoji: "🌀",
+        category: "puzzle",
+        branch: "RazeRotator",
+        path: "RazeRotator/",
+        featured: false,
+        desc: "Rotate intricate labyrinth discs in 3D space to guide bouncy spheres through obstacles into the goal exit."
+      },
+      {
+        id: "HappyGlass",
+        title: "Happy Glass",
+        emoji: "🥛",
+        category: "puzzle",
+        branch: "HappyGlass",
+        path: "HappyGlass/",
+        featured: false,
+        desc: "Draw ink lines to guide streaming water into a sad glass cup and fill it to the brim with smiles."
+      },
+      {
+        id: "RescueTheFish",
+        title: "Rescue The Fish",
+        emoji: "🐠",
+        category: "puzzle",
+        branch: "RescueTheFish",
+        path: "RescueTheFish/",
+        featured: false,
+        desc: "Pin-pulling logic physics! Divert fresh water to save the fish while blocking lava and predators."
+      },
+      {
+        id: "ShapeFold",
+        title: "Fold Fit: Shape Fold",
+        emoji: "🧩",
+        category: "puzzle",
+        branch: "ShapeFold",
+        path: "ShapeFold/",
+        featured: false,
+        desc: "Origami polygon folding puzzle! Fold segmented paper shapes into perfect silhouette targets."
+      },
+      {
+        id: "lanePzzel",
+        title: "Lane Puzzle",
+        emoji: "🛣️",
+        category: "puzzle",
+        branch: "lanePzzel",
+        path: "lanePzzel/",
+        featured: false,
+        desc: "Highway lane shifting strategy! Route cars through multi-lane crossings without collisions."
+      },
+      {
+        id: "StoryboardPuzzel",
+        title: "Story Board Sequence",
+        emoji: "📖",
+        category: "puzzle",
+        branch: "StoryboardPuzzel",
+        path: "StoryboardPuzzel/",
+        featured: false,
+        desc: "Organize illustrated comic book panels in logical chronological order to unlock humorous endings."
+      },
+      {
+        id: "EmogiPuzzles",
+        title: "Emoji Puzzles",
+        emoji: "😃",
+        category: "puzzle",
+        branch: "EmogiPuzzles",
+        path: "EmogiPuzzles/",
+        featured: false,
+        desc: "Solve pop-culture word associations and rebus riddles using quirky emoji combinations."
+      },
+      {
+        id: "CrittersPuzzle",
+        title: "Critters Puzzle",
+        emoji: "🐾",
+        category: "puzzle",
+        branch: "CrittersPuzzle",
+        path: "CrittersPuzzle/",
+        featured: false,
+        desc: "Cute sliding grid puzzle! Guide adorable forest critters to their cozy dens across slippery ice."
+      },
+      {
+        id: "AdoptMarge",
+        title: "Adopt Merge: Pet Haven",
+        emoji: "🐶",
+        category: "casual",
+        branch: "AdoptMarge",
+        path: "AdoptMarge/",
+        featured: false,
+        desc: "Merge cuddly puppies and kittens to rescue animals, unlock pet shelters, and expand your adoption ranch."
+      },
+      {
+        id: "PetAdoption",
+        title: "Pet Adoption Haven",
+        emoji: "🐱",
+        category: "casual",
+        branch: "PetAdoption",
+        path: "PetAdoption/",
+        featured: false,
+        desc: "Care for cute rescue pets! Feed, groom, play, and find forever homes for adorable dogs and cats."
+      },
+      {
+        id: "BikeRacing",
+        title: "2D Bike Racing",
+        emoji: "🏍️",
+        category: "sports",
+        branch: "BikeRacing",
+        path: "BikeRacing/",
+        featured: false,
+        desc: "Extreme hill climbing stunt motocross! Balance bikes over rocky hills, loops, and explosive ramps."
+      },
+      {
+        id: "CarRacing",
+        title: "Car Racing 3D",
+        emoji: "🏎️",
+        category: "sports",
+        branch: "CarRacing",
+        path: "CarRacing/",
+        featured: false,
+        desc: "High-octane track drift racing! Steer sports cars around tight corners and beat time trial laps."
+      },
+      {
+        id: "RunnerGame",
+        title: "Endless Runner Dash",
+        emoji: "🏃",
+        category: "action",
+        branch: "RunnerGame",
+        path: "RunnerGame/",
+        featured: false,
+        desc: "High-speed parkour sprint! Jump over barriers, slide under lasers, and collect power coins."
+      },
+      {
+        id: "Jumping-shell",
+        title: "Hermit Hop (Jumping Shell)",
+        emoji: "🐚",
+        category: "action",
+        branch: "Jumping-shell",
+        path: "Jumping-shell/",
+        featured: false,
+        desc: "Puzzle platformer where you hop out of your heavy shell to leap double heights, then reclaim it."
+      },
+      {
+        id: "BlumgiRocket",
+        title: "Blumgi Rocket",
+        emoji: "🚀",
+        category: "action",
+        branch: "BlumgiRocket",
+        path: "BlumgiRocket/",
+        featured: false,
+        desc: "Rocket car stunts! Fire turbo boosters mid-air to catapult across physics obstacles and finish gates."
+      },
+      {
+        id: "zombiegame",
+        title: "Zombie Shooter Arena",
+        emoji: "🧟",
+        category: "action",
+        branch: "zombiegame",
+        path: "zombiegame/",
+        featured: false,
+        desc: "Top-down undead shooter defense! Upgrade assault rifles, shotguns, and survive relentless zombie swarms."
+      },
+      {
+        id: "fps-controller-game",
+        title: "FPS 3D Combat Controller",
+        emoji: "🎯",
+        category: "action",
+        branch: "fps-controller-game",
+        path: "fps-controller-game/",
+        featured: false,
+        desc: "First-person 3D action arena showcasing responsive WASD movement, mouse-look aiming, and shooting."
+      },
+      {
+        id: "MonkeyMart",
+        title: "Monkey Mart",
+        emoji: "🐒",
+        category: "simulation",
+        branch: "MonkeyMart",
+        path: "MonkeyMart/",
+        featured: true,
+        desc: "Build your own monkey supermarket empire! Grow bananas, stock corn shelves, bake muffins, and hire assistants."
+      },
+      {
+        id: "ResturantBranch",
+        title: "Rush Food Restaurant Dash",
+        emoji: "🍳",
+        category: "simulation",
+        branch: "ResturantBranch",
+        path: "ResturantBranch/",
+        featured: false,
+        desc: "Fast cooking kitchen management! Grill burgers, fry crisp fries, and serve hungry customers fast."
+      },
+      {
+        id: "StoreSimulation",
+        title: "Supermarket Store Simulator",
+        emoji: "🛒",
+        category: "simulation",
+        branch: "StoreSimulation",
+        path: "StoreSimulation/",
+        featured: false,
+        desc: "Operate a 3D supermarket! Scan barcodes, manage cash registers, restock shelves, and satisfy customers."
+      },
+      {
+        id: "Tsunami-Escape",
+        title: "Tsunami Parkour Escape",
+        emoji: "🌊",
+        category: "action",
+        branch: "Tsunami-Escape",
+        path: "Tsunami-Escape/",
+        featured: false,
+        desc: "A massive tsunami is flooding the city! Sprint, leap across rooftops, and climb skyscrapers to survive."
+      },
+      {
+        id: "PrismLaser",
+        title: "Prism Laser Optics",
+        emoji: "💎",
+        category: "puzzle",
+        branch: "PrismLaser",
+        path: "PrismLaser/",
+        featured: false,
+        desc: "Rotate mirrors and angle prisms to split laser beams into rainbow colors and trigger receptors."
+      },
+      {
+        id: "knifeMarge",
+        title: "Knife Merge & Hit",
+        emoji: "🗡️",
+        category: "arcade",
+        branch: "knifeMarge",
+        path: "knifeMarge/",
+        featured: false,
+        desc: "Merge blades into legendary daggers and fling them into spinning wooden targets without striking existing knives."
+      },
+      {
+        id: "HTML-Ads",
+        title: "Playable Ad Interactive Demo",
+        emoji: "📺",
+        category: "casual",
+        branch: "HTML-Ads",
+        path: "HTML-Ads/",
+        featured: false,
+        desc: "Lightweight, responsive playable ad creative template designed for high conversion engagement."
+      },
+      {
+        id: "Unity-Webgl-Template",
+        title: "Unity WebGL Responsive Template",
+        emoji: "🎮",
+        category: "arcade",
+        branch: "Unity-Webgl-Template",
+        path: "Unity-Webgl-Template/",
+        featured: false,
+        desc: "Optimized Unity WebGL wrapper with progress loader, Poki game bridge, and responsive canvas scaling."
+      },
+      {
+        id: "WebgameTemplate",
+        title: "HTML5 Canvas Starter Template",
+        emoji: "🕹️",
+        category: "arcade",
+        branch: "WebgameTemplate",
+        path: "WebgameTemplate/",
+        featured: false,
+        desc: "Clean boilerplate architecture for rapid HTML5 canvas game prototyping with sound and input systems."
+      }
+    ];
+
+    // State
+    let currentMode = "pages"; // "pages" or "local"
+    let currentCategory = "all";
+    let searchQuery = "";
+
+    // DOM Elements
+    const gamesGrid = document.getElementById("gamesGrid");
+    const emptyState = document.getElementById("emptyState");
+    const searchInput = document.getElementById("searchInput");
+    const btnModePages = document.getElementById("btnModePages");
+    const btnModeLocal = document.getElementById("btnModeLocal");
+    const statTotalCount = document.getElementById("statTotalCount");
+    const statHost = document.getElementById("statHost");
+    const countAll = document.getElementById("countAll");
+    const categoryPills = document.getElementById("categoryPills");
+
+    // Modal Elements
+    const gameModal = document.getElementById("gameModal");
+    const modalIframe = document.getElementById("modalIframe");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalEmoji = document.getElementById("modalEmoji");
+    const modalNewTabBtn = document.getElementById("modalNewTabBtn");
+    const modalCloseBtn = document.getElementById("modalCloseBtn");
+    const toastMessage = document.getElementById("toastMessage");
+
+    function getGameUrl(game) {
+      if (currentMode === "local") {
+        return `${LOCAL_BASE}/${game.path}`;
+      } else {
+        return `${GITHUB_PAGES_BASE}/${game.path}`;
+      }
+    }
+
+    function getBranchUrl(game) {
+      return `${GITHUB_REPO_BASE}/tree/${game.branch}`;
+    }
+
+    function renderGames() {
+      // Filter games
+      const q = searchQuery.toLowerCase().trim();
+      const filtered = GAMES.filter(g => {
+        const matchesCat = currentCategory === "all" ||
+          (currentCategory === "featured" && g.featured) ||
+          g.category === currentCategory;
+
+        const matchesQuery = !q ||
+          g.title.toLowerCase().includes(q) ||
+          g.branch.toLowerCase().includes(q) ||
+          g.category.toLowerCase().includes(q) ||
+          g.desc.toLowerCase().includes(q);
+
+        return matchesCat && matchesQuery;
+      });
+
+      // Clear existing cards
+      const cards = gamesGrid.querySelectorAll(".game-card");
+      cards.forEach(c => c.remove());
+
+      if (filtered.length === 0) {
+        emptyState.style.display = "block";
+      } else {
+        emptyState.style.display = "none";
+        filtered.forEach(game => {
+          const card = document.createElement("div");
+          card.className = "game-card";
+          const gameUrl = getGameUrl(game);
+          const branchUrl = getBranchUrl(game);
+
+          card.innerHTML = `
+            <div>
+              <div class="card-top">
+                <div class="card-emoji-box">${game.emoji}</div>
+                <div class="card-meta">
+                  <div class="card-badges-row">
+                    <span class="badge-tag badge-${game.category}">${game.category}</span>
+                    ${game.featured ? '<span class="badge-tag badge-featured">⭐ Featured</span>' : ''}
+                  </div>
+                  <h3 class="card-title" title="${game.title}">${game.title}</h3>
+                  <div class="card-branch">🌿 branch: ${game.branch}</div>
+                </div>
+              </div>
+              <p class="card-desc">${game.desc}</p>
+            </div>
+
+            <div class="card-actions">
+              <button class="btn-play" onclick="openGameModal('${game.id}')">
+                <span>▶</span> Play In-Page
+              </button>
+              <a href="${gameUrl}" target="_blank" class="btn-icon-action" title="Open in New Tab">
+                <span>↗</span>
+              </a>
+              <a href="${branchUrl}" target="_blank" class="btn-icon-action" title="View Source Branch on GitHub">
+                <span>🌿</span>
+              </a>
+              <button class="btn-icon-action" onclick="copyLink('${gameUrl}')" title="Copy Game Link">
+                <span>📋</span>
+              </button>
+            </div>
+          `;
+          gamesGrid.appendChild(card);
+        });
+      }
+    }
+
+    // Modal Preview Handler
+    window.openGameModal = function(gameId) {
+      const game = GAMES.find(g => g.id === gameId);
+      if (!game) return;
+
+      const url = getGameUrl(game);
+      modalTitle.textContent = game.title;
+      modalEmoji.textContent = game.emoji;
+      modalNewTabBtn.href = url;
+      modalIframe.src = url;
+      gameModal.classList.add("active");
+    };
+
+    function closeModal() {
+      gameModal.classList.remove("active");
+      modalIframe.src = "about:blank";
+    }
+
+    modalCloseBtn.addEventListener("click", closeModal);
+    gameModal.addEventListener("click", (e) => {
+      if (e.target === gameModal) closeModal();
+    });
+
+    // Copy to clipboard
+    window.copyLink = function(url) {
+      navigator.clipboard.writeText(url).then(() => {
+        toastMessage.classList.add("show");
+        setTimeout(() => toastMessage.classList.remove("show"), 2000);
+      });
+    };
+
+    // Category Pill Click
+    categoryPills.addEventListener("click", (e) => {
+      const btn = e.target.closest(".cat-pill");
+      if (!btn) return;
+      categoryPills.querySelectorAll(".cat-pill").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      currentCategory = btn.dataset.cat;
+      renderGames();
+    });
+
+    // Search Input
+    searchInput.addEventListener("input", (e) => {
+      searchQuery = e.target.value;
+      renderGames();
+    });
+
+    // Source Mode Toggles
+    btnModePages.addEventListener("click", () => {
+      btnModePages.classList.add("active");
+      btnModeLocal.classList.remove("active");
+      currentMode = "pages";
+      statHost.textContent = "GitHub Pages";
+      renderGames();
+    });
+
+    btnModeLocal.addEventListener("click", () => {
+      btnModeLocal.classList.add("active");
+      btnModePages.classList.remove("active");
+      currentMode = "local";
+      statHost.textContent = "Localhost (Port 8082)";
+      renderGames();
+    });
+
+    // Initialize counts & initial render
+    statTotalCount.textContent = GAMES.length;
+    countAll.textContent = GAMES.length;
+    renderGames();
+  </script>
+</body>
+</html>
