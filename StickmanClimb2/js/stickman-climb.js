@@ -391,10 +391,12 @@
       platforms: [
         { x: 0, y: 620, w: 300, h: 100 },
         { x: 340, y: 520, w: 160, h: 200 },
-        // High vertical wall with stepping ledges
+        // High vertical wall with stepping ledges spaced ~75-80px for smooth climbing
         { x: 540, y: 150, w: 80, h: 570 },
-        { x: 480, y: 420, w: 60, h: 20 },
-        { x: 480, y: 290, w: 60, h: 20 },
+        { x: 450, y: 440, w: 90, h: 24 },
+        { x: 450, y: 360, w: 90, h: 24 },
+        { x: 450, y: 280, w: 90, h: 24 },
+        { x: 450, y: 200, w: 90, h: 24 },
         { x: 540, y: 150, w: 220, h: 40 },
         { x: 820, y: 280, w: 240, h: 440 },
         { x: 1120, y: 220, w: 350, h: 500 }
@@ -405,8 +407,9 @@
       ],
       springs: [],
       coins: [
-        { x: 510, y: 380, collected: false },
-        { x: 510, y: 250, collected: false },
+        { x: 495, y: 400, collected: false },
+        { x: 495, y: 320, collected: false },
+        { x: 495, y: 240, collected: false },
         { x: 650, y: 100, collected: false },
         { x: 940, y: 230, collected: false }
       ],
@@ -767,6 +770,12 @@
 
         // 3. Pot vs Terrain Collision (Circular Body)
         for (const p of level.platforms) {
+          // If thin stepping ledge/rung (h <= 30), allow jump-through from below
+          const isThinRung = p.h <= 30;
+          if (isThinRung && this.vy < -40 && this.y > p.y + 10) {
+            continue;
+          }
+
           const nearestX = Math.max(p.x, Math.min(this.x, p.x + p.w));
           const nearestY = Math.max(p.y, Math.min(this.y, p.y + p.h));
           const dx = this.x - nearestX;
@@ -816,19 +825,19 @@
               this.y -= penTop;
               hy = p.y;
 
-              // 2. Active leverage vault: rotation pushes pot UP and FORWARD
+              // 2. Powerful vertical vault launch into the air:
               if (this.axeAngularVel > 0) {
-                // Clockwise (D) -> vault forward & lift into air
-                const forwardBoost = Math.abs(this.axeAngularVel) * 360 * sdt;
-                const upwardBoost = -Math.abs(this.axeAngularVel) * 280 * sdt;
-                this.vx += forwardBoost;
-                this.vy = Math.min(this.vy, upwardBoost * 4);
+                // Clockwise (D) -> vault forward & launch high into air
+                const launchUp = -Math.abs(this.axeAngularVel) * 32; // up to -560 px/s!
+                const forwardBoost = Math.abs(this.axeAngularVel) * 26; // up to +440 px/s!
+                this.vy = Math.min(this.vy, launchUp);
+                this.vx = Math.max(this.vx, this.vx * 0.7 + forwardBoost);
               } else if (this.axeAngularVel < 0) {
-                // Counter-clockwise (A) -> vault backward & lift
-                const backwardBoost = -Math.abs(this.axeAngularVel) * 360 * sdt;
-                const upwardBoost = -Math.abs(this.axeAngularVel) * 280 * sdt;
-                this.vx += backwardBoost;
-                this.vy = Math.min(this.vy, upwardBoost * 4);
+                // Counter-clockwise (A) -> vault backward & launch high
+                const launchUp = -Math.abs(this.axeAngularVel) * 32;
+                const backwardBoost = -Math.abs(this.axeAngularVel) * 26;
+                this.vy = Math.min(this.vy, launchUp);
+                this.vx = Math.min(this.vx, this.vx * 0.7 + backwardBoost);
               }
 
               // Sound & sparks
@@ -852,11 +861,11 @@
 
               if (this.axeAngularVel > 0) {
                 // Clockwise against wall launches climber UP and over the ledge!
-                this.vy = Math.min(this.vy, -200) - Math.abs(this.axeAngularVel) * 360 * sdt;
-                this.vx += Math.abs(this.axeAngularVel) * 120 * sdt;
+                this.vy = Math.min(this.vy, -480);
+                this.vx = Math.max(this.vx, 70);
               } else if (this.axeAngularVel < 0) {
-                this.vy = Math.min(this.vy, -160) - Math.abs(this.axeAngularVel) * 240 * sdt;
-                this.vx -= Math.abs(this.axeAngularVel) * 80 * sdt;
+                this.vy = Math.min(this.vy, -360);
+                this.vx = Math.min(this.vx, -60);
               }
 
               if (Math.random() < 0.25) {
@@ -868,8 +877,8 @@
               this.x += penRight;
               hx = p.x + p.w;
               if (this.axeAngularVel < 0) {
-                this.vy = Math.min(this.vy, -200) - Math.abs(this.axeAngularVel) * 360 * sdt;
-                this.vx -= Math.abs(this.axeAngularVel) * 120 * sdt;
+                this.vy = Math.min(this.vy, -480);
+                this.vx = Math.min(this.vx, -70);
               }
               this.axeAngularVel *= 0.84;
             }
@@ -878,12 +887,13 @@
           // Ledge Grab / Corner Hooking: Top-Left Corner (p.x, p.y)
           // When pickaxe blade crosses over the corner, hook and pull up!
           const cornerDist = Math.hypot(this.x - p.x, this.y - p.y);
-          if (cornerDist < this.axeLength + 14 && this.y > p.y - 12) {
-            if (hx >= p.x - 4 && hx <= p.x + 40 && hy >= p.y - 14 && hy <= p.y + 18) {
+          if (cornerDist < this.axeLength + 16 && this.y > p.y - 20) {
+            if (hx >= p.x - 6 && hx <= p.x + 45 && hy >= p.y - 20 && hy <= p.y + 25) {
               if (this.axeAngularVel > 0) {
-                // Pull pot over ledge!
-                this.vy -= Math.abs(this.axeAngularVel) * 460 * sdt;
-                this.vx += Math.abs(this.axeAngularVel) * 360 * sdt;
+                // Pull pot up and over the ledge!
+                this.vy = Math.min(this.vy, -540);
+                this.vx = Math.max(this.vx, 250);
+                this.y = Math.min(this.y, p.y - 12);
                 if (Math.random() < 0.3) {
                   sound.playHit(0.4);
                   fx.spawnSparks(p.x, p.y, 0, -1);
