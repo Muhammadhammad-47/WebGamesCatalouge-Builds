@@ -102,18 +102,18 @@ html, body {
   pointer-events: auto;
 }
 
-/* Pure Circular Icon Button (Home, Sound, Restart, Fullscreen) */
+/* Pure Circular Icon Button (Home, Sound, Restart, Fullscreen) - Compact & Crisp */
 .hud-btn.icon-only {
-  width: 48px;
-  height: 48px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
-  border: 3px solid #334155;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28), inset 0 2px 2px rgba(255, 255, 255, 0.9);
+  border: 2.5px solid #334155;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 17px;
   cursor: pointer;
   transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.15s ease, border-color 0.15s ease;
   flex-shrink: 0;
@@ -122,7 +122,7 @@ html, body {
 .hud-btn.icon-only:hover {
   transform: translateY(-2px) scale(1.08);
   border-color: #f97316;
-  box-shadow: 0 8px 18px rgba(249, 115, 22, 0.35), inset 0 2px 2px rgba(255, 255, 255, 1);
+  box-shadow: 0 6px 14px rgba(249, 115, 22, 0.35), inset 0 2px 2px rgba(255, 255, 255, 1);
 }
 
 .hud-btn.icon-only:active {
@@ -141,53 +141,53 @@ html, body {
 .hud-badge-center {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   pointer-events: auto;
 }
 
 .level-indicator-badge {
   background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-  border: 3px solid #c2410c;
+  border: 2.5px solid #c2410c;
   border-radius: 50px;
-  height: 48px;
-  padding: 0 18px;
+  height: 38px;
+  padding: 0 14px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 6px 18px rgba(234, 88, 12, 0.4), inset 0 2px 2px rgba(255, 255, 255, 0.6);
+  gap: 6px;
+  box-shadow: 0 5px 14px rgba(234, 88, 12, 0.38), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.6);
   color: #ffffff;
 }
 
 .badge-tag {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   opacity: 0.9;
 }
 
 .badge-num {
-  font-size: 22px;
+  font-size: 17px;
   font-weight: 900;
 }
 
 .checkpoint-pill {
   background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
-  border: 3px solid #16a34a;
+  border: 2.5px solid #16a34a;
   border-radius: 50px;
-  height: 48px;
-  padding: 0 16px;
+  height: 38px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.32);
+  gap: 6px;
+  box-shadow: 0 5px 12px rgba(22, 163, 74, 0.28);
 }
 
 .cp-icon {
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .cp-text {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 900;
   color: #15803d;
   font-variant-numeric: tabular-nums;
@@ -196,22 +196,22 @@ html, body {
 /* Timer Badge */
 .timer-badge {
   background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%);
-  border: 3px solid #0284c7;
+  border: 2.5px solid #0284c7;
   border-radius: 50px;
-  height: 48px;
-  padding: 0 16px;
+  height: 38px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.32);
+  gap: 6px;
+  box-shadow: 0 5px 12px rgba(2, 132, 199, 0.28);
 }
 
 .timer-icon {
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .timer-text {
-  font-size: 19px;
+  font-size: 15px;
   font-weight: 900;
   color: #0369a1;
   font-variant-numeric: tabular-nums;
@@ -220,22 +220,22 @@ html, body {
 /* Coins Badge */
 .coins-badge {
   background: linear-gradient(180deg, #fef9c3 0%, #fef08a 100%);
-  border: 3px solid #ca8a04;
+  border: 2.5px solid #ca8a04;
   border-radius: 50px;
-  height: 48px;
-  padding: 0 16px;
+  height: 38px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 6px 16px rgba(202, 138, 4, 0.35);
+  gap: 6px;
+  box-shadow: 0 5px 12px rgba(202, 138, 4, 0.3);
 }
 
 .coin-icon {
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .coin-text {
-  font-size: 19px;
+  font-size: 15px;
   font-weight: 900;
   color: #854d0e;
   font-variant-numeric: tabular-nums;
@@ -293,14 +293,14 @@ html, body {
 }
 
 /* ==========================================================================
-   MOBILE ON-SCREEN TOUCH CONTROLS
+   MOBILE ON-SCREEN TOUCH CONTROLS (Compact, Ergonomic & Sleek)
    ========================================================================== */
 .mobile-controls-layer {
   position: absolute;
-  bottom: 24px;
+  bottom: 16px;
   left: 0;
   right: 0;
-  padding: 0 24px;
+  padding: 0 16px;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -310,7 +310,8 @@ html, body {
 
 .touch-control-group {
   display: flex;
-  gap: 14px;
+  align-items: center;
+  gap: 10px;
   pointer-events: auto;
 }
 
@@ -319,33 +320,39 @@ html, body {
 }
 
 .touch-btn {
-  width: 72px;
-  height: 72px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
-  border: 4px solid #334155;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 2px 2px #ffffff;
+  background: rgba(255, 255, 255, 0.82);
+  border: 2.5px solid #334155;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28), inset 0 1.5px 1.5px #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
+  font-size: 21px;
   font-weight: 900;
   color: #0f172a;
   cursor: pointer;
   backdrop-filter: blur(8px);
-  transition: transform 0.1s, background 0.1s;
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.08s ease, background 0.08s ease, border-color 0.08s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 }
 
 .touch-btn:active {
-  transform: scale(0.92);
+  transform: scale(0.90);
   background: #ffffff;
+  border-color: #ea580c;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 .touch-respawn {
-  width: 58px;
-  height: 58px;
-  font-size: 24px;
-  background: rgba(239, 68, 68, 0.85);
+  width: 40px;
+  height: 40px;
+  font-size: 15px;
+  background: rgba(239, 68, 68, 0.88);
   border-color: #991b1b;
   color: #ffffff;
 }
@@ -354,6 +361,11 @@ html, body {
   border-color: #0369a1;
   background: rgba(14, 165, 233, 0.85);
   color: #ffffff;
+}
+
+.touch-btn.p2-color:active {
+  background: #38bdf8;
+  border-color: #0284c7;
 }
 
 /* ==========================================================================
@@ -1091,13 +1103,30 @@ input:checked + .slider:before { transform: translateX(22px); }
     top: 8px;
   }
   .hud-btn.icon-only {
-    width: 42px;
-    height: 42px;
-    font-size: 18px;
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+    border-width: 2px;
   }
   .level-indicator-badge, .timer-badge, .coins-badge, .checkpoint-pill {
-    height: 42px;
-    padding: 0 10px;
+    height: 34px;
+    padding: 0 9px;
+    font-size: 13px;
+    border-width: 2px;
+    gap: 4px;
+  }
+  .badge-tag { font-size: 10px; }
+  .badge-num { font-size: 15px; }
+  .cp-icon, .timer-icon, .coin-icon { font-size: 14px; }
+  .cp-text, .timer-text, .coin-text { font-size: 13px; }
+  .touch-btn {
+    width: 46px;
+    height: 46px;
+    font-size: 18px;
+  }
+  .touch-respawn {
+    width: 38px;
+    height: 38px;
     font-size: 14px;
   }
   .menu-modal-card {
