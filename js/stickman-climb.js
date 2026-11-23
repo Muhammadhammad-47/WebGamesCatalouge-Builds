@@ -174,6 +174,31 @@
       this.playTone(180, 'triangle', 0.10, vol * 0.8, this.sfxGain);
     }
 
+    // SFX: Aerodynamic Axe Swing Whoosh
+    playWhoosh(intensity = 1.0) {
+      if (!this.sfxEnabled || this.isMuted || !this.ctx) return;
+      const now = this.ctx.currentTime;
+      if (this.lastWhooshTime && now - this.lastWhooshTime < 0.18) return;
+      this.lastWhooshTime = now;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(140 + Math.random() * 50, now);
+      osc.frequency.exponentialRampToValueAtTime(360, now + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(90, now + 0.18);
+
+      const vol = Math.min(0.24, 0.08 * intensity);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(vol, now + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(now);
+      osc.stop(now + 0.20);
+    }
+
     // SFX: Spring Booster Launch
     playSpring() {
       if (!this.sfxEnabled || this.isMuted) return;
@@ -700,6 +725,12 @@
       this.hasFinished = false;
       this.finishTime = 0;
 
+      // Juice & Animation
+      this.scaleX = 1;
+      this.scaleY = 1;
+      this.trailHistory = [];
+      this.facing = 1; // 1 for right, -1 for left
+
       // Customization config
       this.skinId = isP2 ? 'blue' : 'red';
       this.potId = 'cauldron';
@@ -730,6 +761,9 @@
       this.axeAngle = -Math.PI / 4;
       this.isDead = false;
       this.deadTimer = 0;
+      this.scaleX = 1;
+      this.scaleY = 1;
+      this.trailHistory = [];
     }
 
     update(dt, level, sound, fx, inputLeft = false, inputRight = false) {
@@ -740,6 +774,33 @@
           fx.spawnDust(this.x, this.y);
         }
         return;
+      }
+
+      // Smoothly ease squash and stretch back to 1.0
+      this.scaleX += (1 - this.scaleX) * Math.min(1, dt * 14);
+      this.scaleY += (1 - this.scaleY) * Math.min(1, dt * 14);
+
+      // Dynamic facing direction based on horizontal velocity
+      if (this.vx > 25) this.facing = 1;
+      else if (this.vx < -25) this.facing = -1;
+
+      // Whoosh SFX on high angular swing speed
+      if (Math.abs(this.axeAngularVel) > 8.0) {
+        sound.playWhoosh(Math.abs(this.axeAngularVel) / 10);
+      }
+
+      // Record axe head motion trail for speed blur
+      if (Math.abs(this.axeAngularVel) > 3.2) {
+        this.trailHistory.push({
+          angle: this.axeAngle,
+          alpha: 0.65
+        });
+        if (this.trailHistory.length > 7) this.trailHistory.shift();
+      } else if (this.trailHistory.length > 0) {
+        this.trailHistory.shift();
+      }
+      for (const t of this.trailHistory) {
+        t.alpha = Math.max(0, t.alpha - dt * 3.2);
       }
 
       // Physics sub-stepping for ultra-stable non-penetrating collision & leverage
@@ -800,6 +861,14 @@
               if (Math.abs(velDotNormal) > 140) {
                 sound.playHit(Math.min(1.0, Math.abs(velDotNormal) / 500));
                 fx.spawnDust(nearestX, nearestY);
+
+                // Squash pot on hard landing
+                const impactRatio = Math.min(0.35, Math.abs(velDotNormal) / 1200);
+                this.scaleX = Math.min(1.36, this.scaleX + impactRatio);
+                this.scaleY = Math.max(0.68, this.scaleY - impactRatio);
+                if (window.game && Math.abs(velDotNormal) > 280) {
+                  window.game.screenShake = Math.max(window.game.screenShake, 5);
+                }
               }
             }
           }
@@ -832,12 +901,21 @@
                 const forwardBoost = Math.abs(this.axeAngularVel) * 26; // up to +440 px/s!
                 this.vy = Math.min(this.vy, launchUp);
                 this.vx = Math.max(this.vx, this.vx * 0.7 + forwardBoost);
+
+                // Stretch vertically on explosive vault launch
+                this.scaleX = Math.max(0.72, this.scaleX - 0.22);
+                this.scaleY = Math.min(1.38, this.scaleY + 0.28);
+                if (window.game) window.game.screenShake = Math.max(window.game.screenShake, 3.5);
               } else if (this.axeAngularVel < 0) {
                 // Counter-clockwise (A) -> vault backward & launch high
                 const launchUp = -Math.abs(this.axeAngularVel) * 32;
                 const backwardBoost = -Math.abs(this.axeAngularVel) * 26;
                 this.vy = Math.min(this.vy, launchUp);
                 this.vx = Math.min(this.vx, this.vx * 0.7 + backwardBoost);
+
+                this.scaleX = Math.max(0.72, this.scaleX - 0.22);
+                this.scaleY = Math.min(1.38, this.scaleY + 0.28);
+                if (window.game) window.game.screenShake = Math.max(window.game.screenShake, 3.5);
               }
 
               // Sound & sparks
@@ -910,8 +988,13 @@
         const dy = Math.abs(this.y - s.y);
         if (dx < 36 && dy < 32 && this.vy > -200) {
           this.vy = -s.force;
+          s.compression = 1.0;
+          this.scaleX = 0.65;
+          this.scaleY = 1.45;
           sound.playSpring();
           fx.spawnDust(s.x, s.y);
+          if (window.game) window.game.screenShake = Math.max(window.game.screenShake, 7);
+          if (navigator.vibrate) navigator.vibrate(25);
         }
       }
 
@@ -924,6 +1007,8 @@
           this.respawnY = cp.y - 10;
           sound.playCheckpoint();
           fx.spawnCheckpointStars(cp.x, cp.y - 30);
+          if (window.game) window.game.screenShake = Math.max(window.game.screenShake, 4);
+          if (navigator.vibrate) navigator.vibrate(15);
           window.dispatchEvent(new CustomEvent('cp-reached', { detail: { count: idx + 1 } }));
         }
       });
@@ -934,6 +1019,7 @@
           c.collected = true;
           sound.playCoin();
           fx.spawnCoinSparkles(c.x, c.y);
+          if (navigator.vibrate) navigator.vibrate(10);
           window.dispatchEvent(new Event('coin-collected'));
         }
       });
@@ -957,6 +1043,7 @@
         this.hasFinished = true;
         sound.playVictory();
         fx.spawnVictoryConfetti(level.goal.x, level.goal.y - 30);
+        if (window.game) window.game.screenShake = Math.max(window.game.screenShake, 6);
         window.dispatchEvent(new CustomEvent('goal-reached', { detail: { climber: this } }));
       }
     }
@@ -967,6 +1054,8 @@
       this.deadTimer = 0.65;
       sound.playDeath();
       fx.spawnDeathBurst(this.x, this.y);
+      if (window.game) window.game.screenShake = Math.max(window.game.screenShake, 14);
+      if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
     }
 
     draw(ctx) {
@@ -978,6 +1067,22 @@
 
       ctx.save();
       ctx.translate(this.x, this.y);
+
+      // 0. Motion Trail Arc behind Axe
+      if (this.trailHistory && this.trailHistory.length > 1) {
+        ctx.save();
+        for (let i = 0; i < this.trailHistory.length - 1; i++) {
+          const t1 = this.trailHistory[i];
+          const t2 = this.trailHistory[i + 1];
+          ctx.beginPath();
+          ctx.arc(0, 0, this.axeLength, t1.angle, t2.angle, this.axeAngularVel < 0);
+          ctx.lineWidth = 14 * t2.alpha;
+          ctx.strokeStyle = `rgba(250, 204, 21, ${t2.alpha * 0.42})`;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
 
       // 1. Pickaxe & Handle
       ctx.save();
@@ -1048,18 +1153,40 @@
         ctx.fill();
       }
 
-      // Cute Stickman Eye
+      // Expressive Stickman Eyes (Dynamic tracking & Leaping widening)
+      const eyeDir = this.facing;
+      const eyeBaseX = eyeDir * 4;
+      const eyeBaseY = -33;
+      const speed = Math.hypot(this.vx, this.vy);
+      const isLeaping = speed > 300 || this.vy < -260;
+
+      // Outer White Eye
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(4, -33, 2.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#0f172a';
-      ctx.beginPath();
-      ctx.arc(4.5, -33, 1.4, 0, Math.PI * 2);
+      ctx.arc(eyeBaseX, eyeBaseY, isLeaping ? 3.6 : 2.8, 0, Math.PI * 2);
       ctx.fill();
 
-      // 3. The Pot / Container
+      // Pupil (looks dynamically towards velocity or axe tip)
+      const lookAngle = Math.atan2(this.vy, this.vx || eyeDir);
+      const pShiftX = Math.cos(lookAngle) * 1.2;
+      const pShiftY = Math.sin(lookAngle) * 0.9;
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(eyeBaseX + pShiftX, eyeBaseY + pShiftY, isLeaping ? 1.6 : 1.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cute white twinkle highlight
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(eyeBaseX + pShiftX - 0.6, eyeBaseY + pShiftY - 0.6, 0.6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 3. The Pot / Container (with organic Squash & Stretch)
+      ctx.save();
+      ctx.scale(this.scaleX, this.scaleY);
       this.drawPot(ctx, pot);
+      ctx.restore();
 
       ctx.restore();
     }
@@ -1214,6 +1341,27 @@
           life: 0.35
         });
       }
+      this.spawnRubble(x, y, nx, ny);
+    }
+
+    spawnRubble(x, y, nx, ny) {
+      for (let i = 0; i < 3; i++) {
+        const speed = Math.random() * 120 + 40;
+        const angle = Math.atan2(ny, nx) + (Math.random() - 0.5) * 1.6;
+        this.particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          gravity: 550,
+          w: Math.random() * 4 + 2,
+          h: Math.random() * 4 + 2,
+          rot: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 14,
+          color: Math.random() > 0.5 ? '#78716c' : '#57534e',
+          alpha: 1.0,
+          life: 0.4
+        });
+      }
     }
 
     spawnDust(x, y) {
@@ -1360,6 +1508,7 @@
       const w = this.canvas.width;
       const h = this.canvas.height;
       const ctx = this.ctx;
+      const now = performance.now();
       ctx.clearRect(0, 0, w, h);
 
       // Sky gradient
@@ -1381,6 +1530,19 @@
       }
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, w, h);
+
+      // Layer 0: Drifting Soft Cloud Puffs
+      ctx.save();
+      const cloudOffset = (now * 0.015 - cameraX * 0.05) % (w + 400);
+      ctx.fillStyle = theme === 'neon' ? 'rgba(56, 189, 248, 0.08)' : 'rgba(255, 255, 255, 0.22)';
+      for (let cx = -400 + cloudOffset; cx < w + 400; cx += 450) {
+        ctx.beginPath();
+        ctx.arc(cx, h * 0.18, 48, 0, Math.PI * 2);
+        ctx.arc(cx + 40, h * 0.15, 62, 0, Math.PI * 2);
+        ctx.arc(cx + 90, h * 0.18, 52, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
 
       // Layer 1: Distant Mountain Silhouettes (Slowest parallax 0.15)
       ctx.save();
@@ -1412,6 +1574,18 @@
       ctx.lineTo(0, h);
       ctx.closePath();
       ctx.fill();
+      ctx.restore();
+
+      // Layer 3: Floating Ambient Dust / Sparkle Motes
+      ctx.save();
+      ctx.fillStyle = theme === 'neon' ? 'rgba(56, 189, 248, 0.4)' : 'rgba(255, 255, 255, 0.35)';
+      for (let i = 0; i < 18; i++) {
+        const mx = ((i * 127 + now * 0.02 - cameraX * 0.2) % w + w) % w;
+        const my = ((i * 73 + Math.sin(now * 0.001 + i) * 30 - cameraY * 0.1) % (h * 0.8) + h * 0.8) % (h * 0.8);
+        ctx.beginPath();
+        ctx.arc(mx, my, (i % 3) + 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
     }
   }
@@ -1518,6 +1692,7 @@
       // Camera
       this.cameraX = 0;
       this.cameraY = 0;
+      this.screenShake = 0;
 
       // Input Map
       this.keys = {};
@@ -1929,6 +2104,11 @@
       const dt = Math.min((timestamp - this.lastTimestamp) / 1000, 0.05);
       this.lastTimestamp = timestamp;
 
+      // Decay screen shake
+      if (this.screenShake > 0) {
+        this.screenShake = Math.max(0, this.screenShake - dt * 26);
+      }
+
       // 1. Process Player Input
       if (this.state === 'PLAYING') {
         this.elapsedLevelTime = (performance.now() - this.levelStartTime) / 1000;
@@ -1993,15 +2173,23 @@
       const h = this.worldCanvas.height;
       const theme = this.activeLevel ? this.activeLevel.theme : 'canyon';
 
+      // Screen Shake offset
+      let renderCamX = this.cameraX;
+      let renderCamY = this.cameraY;
+      if (this.screenShake > 0.1) {
+        renderCamX += (Math.random() - 0.5) * this.screenShake;
+        renderCamY += (Math.random() - 0.5) * this.screenShake;
+      }
+
       // 1. Draw Parallax Background
-      this.bg.draw(this.cameraX, this.cameraY, theme);
+      this.bg.draw(renderCamX, renderCamY, theme);
 
       // 2. Clear & Draw Physics World
       this.ctx.clearRect(0, 0, w, h);
 
       if (this.state === 'PLAYING' || this.state === 'PAUSED' || this.state === 'VICTORY') {
         this.ctx.save();
-        this.ctx.translate(-this.cameraX, -this.cameraY);
+        this.ctx.translate(-renderCamX, -renderCamY);
 
         // Draw Platforms
         for (const p of this.activeLevel.platforms) {
@@ -2036,10 +2224,15 @@
         if (this.p2) this.p2.draw(this.ctx);
 
         this.ctx.restore();
+
+        // 2P Mode Offscreen Indicators (drawn directly in screen coordinates)
+        if (this.gameMode === '2P') {
+          this.drawOffscreenIndicators(w, h, renderCamX, renderCamY);
+        }
       }
 
       // 3. Draw Particle FX
-      this.fx.draw(this.cameraX, this.cameraY);
+      this.fx.draw(renderCamX, renderCamY);
     }
 
     drawPlatform(ctx, p, theme) {
@@ -2094,95 +2287,254 @@
 
     drawSpring(ctx, s) {
       ctx.save();
-      ctx.fillStyle = '#facc15';
-      ctx.strokeStyle = '#ca8a04';
-      ctx.lineWidth = 2.5;
+      if (s.compression === undefined) s.compression = 0;
+      s.compression += (0 - s.compression) * 0.15;
 
-      // Spring coil base
+      const compHeight = s.compression * 12;
+      const basePlateY = s.y;
+      const topPlateY = s.y - 18 + compHeight;
+
+      // Base mount plate
+      ctx.fillStyle = '#334155';
       ctx.beginPath();
-      ctx.roundRect(s.x - 20, s.y - 12, 40, 12, 4);
+      ctx.roundRect(s.x - 22, basePlateY - 4, 44, 6, 2);
       ctx.fill();
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // Red/Yellow chevron warning stripes
+      // Accordion zigzag spring wire
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 3.5;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(s.x, basePlateY - 4);
+      const loops = 4;
+      const totalH = (basePlateY - 4) - (topPlateY + 6);
+      const loopStep = totalH / loops;
+      for (let i = 0; i < loops; i++) {
+        const segY = (basePlateY - 4) - (i + 0.5) * loopStep;
+        const segX = s.x + (i % 2 === 0 ? 12 : -12);
+        ctx.lineTo(segX, segY);
+      }
+      ctx.lineTo(s.x, topPlateY + 6);
+      ctx.stroke();
+
+      // Top Bumper Pad
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.roundRect(s.x - 20, topPlateY, 40, 10, 3);
+      ctx.fill();
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Red chevron warning hazard stripes on pad
       ctx.fillStyle = '#ef4444';
-      ctx.fillRect(s.x - 12, s.y - 10, 8, 8);
-      ctx.fillRect(s.x + 4, s.y - 10, 8, 8);
+      ctx.beginPath();
+      ctx.moveTo(s.x - 14, topPlateY + 8);
+      ctx.lineTo(s.x - 8, topPlateY + 2);
+      ctx.lineTo(s.x - 4, topPlateY + 2);
+      ctx.lineTo(s.x - 10, topPlateY + 8);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(s.x + 2, topPlateY + 8);
+      ctx.lineTo(s.x + 8, topPlateY + 2);
+      ctx.lineTo(s.x + 12, topPlateY + 2);
+      ctx.lineTo(s.x + 6, topPlateY + 8);
+      ctx.closePath();
+      ctx.fill();
+
       ctx.restore();
     }
 
     drawCheckpoint(ctx, cp) {
+      const now = performance.now();
       ctx.save();
-      // Pole
+
+      // Checkpoint Base Light / Ring
+      if (cp.reached) {
+        const pulse = (Math.sin(now * 0.005) + 1) * 0.5;
+        ctx.strokeStyle = `rgba(34, 197, 94, ${0.35 + pulse * 0.45})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(cp.x, cp.y - 2, 22 + pulse * 8, 8 + pulse * 3, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Metallic Pole
       ctx.strokeStyle = '#64748b';
       ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.moveTo(cp.x, cp.y);
-      ctx.lineTo(cp.x, cp.y - 50);
+      ctx.lineTo(cp.x, cp.y - 54);
       ctx.stroke();
 
-      // Flag
+      // Gold cap on pole
+      ctx.fillStyle = cp.reached ? '#22c55e' : '#facc15';
+      ctx.beginPath();
+      ctx.arc(cp.x, cp.y - 54, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Wavy fluttering flag cloth
+      const wave = Math.sin(now * 0.007 + cp.x * 0.03) * 4;
       ctx.fillStyle = cp.reached ? '#22c55e' : '#ef4444';
       ctx.strokeStyle = '#0f172a';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(cp.x, cp.y - 50);
-      ctx.lineTo(cp.x + 24, cp.y - 38);
-      ctx.lineTo(cp.x, cp.y - 26);
+      ctx.moveTo(cp.x, cp.y - 52);
+      ctx.quadraticCurveTo(cp.x + 14, cp.y - 48 + wave, cp.x + 28, cp.y - 40 + wave * 0.5);
+      ctx.quadraticCurveTo(cp.x + 14, cp.y - 34 + wave, cp.x, cp.y - 28);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
+
       ctx.restore();
     }
 
     drawCoin(ctx, c) {
+      const now = performance.now();
+      const spin = Math.sin(now * 0.005 + c.x * 0.04);
+      const bobY = Math.sin(now * 0.004 + c.x * 0.02) * 4;
+      const cy = c.y + bobY;
+      const widthScale = Math.max(0.12, Math.abs(spin));
+
       ctx.save();
-      ctx.fillStyle = '#facc15';
-      ctx.strokeStyle = '#ca8a04';
-      ctx.lineWidth = 2.5;
+      // Outer golden glow halo
+      ctx.shadowColor = 'rgba(250, 204, 21, 0.55)';
+      ctx.shadowBlur = 10;
+
+      // Outer coin bevel
+      ctx.fillStyle = '#ca8a04';
       ctx.beginPath();
-      ctx.arc(c.x, c.y, 11, 0, Math.PI * 2);
+      ctx.ellipse(c.x, cy, 12 * widthScale, 12, 0, 0, Math.PI * 2);
       ctx.fill();
+
+      // Inner shiny face
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.ellipse(c.x, cy, 9.5 * widthScale, 9.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#a16207';
+      ctx.lineWidth = 1.2;
       ctx.stroke();
 
-      ctx.fillStyle = '#854d0e';
-      ctx.font = '900 12px "Fredoka", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('$', c.x, c.y);
+      // Currency symbol (scaled with spin)
+      if (widthScale > 0.45) {
+        ctx.fillStyle = '#78350f';
+        ctx.font = '900 11px "Fredoka", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.save();
+        ctx.translate(c.x, cy);
+        ctx.scale(widthScale, 1);
+        ctx.fillText('$', 0, 0.5);
+        ctx.restore();
+      }
+
       ctx.restore();
     }
 
     drawGoalFlag(ctx, goal) {
+      const now = performance.now();
       ctx.save();
-      // Pole
-      ctx.strokeStyle = '#0f172a';
+
+      // Glowing aura around goal
+      const glow = (Math.sin(now * 0.004) + 1) * 0.5;
+      ctx.strokeStyle = `rgba(250, 204, 21, ${0.4 + glow * 0.5})`;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.ellipse(goal.x, goal.y - 2, 28 + glow * 10, 10 + glow * 4, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Metallic Pole
+      ctx.strokeStyle = '#1e293b';
       ctx.lineWidth = 5;
       ctx.beginPath();
       ctx.moveTo(goal.x, goal.y);
-      ctx.lineTo(goal.x, goal.y - 65);
+      ctx.lineTo(goal.x, goal.y - 68);
       ctx.stroke();
 
-      // Checkered Flag
-      const fx = goal.x, fy = goal.y - 65;
+      // Checkered Flag with wind ripples
+      const fx = goal.x, fy = goal.y - 68;
+      const wave = Math.sin(now * 0.006) * 3;
+
+      ctx.save();
+      ctx.translate(fx, fy);
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(fx, fy, 32, 22);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(34, wave);
+      ctx.lineTo(34, 24 + wave);
+      ctx.lineTo(0, 24);
+      ctx.closePath();
+      ctx.fill();
+
+      // Checkered squares
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(fx, fy, 8, 11);
-      ctx.fillRect(fx + 16, fy, 8, 11);
-      ctx.fillRect(fx + 8, fy + 11, 8, 11);
-      ctx.fillRect(fx + 24, fy + 11, 8, 11);
+      ctx.fillRect(0, 0, 8.5, 12);
+      ctx.fillRect(17, wave * 0.5, 8.5, 12);
+      ctx.fillRect(8.5, 12, 8.5, 12);
+      ctx.fillRect(25.5, 12 + wave, 8.5, 12);
 
       ctx.strokeStyle = '#0f172a';
       ctx.lineWidth = 2;
-      ctx.strokeRect(fx, fy, 32, 22);
+      ctx.strokeRect(0, 0, 34, 24);
+      ctx.restore();
 
-      // Gold Trophy Top
+      // Golden Trophy Top
       ctx.fillStyle = '#facc15';
       ctx.beginPath();
-      ctx.arc(goal.x, goal.y - 66, 6, 0, Math.PI * 2);
+      ctx.arc(goal.x, goal.y - 69, 7, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = '#ca8a04';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
       ctx.restore();
+    }
+
+    drawOffscreenIndicators(w, h, camX, camY) {
+      const players = [
+        { climber: this.p1, name: 'P1', color: '#ef4444', emoji: '🔴' },
+        { climber: this.p2, name: 'P2', color: '#0ea5e9', emoji: '🔵' }
+      ];
+
+      for (const p of players) {
+        if (!p.climber || p.climber.isDead) continue;
+        const screenX = p.climber.x - camX;
+        const screenY = p.climber.y - camY;
+
+        const isOffscreen = screenX < 20 || screenX > w - 20 || screenY < 20 || screenY > h - 20;
+        if (!isOffscreen) continue;
+
+        const clampedX = Math.max(50, Math.min(w - 50, screenX));
+        const clampedY = Math.max(55, Math.min(h - 55, screenY));
+        const dist = Math.round(Math.hypot(screenX - clampedX, screenY - clampedY) / 10);
+
+        this.ctx.save();
+        this.ctx.translate(clampedX, clampedY);
+
+        // Directional Pill Badge
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.beginPath();
+        this.ctx.roundRect(-38, -15, 76, 30, 15);
+        this.ctx.fill();
+        this.ctx.strokeStyle = p.color;
+        this.ctx.lineWidth = 2.5;
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = '900 12px "Fredoka", sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(`${p.name} ${dist}m`, 0, 0);
+
+        this.ctx.restore();
+      }
     }
 
     // Mini Live Preview on Main Menu
