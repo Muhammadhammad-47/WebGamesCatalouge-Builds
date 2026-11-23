@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Stickman Climb 2 | CIEL WebGames</title>
+  <meta name="description" content="Play Stickman Climb 2 online! Master precision physics, swing your pickaxe, conquer challenging obstacle courses, or race a friend in 2-Player mode!">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>⛏️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;800;900&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/stickman-climb.css">
+</head>
+<body>
+  <!-- Official CIEL Games Loader -->
+  <script src="ciel-loader.js"></script>
+
+  <!-- Main Viewport -->
+  <div class="game-viewport" id="gameViewport">
+
+    <!-- Layer 0: Parallax Background Canvas -->
+    <canvas id="bgCanvas"></canvas>
+
+    <!-- Layer 1: Physics World Canvas (Terrain, Traps, Checkpoints, Stickmen) -->
+    <canvas id="worldCanvas"></canvas>
+
+    <!-- Layer 2: Particle FX Canvas (Sparks, Dust, Confetti) -->
+    <canvas id="fxCanvas"></canvas>
+
+    <!-- ================= TOP HUD ================= -->
+    <header class="top-hud" id="topHud">
+      <!-- Left: Icon Navigation Buttons -->
+      <div class="hud-group">
+        <button class="hud-btn icon-only" id="btnHome" title="Main Menu" aria-label="Main Menu">
+          <span class="btn-icon">🏠</span>
+        </button>
+
+        <button class="hud-btn icon-only" id="btnSound" title="Toggle Sound" aria-label="Toggle Sound">
+          <span class="btn-icon" id="soundIcon">🔊</span>
+        </button>
+
+        <button class="hud-btn icon-only" id="btnRestart" title="Restart Level (R)" aria-label="Restart Level">
+          <span class="btn-icon">🔄</span>
+        </button>
+      </div>
+
+      <!-- Center: Level Info & Checkpoint Progress -->
+      <div class="hud-badge-center" id="hudCenter">
+        <div class="level-indicator-badge">
+          <span class="badge-tag" id="hudModeTag">LEVEL</span>
+          <span class="badge-num" id="hudLevelNum">1</span>
+        </div>
+        <div class="checkpoint-pill" id="checkpointPill">
+          <span class="cp-icon">🚩</span>
+          <span class="cp-text" id="hudCheckpoints">0 / 3</span>
+        </div>
+      </div>
+
+      <!-- Right: Timer, Coins, Fullscreen -->
+      <div class="hud-group">
+        <div class="timer-badge" id="timerBadge">
+          <span class="timer-icon">⏱️</span>
+          <span class="timer-text" id="hudTimer">00:00.0</span>
+        </div>
+
+        <div class="coins-badge" id="coinsBadge">
+          <span class="coin-icon">🪙</span>
+          <span class="coin-text" id="hudCoins">0</span>
+        </div>
+
+        <button class="hud-btn icon-only" id="btnFullscreen" title="Toggle Fullscreen" aria-label="Fullscreen">
+          <span class="btn-icon">⛶</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 2-PLAYER TOP RACE BAR (Active only in 2P mode) -->
+    <div class="race-bar-hud hidden" id="raceBarHud">
+      <div class="race-track-progress">
+        <div class="race-marker p1" id="raceMarkerP1" title="Player 1">🔴 P1</div>
+        <div class="race-marker p2" id="raceMarkerP2" title="Player 2">🔵 P2</div>
+      </div>
+    </div>
+
+    <!-- MOBILE TOUCH CONTROLS (Auto visible on touch devices or toggled) -->
+    <div class="mobile-controls-layer" id="mobileControls">
+      <!-- Left Player / P1 Touch Buttons -->
+      <div class="touch-control-group p1-controls">
+        <button class="touch-btn rotate-left" id="btnTouchLeft" aria-label="Rotate Left">
+          <span>↺</span>
+        </button>
+        <button class="touch-btn rotate-right" id="btnTouchRight" aria-label="Rotate Right">
+          <span>↻</span>
+        </button>
+        <button class="touch-btn touch-respawn" id="btnTouchRespawn" aria-label="Respawn at Checkpoint">
+          <span>🚩</span>
+        </button>
+      </div>
+
+      <!-- Right Touch Controls (for 2P Mode on mobile) -->
+      <div class="touch-control-group p2-controls hidden" id="p2TouchControls">
+        <button class="touch-btn touch-respawn p2-color" id="btnTouchRespawnP2" aria-label="P2 Respawn">
+          <span>🚩</span>
+        </button>
+        <button class="touch-btn rotate-left p2-color" id="btnTouchLeftP2" aria-label="P2 Rotate Left">
+          <span>↺</span>
+        </button>
+        <button class="touch-btn rotate-right p2-color" id="btnTouchRightP2" aria-label="P2 Rotate Right">
+          <span>↻</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- GAME NOTIFICATION TOAST -->
+    <div class="game-toast hidden" id="gameToast">
+      <span class="toast-icon" id="toastIcon">🚩</span>
+      <span class="toast-text" id="toastText">CHECKPOINT REACHED!</span>
+    </div>
+
+    <!-- ================= SCREEN: MAIN MENU ================= -->
+    <section class="overlay-screen" id="menuScreen">
+      <div class="menu-modal-card">
+        <!-- Animated Stickman Logo Hero -->
+        <div class="menu-hero-visual" id="menuHero">
+          <canvas id="menuPreviewCanvas" width="160" height="160"></canvas>
+        </div>
+
+        <!-- Game Title -->
+        <div class="game-title-group">
+          <h1 class="main-title">
+            <span class="title-stickman">STICKMAN</span>
+            <span class="title-climb">CLIMB</span>
+            <span class="title-number">2</span>
+          </h1>
+          <p class="title-subtitle">Physics Pickaxe Climbing Challenge</p>
+        </div>
+
+        <!-- Mode Select Primary Buttons -->
+        <div class="menu-modes-stack">
+          <button class="btn-mode-primary p1-mode" id="btnStart1P">
+            <span class="mode-icon">🧗‍♂️</span>
+            <div class="mode-info">
+              <span class="mode-title">1 PLAYER</span>
+              <span class="mode-desc">Conquer obstacle levels & beat the clock!</span>
+            </div>
+            <span class="mode-arrow">▶</span>
+          </button>
+
+          <button class="btn-mode-primary p2-mode" id="btnStart2P">
+            <span class="mode-icon">⚔️</span>
+            <div class="mode-info">
+              <span class="mode-title">2 PLAYERS (VS RACE)</span>
+              <span class="mode-desc">Race a friend on the same device!</span>
+            </div>
+            <span class="mode-arrow">▶</span>
+          </button>
+        </div>
+
+        <!-- Bottom Icon Actions Row (Levels, Garage/Skins, How to Play, Settings) -->
+        <div class="menu-bottom-row">
+          <button class="icon-action-btn" id="btnOpenLevels" title="Level Select">
+            <span class="btn-emoji">🗺️</span>
+            <span class="btn-label">Levels</span>
+          </button>
+
+          <button class="icon-action-btn" id="btnOpenGarage" title="Garage & Customization">
+            <span class="btn-emoji">🎨</span>
+            <span class="btn-label">Garage</span>
+          </button>
+
+          <button class="icon-action-btn" id="btnOpenHowTo" title="How to Play">
+            <span class="btn-emoji">❓</span>
+            <span class="btn-label">Controls</span>
+          </button>
+
+          <button class="icon-action-btn" id="btnOpenSettings" title="Settings">
+            <span class="btn-emoji">⚙️</span>
+            <span class="btn-label">Settings</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MODAL: LEVEL SELECT ================= -->
+    <div class="modal-overlay hidden" id="levelSelectModal">
+      <div class="modal-box levels-box">
+        <div class="modal-header">
+          <h3 class="modal-title">🗺️ Select Level</h3>
+          <button class="close-x-btn" id="btnCloseLevels" title="Close">✕</button>
+        </div>
+
+        <div class="level-select-grid" id="levelSelectGrid">
+          <!-- Dynamically populated with 10+ levels with stars & best times -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MODAL: GARAGE / CUSTOMIZATION ================= -->
+    <div class="modal-overlay hidden" id="garageModal">
+      <div class="modal-box garage-box">
+        <div class="modal-header">
+          <h3 class="modal-title">🎨 Garage & Skins</h3>
+          <div class="garage-coin-balance">
+            <span>🪙</span>
+            <span id="garageCoins">0</span>
+          </div>
+          <button class="close-x-btn" id="btnCloseGarage" title="Close">✕</button>
+        </div>
+
+        <!-- Live 3D Interactive Preview Canvas -->
+        <div class="garage-preview-viewport">
+          <canvas id="garageCanvas" width="180" height="180"></canvas>
+          <div class="preview-tag">INTERACTIVE PREVIEW</div>
+        </div>
+
+        <!-- Garage Navigation Tabs -->
+        <div class="garage-tabs-row">
+          <button class="garage-tab active" data-tab="skins" id="tabSkins">Stickman</button>
+          <button class="garage-tab" data-tab="pots" id="tabPots">Pots / Containers</button>
+          <button class="garage-tab" data-tab="axes" id="tabAxes">Pickaxes</button>
+        </div>
+
+        <!-- Tab Content Grid -->
+        <div class="garage-items-grid" id="garageItemsGrid">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MODAL: CONTROLS & HOW TO PLAY ================= -->
+    <div class="modal-overlay hidden" id="howToModal">
+      <div class="modal-box howto-box">
+        <div class="modal-header">
+          <h3 class="modal-title">❓ Controls & Tips</h3>
+          <button class="close-x-btn" id="btnCloseHowTo" title="Close">✕</button>
+        </div>
+
+        <div class="controls-guide-grid">
+          <div class="guide-player-card p1-card">
+            <h4>🔴 Player 1</h4>
+            <div class="key-combo-row">
+              <span class="keycap">A</span>
+              <span class="keycap">D</span>
+              <span class="key-desc">Rotate Pickaxe</span>
+            </div>
+            <div class="key-combo-row">
+              <span class="keycap">R</span>
+              <span class="key-desc">Respawn Checkpoint</span>
+            </div>
+          </div>
+
+          <div class="guide-player-card p2-card">
+            <h4>🔵 Player 2 (Race Mode)</h4>
+            <div class="key-combo-row">
+              <span class="keycap">←</span>
+              <span class="keycap">→</span>
+              <span class="key-desc">Rotate Pickaxe</span>
+            </div>
+            <div class="key-combo-row">
+              <span class="keycap">Enter</span>
+              <span class="key-desc">Respawn Checkpoint</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="physics-tips-card">
+          <span class="tip-icon">💡</span>
+          <div>
+            <strong>Physics Climbing Secrets:</strong>
+            <p>Dig your pickaxe head into the ground or wall to leverage yourself forward. Spin the axe in full rotations to vault over gaps and scale steep cliffs!</p>
+          </div>
+        </div>
+
+        <button class="btn-modal-action" id="btnGotIt">
+          <span>👍</span>
+          <span>GOT IT, LET'S CLIMB!</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= MODAL: SETTINGS ================= -->
+    <div class="modal-overlay hidden" id="settingsModal">
+      <div class="modal-box settings-box">
+        <div class="modal-header">
+          <h3 class="modal-title">⚙️ Game Settings</h3>
+          <button class="close-x-btn" id="btnCloseSettings" title="Close">✕</button>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <span class="setting-name">Music 🎵</span>
+            <span class="setting-desc">Upbeat chiptune platformer soundtrack</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggleMusic" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <span class="setting-name">Sound Effects 🔊</span>
+            <span class="setting-desc">Pickaxe strikes, rolls, checkpoints & victory</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggleSfx" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <span class="setting-name">Mobile Touch Buttons 📱</span>
+            <span class="setting-desc">Show on-screen rotation controls</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggleTouchControls">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row reset-row">
+          <div class="setting-info">
+            <span class="setting-name">Clear Game Data</span>
+            <span class="setting-desc">Reset unlocked levels, stars and best times</span>
+          </div>
+          <button class="danger-pill-btn" id="btnResetProgress">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MODAL: LEVEL COMPLETE / VICTORY ================= -->
+    <div class="modal-overlay hidden" id="victoryModal">
+      <div class="modal-box victory-box">
+        <div class="victory-trophy-burst">🏆</div>
+        <h2 class="victory-title" id="vicTitle">LEVEL COMPLETE!</h2>
+        <p class="victory-subtitle" id="vicSubtitle">Incredible climbing skills!</p>
+
+        <!-- Star Rating -->
+        <div class="stars-earned-row" id="vicStars">
+          <span class="star-badge star-1">⭐</span>
+          <span class="star-badge star-2">⭐</span>
+          <span class="star-badge star-3">⭐</span>
+        </div>
+
+        <!-- Stats Breakdown -->
+        <div class="victory-stats-card">
+          <div class="stat-col">
+            <span class="stat-label">Your Time</span>
+            <span class="stat-value highlight" id="vicTime">00:15.4</span>
+          </div>
+          <div class="stat-col">
+            <span class="stat-label">Coins Earned</span>
+            <span class="stat-value coin-val" id="vicCoins">+50 🪙</span>
+          </div>
+          <div class="stat-col">
+            <span class="stat-label">Best Record</span>
+            <span class="stat-value" id="vicBestTime">00:14.2</span>
+          </div>
+        </div>
+
+        <!-- 2P Winner Banner (shown only in 2P mode) -->
+        <div class="winner-2p-banner hidden" id="vic2PBanner">
+          <span class="winner-crown">👑</span>
+          <span class="winner-text" id="vic2PText">PLAYER 1 WINS THE RACE!</span>
+        </div>
+
+        <div class="modal-actions-row">
+          <button class="hud-btn icon-only" id="btnVicMenu" title="Main Menu">
+            <span>🏠</span>
+          </button>
+          <button class="hud-btn icon-only" id="btnVicReplay" title="Replay Level">
+            <span>🔄</span>
+          </button>
+          <button class="btn-play-primary next-level-btn" id="btnVicNext">
+            <span>NEXT LEVEL</span>
+            <span>▶</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Main Game Engine -->
+  <script src="js/stickman-climb.js"></script>
+</body>
+</html>
