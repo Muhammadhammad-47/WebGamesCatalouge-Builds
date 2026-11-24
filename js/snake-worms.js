@@ -213,22 +213,22 @@
   ];
 
   const FOOD_TYPES = [
-    // Fresh Delicious Fruits
-    { name: 'apple', category: 'fruit', emoji: '🍎', mass: 1.5, r: 12 },
-    { name: 'strawberry', category: 'fruit', emoji: '🍓', mass: 1.8, r: 12 },
-    { name: 'banana', category: 'fruit', emoji: '🍌', mass: 2.0, r: 13 },
-    { name: 'watermelon', category: 'fruit', emoji: '🍉', mass: 3.5, r: 15 },
-    { name: 'grapes', category: 'fruit', emoji: '🍇', mass: 2.2, r: 13 },
-    { name: 'orange', category: 'fruit', emoji: '🍊', mass: 1.8, r: 12 },
-    // Crispy & Cheesy Fast Food
-    { name: 'burger', category: 'fastfood', emoji: '🍔', mass: 3.2, r: 14 },
-    { name: 'pizza', category: 'fastfood', emoji: '🍕', mass: 2.8, r: 13 },
-    { name: 'donut', category: 'fastfood', emoji: '🍩', mass: 2.5, r: 13 },
-    { name: 'fries', category: 'fastfood', emoji: '🍟', mass: 2.6, r: 13 },
-    { name: 'hotdog', category: 'fastfood', emoji: '🌭', mass: 3.0, r: 14 },
-    { name: 'cupcake', category: 'fastfood', emoji: '🧁', mass: 2.4, r: 12 },
+    // Fresh Delicious Fruits (Enlarged and vibrant)
+    { name: 'apple', category: 'fruit', emoji: '🍎', mass: 1.5, r: 18 },
+    { name: 'strawberry', category: 'fruit', emoji: '🍓', mass: 1.8, r: 18 },
+    { name: 'banana', category: 'fruit', emoji: '🍌', mass: 2.0, r: 19 },
+    { name: 'watermelon', category: 'fruit', emoji: '🍉', mass: 3.5, r: 22 },
+    { name: 'grapes', category: 'fruit', emoji: '🍇', mass: 2.2, r: 19 },
+    { name: 'orange', category: 'fruit', emoji: '🍊', mass: 1.8, r: 18 },
+    // Crispy & Cheesy Fast Food (Enlarged and appetizing)
+    { name: 'burger', category: 'fastfood', emoji: '🍔', mass: 3.2, r: 21 },
+    { name: 'pizza', category: 'fastfood', emoji: '🍕', mass: 2.8, r: 20 },
+    { name: 'donut', category: 'fastfood', emoji: '🍩', mass: 2.5, r: 20 },
+    { name: 'fries', category: 'fastfood', emoji: '🍟', mass: 2.6, r: 20 },
+    { name: 'hotdog', category: 'fastfood', emoji: '🌭', mass: 3.0, r: 21 },
+    { name: 'cupcake', category: 'fastfood', emoji: '🧁', mass: 2.4, r: 19 },
     // Special Star
-    { name: 'star', category: 'special', emoji: '⭐', mass: 4.5, r: 15 }
+    { name: 'star', category: 'special', emoji: '⭐', mass: 4.5, r: 22 }
   ];
 
   const POWERUP_TYPES = [
@@ -1222,11 +1222,11 @@
       for (const s of this.snakes) {
         if (s.isDead) continue;
         const sr = s.getRadius();
-        const eatRadius = sr + 14;
         const mult = s.powerups.multiplier ? 2 : 1;
 
         for (let i = this.foods.length - 1; i >= 0; i--) {
           const f = this.foods[i];
+          const eatRadius = sr + (f.type.r || 18);
           const dist = Math.hypot(s.x - f.x, s.y - f.y);
           if (dist < eatRadius) {
             s.mass += f.type.mass * mult;
@@ -1528,10 +1528,10 @@
     drawFoods(ctx) {
       const viewW = this.canvas.width / this.camera.zoom;
       const viewH = this.canvas.height / this.camera.zoom;
-      const minX = this.camera.x - viewW / 2 - 40;
-      const maxX = this.camera.x + viewW / 2 + 40;
-      const minY = this.camera.y - viewH / 2 - 40;
-      const maxY = this.camera.y + viewH / 2 + 40;
+      const minX = this.camera.x - viewW / 2 - 60;
+      const maxX = this.camera.x + viewW / 2 + 60;
+      const minY = this.camera.y - viewH / 2 - 60;
+      const maxY = this.camera.y + viewH / 2 + 60;
 
       for (const f of this.foods) {
         if (f.x < minX || f.x > maxX || f.y < minY || f.y > maxY) continue;
@@ -1540,25 +1540,26 @@
           // Glowing star orb remnant
           ctx.save();
           ctx.shadowColor = f.color;
-          ctx.shadowBlur = 12;
+          ctx.shadowBlur = 14;
           ctx.fillStyle = f.color;
           ctx.beginPath();
-          ctx.arc(f.x, f.y, 8, 0, Math.PI * 2);
+          ctx.arc(f.x, f.y, 11, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = '#ffffff';
           ctx.beginPath();
-          ctx.arc(f.x, f.y, 4, 0, Math.PI * 2);
+          ctx.arc(f.x, f.y, 5.5, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
         } else {
-          // Cartoon Food Emoji Item (clean, crisp, spacious)
+          // Cartoon Food Emoji Item (Enlarged, vibrant, juicy)
           ctx.save();
-          ctx.font = '18px sans-serif';
+          ctx.font = '28px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.shadowColor = 'rgba(0,0,0,0.4)';
-          ctx.shadowBlur = 4;
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+          ctx.shadowBlur = 6;
+          ctx.shadowOffsetY = 2;
           ctx.fillText(f.type.emoji, f.x, f.y);
           ctx.restore();
         }
