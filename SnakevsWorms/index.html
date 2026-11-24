@@ -162,13 +162,12 @@
       <div class="menu-content-card">
         <!-- Logo Branding -->
         <div class="logo-wrap">
-          <div class="logo-emoji-row">
-            <span class="logo-snake">🐍</span>
-            <span class="logo-vs">VS</span>
-            <span class="logo-worm">🐛</span>
+          <div class="brand-chip"><b>CIEL</b><span>GAMES</span></div>
+          <div class="logo-art" aria-hidden="true">
+            <span class="la la-snake">🐍</span><span class="la la-vs">VS</span><span class="la la-worm">🐛</span>
           </div>
-          <h1 class="game-logo-title">SNAKE <span class="vs-text">VS</span> WORMS</h1>
-          <p class="game-subtitle">Arcade Slither & Battle Royale Arena</p>
+          <h1 class="game-logo-title">Snake <span class="vs-text">vs</span> <span class="logo-worms">Worms</span></h1>
+          <p class="game-subtitle">Slither, grow and rule the arena!</p>
         </div>
 
         <!-- Player Nickname Input -->
@@ -248,6 +247,11 @@
           <button class="menu-circle-btn" id="btnOpenHowTo" title="How To Play">
             <span class="btn-emoji">❓</span>
             <span class="btn-caption">HOW TO</span>
+          </button>
+
+          <button class="menu-circle-btn" id="btnExitGame" title="Leave the game">
+            <span class="btn-emoji">🚪</span>
+            <span class="btn-caption">EXIT</span>
           </button>
         </div>
 
@@ -510,6 +514,19 @@
     <!-- =====================================================================
          MODAL 7: GAME OVER / VICTORY MODAL
          ===================================================================== -->
+    <!-- Exit confirmation -->
+    <div class="modal-dialog hidden" id="exitModal">
+      <div class="modal-card confirm-card">
+        <div class="confirm-badge">LEAVE GAME?</div>
+        <div class="confirm-emoji">🐍</div>
+        <p class="confirm-text">Your coins and skins are saved. Come back any time!</p>
+        <div class="confirm-actions">
+          <button class="btn-go-action btn-menu" id="btnExitCancel">Cancel</button>
+          <button class="btn-go-action btn-exit-yes" id="btnExitYes">Leave</button>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-dialog hidden" id="gameOverModal">
       <div class="modal-card gameover-card">
         <div class="gameover-banner" id="gameOverBanner">

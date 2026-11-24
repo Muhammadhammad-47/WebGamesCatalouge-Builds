@@ -197,11 +197,11 @@
   ];
 
   const BACKGROUND_THEMES = [
-    { id: 'hex', name: 'Dark Sci-Fi Hex', price: 0, bg: '#090d16', grid: '#1e293b', style: 'hex' },
-    { id: 'forest', name: 'Emerald Forest', price: 200, bg: '#052e16', grid: '#14532d', style: 'grid' },
-    { id: 'space', name: 'Deep Space Nebula', price: 350, bg: '#030712', grid: '#312e81', style: 'stars' },
-    { id: 'candy', name: 'Candy Wonderland', price: 400, bg: '#4c0519', grid: '#831843', style: 'checker' },
-    { id: 'volcano', name: 'Molten Obsidian', price: 500, bg: '#1c1917', grid: '#7f1d1d', style: 'magma' }
+    { id: 'hex', name: 'Sunny Meadow', price: 0, bg: '#8ee4a6', grid: '#7bd395', style: 'hex' },
+    { id: 'forest', name: 'Lime Garden', price: 200, bg: '#bef264', grid: '#a3dd4c', style: 'grid' },
+    { id: 'space', name: 'Sky Lagoon', price: 350, bg: '#7dd3fc', grid: '#5fc0ef', style: 'stars' },
+    { id: 'candy', name: 'Candy Wonderland', price: 400, bg: '#fbcfe8', grid: '#f6aed4', style: 'checker' },
+    { id: 'volcano', name: 'Sunset Sands', price: 500, bg: '#fed7aa', grid: '#fdba74', style: 'magma' }
   ];
 
   const BOT_NAMES = [
@@ -346,7 +346,14 @@
         }
       }
 
-      if (curSpeed > 0) {
+      // Ease towards the target speed so starting, stopping and boosting feel smooth, not instant.
+      if (this.moveSpeed === undefined) this.moveSpeed = this.isPlayer ? 0 : curSpeed;
+      const accel = curSpeed > this.moveSpeed ? 7 : 5;
+      this.moveSpeed += (curSpeed - this.moveSpeed) * (1 - Math.exp(-accel * dt));
+      if (Math.abs(curSpeed - this.moveSpeed) < 0.5) this.moveSpeed = curSpeed;
+      curSpeed = this.moveSpeed;
+
+      if (curSpeed > 0.5) {
         // 3. Smooth Angular Rotation
         let diff = this.targetAngle - this.angle;
         while (diff < -Math.PI) diff += Math.PI * 2;
@@ -442,18 +449,17 @@
         const taper = Math.max(0.45, Math.min(1.0, (i + 4) / segs.length));
         const segRadius = r * taper;
 
-        // Drop shadow for depth
-        ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
-        ctx.shadowBlur = 8;
-        ctx.shadowOffsetY = 3;
+        // Soft drop shadow (offset circle: same depth as a blur shadow, a fraction of the cost)
+        ctx.fillStyle = 'rgba(20, 60, 40, 0.22)';
+        ctx.beginPath();
+        ctx.arc(screenX, screenY + 4, segRadius + 2.5, 0, Math.PI * 2);
+        ctx.fill();
 
         // Outer Dark Outline
-        ctx.fillStyle = '#0f172a';
+        ctx.fillStyle = '#1e293b';
         ctx.beginPath();
         ctx.arc(screenX, screenY, segRadius + 2.5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.restore();
 
         // Base Segment Color
         let fillColor = this.skin.primary;
@@ -848,10 +854,14 @@
     }
 
     resize() {
-      this.canvas.width = window.innerWidth;
-      this.canvas.height = window.innerHeight;
-      this.camera.w = this.canvas.width;
-      this.camera.h = this.canvas.height;
+      // Render at device resolution (capped at 2x) so snakes and food stay sharp on phones/Retina.
+      this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      this.viewW = window.innerWidth;
+      this.viewH = window.innerHeight;
+      this.canvas.width = Math.round(this.viewW * this.dpr);
+      this.canvas.height = Math.round(this.viewH * this.dpr);
+      this.camera.w = this.viewW;
+      this.camera.h = this.viewH;
     }
 
     updateCoinDisplays() {
@@ -1098,7 +1108,8 @@
 
       document.getElementById('gameOverEmoji').textContent = isVictory ? '👑' : '💥';
       document.getElementById('gameOverTitle').textContent = isVictory ? 'VICTORY ROYALE!' : '💥 SNAKE DESTROYED!';
-      document.getElementById('gameOverTitle').style.color = isVictory ? '#facc15' : '#ef4444';
+      // White title with a coloured 3D edge reads well on the bright violet card
+      document.getElementById('gameOverTitle').style.color = isVictory ? '#ca8a04' : '#e11d48';
       document.getElementById('gameOverSub').textContent = isVictory
         ? 'You outsmarted all rival worms and won the crown!'
         : (this.mode === 'levels'
@@ -1164,21 +1175,16 @@
           p.targetAngle = Math.atan2(keyY, keyX);
           p.isMoving = true;
         } else if (this.activeInput === 'mouse' && this.mouseMoved) {
-          const screenCenterX = this.canvas.width / 2;
-          const screenCenterY = this.canvas.height / 2;
+          const screenCenterX = this.viewW / 2;
+          const screenCenterY = this.viewH / 2;
           const dx = this.mouse.x - screenCenterX;
           const dy = this.mouse.y - screenCenterY;
-          if (Math.hypot(dx, dy) > 35) {
-            p.targetAngle = Math.atan2(dy, dx);
-            p.isMoving = true;
-          } else {
-            p.isMoving = false;
-          }
-        } else if (this.activeInput === 'touch') {
-          // Controlled by virtual joystick
+          // Inside the small dead zone keep the current heading instead of stopping.
+          if (Math.hypot(dx, dy) > 24) p.targetAngle = Math.atan2(dy, dx);
+          p.isMoving = true;
         } else {
-          // When no keys are pressed, snake stays still!
-          p.isMoving = false;
+          // No input (keys released, joystick let go): keep slithering in the current direction.
+          p.isMoving = true;
         }
 
         p.isBoosting = (this.mouse.isDown || !!this.keys['Space'] || !!this.keys['ShiftLeft'] || !!this.keys['ShiftRight'] || !!this.keys['KeyJ'] || !!this.keys['KeyK']) && p.isMoving;
@@ -1294,23 +1300,14 @@
           // 1. Head-to-Head Collision Check
           const headDist = Math.hypot(attacker.x - target.x, attacker.y - target.y);
           if (headDist < hr + target.getRadius() * 0.85) {
-            if (attacker.isPlayer) {
-              attacker.triggerDeath();
-              target.kills += 1;
-              target.score += 250;
-              break;
-            } else if (target.isPlayer) {
-              attacker.triggerDeath();
-              target.kills += 1;
-              target.score += 250;
-              break;
-            } else {
-              if (attacker.mass <= target.mass) {
-                attacker.triggerDeath();
-                target.kills += 1;
-                break;
-              }
-            }
+            // Head-on crash: the smaller snake loses (a tie goes against the one that rammed).
+            const loser = attacker.mass <= target.mass ? attacker : target;
+            const winner = loser === attacker ? target : attacker;
+            loser.triggerDeath();
+            winner.kills += 1;
+            winner.score += 250;
+            if (loser === attacker) break;
+            continue;
           }
 
           // 2. Check against target segments (i >= 1)
@@ -1349,21 +1346,25 @@
       if (p) {
         let targetZoom = Math.max(0.68, 1.0 - (p.mass - 20) * 0.001);
         if (p.powerups.zoom) targetZoom = 0.54; // Eagle Eye Zoom
-        this.camera.zoom += (targetZoom - this.camera.zoom) * 0.08;
-        this.camera.x += (p.x - this.camera.x) * 0.12;
-        this.camera.y += (p.y - this.camera.y) * 0.12;
+        // Frame-rate independent smoothing: same feel at 60 Hz and 120 Hz.
+        this.camera.zoom += (targetZoom - this.camera.zoom) * (1 - Math.exp(-3.5 * dt));
+        const follow = 1 - Math.exp(-10 * dt);
+        this.camera.x += (p.x - this.camera.x) * follow;
+        this.camera.y += (p.y - this.camera.y) * follow;
       }
 
-      // Camera Shake Effect on Destruction
+      // Camera Shake Effect on Destruction: applied as a render offset, the camera itself never drifts.
+      this.shakeX = 0; this.shakeY = 0;
       if (this.cameraShake > 0) {
-        this.camera.x += (Math.random() - 0.5) * this.cameraShake;
-        this.camera.y += (Math.random() - 0.5) * this.cameraShake;
-        this.cameraShake *= 0.88;
+        this.shakeX = (Math.random() - 0.5) * this.cameraShake;
+        this.shakeY = (Math.random() - 0.5) * this.cameraShake;
+        this.cameraShake *= Math.exp(-8 * dt);
         if (this.cameraShake < 0.5) this.cameraShake = 0;
       }
 
       // 9. Update In-Game HUD & Leaderboard
-      this.updateHUD();
+      this.hudTimer = (this.hudTimer || 0) - dt;
+      if (this.hudTimer <= 0) { this.hudTimer = 0.12; this.updateHUD(); }
     }
 
     updateHUD() {
@@ -1401,18 +1402,21 @@
     }
 
     render() {
-      const w = this.canvas.width;
-      const h = this.canvas.height;
+      const w = this.viewW;
+      const h = this.viewH;
       const ctx = this.ctx;
 
-      ctx.clearRect(0, 0, w, h);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
       if (this.state === 'PLAYING' || this.state === 'GAMEOVER') {
         ctx.save();
         // Camera translation & zoom centered at screen
         ctx.translate(w / 2, h / 2);
         ctx.scale(this.camera.zoom, this.camera.zoom);
-        ctx.translate(-this.camera.x, -this.camera.y);
+        const shaking = this.state === 'PLAYING';
+        ctx.translate(-(this.camera.x + (shaking ? this.shakeX || 0 : 0)), -(this.camera.y + (shaking ? this.shakeY || 0 : 0)));
 
         // 1. Draw Background Theme
         this.drawBackground(ctx);
@@ -1464,8 +1468,8 @@
 
     drawBackground(ctx) {
       const theme = BACKGROUND_THEMES.find(t => t.id === this.equippedThemeId) || BACKGROUND_THEMES[0];
-      const viewW = this.canvas.width / this.camera.zoom;
-      const viewH = this.canvas.height / this.camera.zoom;
+      const viewW = this.viewW / this.camera.zoom;
+      const viewH = this.viewH / this.camera.zoom;
       const startX = Math.floor((this.camera.x - viewW / 2) / 100) * 100;
       const endX = this.camera.x + viewW / 2 + 100;
       const startY = Math.floor((this.camera.y - viewH / 2) / 100) * 100;
@@ -1492,10 +1496,14 @@
 
     drawArenaBoundary(ctx) {
       ctx.save();
-      ctx.strokeStyle = '#ef4444';
+      // Glow drawn as a wide translucent stroke instead of a (very expensive) blur on a huge circle
+      ctx.strokeStyle = 'rgba(244, 63, 94, 0.25)';
+      ctx.lineWidth = 34;
+      ctx.beginPath();
+      ctx.arc(0, 0, this.arenaRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = '#f43f5e';
       ctx.lineWidth = 14;
-      ctx.shadowColor = 'rgba(239, 68, 68, 0.7)';
-      ctx.shadowBlur = 24;
       ctx.beginPath();
       ctx.arc(0, 0, this.arenaRadius, 0, Math.PI * 2);
       ctx.stroke();
@@ -1529,8 +1537,8 @@
     }
 
     drawFoods(ctx) {
-      const viewW = this.canvas.width / this.camera.zoom;
-      const viewH = this.canvas.height / this.camera.zoom;
+      const viewW = this.viewW / this.camera.zoom;
+      const viewH = this.viewH / this.camera.zoom;
       const minX = this.camera.x - viewW / 2 - 60;
       const maxX = this.camera.x + viewW / 2 + 60;
       const minY = this.camera.y - viewH / 2 - 60;
@@ -1542,9 +1550,12 @@
         if (f.isRemnant) {
           // Glowing star orb remnant
           ctx.save();
-          ctx.shadowColor = f.color;
-          ctx.shadowBlur = 14;
+          ctx.globalAlpha = 0.35;
           ctx.fillStyle = f.color;
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, 16, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
           ctx.beginPath();
           ctx.arc(f.x, f.y, 11, 0, Math.PI * 2);
           ctx.fill();
@@ -1560,9 +1571,11 @@
           ctx.font = '28px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
-          ctx.shadowBlur = 6;
-          ctx.shadowOffsetY = 2;
+          ctx.fillStyle = 'rgba(20, 60, 40, 0.2)';
+          ctx.beginPath();
+          ctx.ellipse(f.x, f.y + 14, 12, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#000000'; // opaque again, or the emoji is drawn at the shadow's 20% alpha
           ctx.fillText(f.type.emoji, f.x, f.y);
           ctx.restore();
         }
@@ -1570,8 +1583,8 @@
     }
 
     drawPowerups(ctx) {
-      const viewW = this.canvas.width / this.camera.zoom;
-      const viewH = this.canvas.height / this.camera.zoom;
+      const viewW = this.viewW / this.camera.zoom;
+      const viewH = this.viewH / this.camera.zoom;
       const minX = this.camera.x - viewW / 2 - 50;
       const maxX = this.camera.x + viewW / 2 + 50;
       const minY = this.camera.y - viewH / 2 - 50;
@@ -1988,6 +2001,33 @@
     initEvents() {
       window.addEventListener('resize', () => this.resize());
 
+      // Opening the audio device can block the page for 100-800 ms. Do it on the player's first
+      // interaction in the menu (a user gesture, as browsers require) so the match starts without a freeze.
+      const warmAudio = () => {
+        ['pointerdown', 'keydown', 'touchstart'].forEach(t => window.removeEventListener(t, warmAudio, true));
+        this.sound.init();
+      };
+      ['pointerdown', 'keydown', 'touchstart'].forEach(t => window.addEventListener(t, warmAudio, true));
+
+      // Exit button on the main menu, with a confirmation popup
+      const exitModal = document.getElementById('exitModal');
+      const leaveGame = () => {
+        try {
+          if (window.parent && window.parent !== window) { // inside the CIEL portal: ask it to close the game popup
+            window.parent.postMessage({ action: 'closeModal', type: 'GAME_ENDED' }, '*');
+            return;
+          }
+        } catch (e) { /* cross-origin parent */ }
+        try { window.close(); } catch (e) { /* not opened by script */ }
+        setTimeout(() => { if (history.length > 1) history.back(); else window.location.href = '../'; }, 250);
+      };
+      if (exitModal) {
+        document.getElementById('btnExitGame').addEventListener('click', () => { this.sound.playClick(); exitModal.classList.remove('hidden'); });
+        document.getElementById('btnExitCancel').addEventListener('click', () => { this.sound.playClick(); exitModal.classList.add('hidden'); });
+        document.getElementById('btnExitYes').addEventListener('click', () => { exitModal.classList.add('hidden'); leaveGame(); });
+        exitModal.addEventListener('click', (e) => { if (e.target === exitModal) exitModal.classList.add('hidden'); });
+      }
+
       // Mouse & Pointer
       window.addEventListener('mousemove', (e) => {
         this.mouse.x = e.clientX;
@@ -2066,18 +2106,15 @@
           const dist = Math.min(38, Math.hypot(dx, dy));
           const angle = Math.atan2(dy, dx);
           knob.style.transform = `translate(${Math.cos(angle) * dist}px, ${Math.sin(angle) * dist}px)`;
-          if (this.player) {
+          if (this.player && dist > 8) {
             this.player.targetAngle = angle;
-            this.player.isMoving = (dist > 8);
           }
         });
 
         const resetJoy = () => {
           joyActive = false;
           knob.style.transform = 'translate(0, 0)';
-          if (this.player) {
-            this.player.isMoving = false;
-          }
+          // Releasing the joystick keeps the snake moving in its last direction.
         };
         window.addEventListener('pointerup', resetJoy);
         window.addEventListener('pointercancel', resetJoy);
