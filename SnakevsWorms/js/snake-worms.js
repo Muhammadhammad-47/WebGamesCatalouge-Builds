@@ -204,6 +204,31 @@
     { name: 'star', emoji: '⭐', mass: 4, r: 14 }
   ];
 
+  const POWERUP_TYPES = [
+    { id: 'magnet', name: 'Food Magnet', emoji: '🧲', color: '#ec4899', duration: 10 },
+    { id: 'boost', name: 'Free Turbo', emoji: '⚡', color: '#f59e0b', duration: 8 },
+    { id: 'zoom', name: 'Eagle Eye Zoom', emoji: '👁️', color: '#38bdf8', duration: 12 },
+    { id: 'multiplier', name: '2X Score', emoji: '✨', color: '#a855f7', duration: 10 }
+  ];
+
+  const CAMPAIGN_LEVELS = [
+    { level: 1, title: "Baby Steps", desc: "Reach 50 Mass", type: "mass", target: 50, rewardCoins: 100, timePar: 35 },
+    { level: 2, title: "Snack Feast", desc: "Eat 15 Food Snacks", type: "food", target: 15, rewardCoins: 120, timePar: 40 },
+    { level: 3, title: "First Elimination", desc: "Defeat 1 Rival Worm", type: "kills", target: 1, rewardCoins: 150, timePar: 45 },
+    { level: 4, title: "Turbo Rush", desc: "Reach 85 Mass & Boost for 6s", type: "mass_and_boost", targetMass: 85, targetBoost: 6, rewardCoins: 160, timePar: 50 },
+    { level: 5, title: "Magnet Master", desc: "Collect 2 Magnet Orbs", type: "collect_powerup", powerup: "magnet", target: 2, rewardCoins: 180, timePar: 55 },
+    { level: 6, title: "Double Strike", desc: "Defeat 2 Rival Worms", type: "kills", target: 2, rewardCoins: 200, timePar: 60 },
+    { level: 7, title: "Top 5 Contender", desc: "Climb to Top 5 on Leaderboard", type: "rank", target: 5, rewardCoins: 220, timePar: 60 },
+    { level: 8, title: "Heavyweight Viper", desc: "Reach 140 Mass", type: "mass", target: 140, rewardCoins: 250, timePar: 70 },
+    { level: 9, title: "Triple Threat", desc: "Defeat 3 Rival Worms", type: "kills", target: 3, rewardCoins: 280, timePar: 75 },
+    { level: 10, title: "Arena Champion", desc: "Reach Rank #1 on Leaderboard", type: "rank", target: 1, rewardCoins: 350, timePar: 80 },
+    { level: 11, title: "Power Frenzy", desc: "Collect 3 Power-Up Orbs", type: "any_powerup", target: 3, rewardCoins: 380, timePar: 85 },
+    { level: 12, title: "Giant Anaconda", desc: "Reach 220 Mass", type: "mass", target: 220, rewardCoins: 400, timePar: 90 },
+    { level: 13, title: "Apex Predator", desc: "Defeat 4 Rival Worms", type: "kills", target: 4, rewardCoins: 450, timePar: 95 },
+    { level: 14, title: "Survival Master", desc: "Survive 60s & Reach Top 3", type: "survive_rank", targetTime: 60, targetRank: 3, rewardCoins: 500, timePar: 90 },
+    { level: 15, title: "Mythic Dragon God", desc: "Reach 320 Mass & Defeat 5 Worms", type: "mass_and_kills", targetMass: 320, targetKills: 5, rewardCoins: 1000, timePar: 110 }
+  ];
+
   // =========================================================================
   // 3. SNAKE KINEMATIC RIGID BODY ENTITY
   // =========================================================================
@@ -274,10 +299,11 @@
       }
 
       // 2. Determine Speed & Boosting
+      const hasFreeBoost = !!(this.powerups.boost || this.powerups.freeBoost);
       let curSpeed = this.speed;
-      if (this.isBoosting && (this.mass > 12 || this.powerups.freeBoost)) {
+      if ((this.isBoosting || hasFreeBoost) && (this.mass > 12 || hasFreeBoost)) {
         curSpeed = this.boostSpeed;
-        if (!this.powerups.freeBoost) {
+        if (!hasFreeBoost) {
           this.boostShedTimer += dt;
           if (this.boostShedTimer >= 0.14) {
             this.boostShedTimer = 0;
@@ -716,8 +742,10 @@
       this.customModal = document.getElementById('customModal');
       this.howToModal = document.getElementById('howToModal');
       this.gameOverModal = document.getElementById('gameOverModal');
+      this.levelSelectModal = document.getElementById('levelSelectModal');
+      this.levelCompleteModal = document.getElementById('levelCompleteModal');
 
-      // HUD Badges
+      // HUD Badges & Trackers
       this.hudScore = document.getElementById('hudScore');
       this.hudRank = document.getElementById('hudRank');
       this.hudKills = document.getElementById('hudKills');
@@ -727,14 +755,23 @@
       this.hudControlsBar = document.getElementById('hudControlsBar');
       this.goalToast = document.getElementById('goalToast');
       this.btnCloseGoalToast = document.getElementById('btnCloseGoalToast');
+      this.levelHudTracker = document.getElementById('levelHudTracker');
+      this.hudLevelTag = document.getElementById('hudLevelTag');
+      this.hudLevelGoalName = document.getElementById('hudLevelGoalName');
+      this.hudLevelNumVal = document.getElementById('hudLevelNumVal');
+      this.hudLevelProgressBar = document.getElementById('hudLevelProgressBar');
+      this.powerupsHud = document.getElementById('powerupsHud');
       this.toastTimer = null;
 
       // Systems
       this.sound = new SoundEngine();
 
-      // State
+      // State & Modes
       this.state = 'MENU'; // 'MENU' | 'PLAYING' | 'GAMEOVER'
-      this.mode = 'arena'; // 'arena' | 'battleroyale' | 'infinity'
+      this.mode = 'levels'; // 'levels' | 'arena' | 'battleroyale' | 'infinity'
+      this.currentLevel = parseInt(localStorage.getItem('svw_current_level') || '1', 10);
+      this.levelProgress = JSON.parse(localStorage.getItem('svw_level_progress') || JSON.stringify({ unlocked: 1, stars: {} }));
+      this.levelStats = { foodEaten: 0, boostTime: 0, powerupsCollected: 0, magnetCollected: 0, completed: false, startTime: 0 };
       this.arenaRadius = 2600;
       this.stormRadius = 2600;
 
@@ -743,6 +780,7 @@
       this.snakes = [];
       this.bots = [];
       this.foods = [];
+      this.powerupItems = [];
       this.particles = [];
 
       // Camera
@@ -766,6 +804,7 @@
 
       // Init subsystems
       this.initEvents();
+      this.initLevels();
       this.resize();
       this.updateCoinDisplays();
       this.initShop();
@@ -807,12 +846,15 @@
       const startBigger = document.getElementById('checkStartBigger')?.checked;
       const initialMass = startBigger ? 60 : 20;
 
-      // Reset Entities
+      // Reset Entities & Stats
       this.snakes = [];
       this.bots = [];
       this.foods = [];
+      this.powerupItems = [];
       this.particles = [];
-      this.arenaRadius = this.mode === 'infinity' ? 99999 : 2600;
+      this.levelStats = { foodEaten: 0, boostTime: 0, powerupsCollected: 0, magnetCollected: 0, completed: false, startTime: performance.now() };
+
+      this.arenaRadius = (this.mode === 'infinity') ? 99999 : (this.mode === 'levels' ? 2200 : 2600);
       this.stormRadius = this.arenaRadius;
 
       // Spawn Player
@@ -820,26 +862,48 @@
       this.player.mass = initialMass;
       this.snakes.push(this.player);
 
-      // Spawn AI Bots (45 bots for full arena action)
-      const botCount = this.mode === 'infinity' ? 35 : 45;
+      // Spawn AI Bots
+      let botCount = 45;
+      if (this.mode === 'infinity') botCount = 35;
+      if (this.mode === 'levels') botCount = Math.min(38, 12 + this.currentLevel * 2);
+
       for (let i = 0; i < botCount; i++) {
         this.spawnBot();
       }
 
       // Populate Initial Food (Clean, spacious, uncrowded)
-      const foodCount = this.mode === 'infinity' ? 280 : 200;
+      const foodCount = this.mode === 'infinity' ? 280 : (this.mode === 'levels' ? 170 : 200);
       for (let i = 0; i < foodCount; i++) {
         this.spawnFood();
       }
 
+      // Populate Floating Power-Ups
+      for (let i = 0; i < 6; i++) {
+        this.spawnPowerup();
+      }
+
       // Update UI Mode Tag
       const modeData = {
+        levels: { icon: '🎯', name: `LEVEL ${this.currentLevel}` },
         arena: { icon: '🏟️', name: 'ARENA' },
         battleroyale: { icon: '👑', name: 'BATTLE ROYALE' },
         infinity: { icon: '♾️', name: 'INFINITY' }
-      }[this.mode];
+      }[this.mode] || { icon: '🎯', name: `LEVEL ${this.currentLevel}` };
       this.hudModeIcon.textContent = modeData.icon;
       this.hudModeText.textContent = modeData.name;
+
+      // Configure Level Tracker HUD
+      if (this.mode === 'levels') {
+        const lvl = CAMPAIGN_LEVELS[this.currentLevel - 1] || CAMPAIGN_LEVELS[0];
+        if (this.levelHudTracker) {
+          this.levelHudTracker.classList.remove('hidden');
+          if (this.hudLevelTag) this.hudLevelTag.textContent = `LVL ${lvl.level}`;
+          if (this.hudLevelGoalName) this.hudLevelGoalName.textContent = lvl.desc;
+          if (this.hudLevelProgressBar) this.hudLevelProgressBar.style.width = '0%';
+        }
+      } else {
+        if (this.levelHudTracker) this.levelHudTracker.classList.add('hidden');
+      }
 
       // Switch Screens
       this.menuScreen.classList.add('hidden');
@@ -847,6 +911,8 @@
       this.leaderboardCard.classList.remove('hidden');
       this.minimapContainer.classList.remove('hidden');
       this.gameOverModal.classList.add('hidden');
+      if (this.levelSelectModal) this.levelSelectModal.classList.add('hidden');
+      if (this.levelCompleteModal) this.levelCompleteModal.classList.add('hidden');
 
       // Show In-Game HUD Controls Hint & Quick Goal Toast
       if (this.hudControlsBar) this.hudControlsBar.classList.remove('hidden');
@@ -865,6 +931,18 @@
 
       this.gameStartTime = performance.now();
       this.state = 'PLAYING';
+    }
+
+    spawnPowerup() {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 120 + Math.random() * Math.max(200, this.arenaRadius - 300);
+      const pType = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+      this.powerupItems.push({
+        x: Math.cos(angle) * dist,
+        y: Math.sin(angle) * dist,
+        type: pType,
+        bobPhase: Math.random() * Math.PI * 2
+      });
     }
 
     spawnBot() {
@@ -1049,6 +1127,22 @@
         }
 
         p.isBoosting = this.mouse.isDown || !!this.keys['Space'] || !!this.keys['ShiftLeft'] || !!this.keys['ShiftRight'] || !!this.keys['KeyJ'] || !!this.keys['KeyK'];
+        if (p.isBoosting) {
+          this.levelStats.boostTime += dt;
+        }
+
+        // Magnet Power-Up: Sucks nearby food towards player head
+        if (p.powerups.magnet) {
+          for (const f of this.foods) {
+            const dx = p.x - f.x;
+            const dy = p.y - f.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < 360 && dist > 5) {
+              f.x += (dx / dist) * 440 * dt;
+              f.y += (dy / dist) * 440 * dt;
+            }
+          }
+        }
       }
 
       // 2. Battle Royale Storm Shrinkage
@@ -1077,15 +1171,17 @@
         if (s.isDead) continue;
         const sr = s.getRadius();
         const eatRadius = sr + 14;
+        const mult = s.powerups.multiplier ? 2 : 1;
 
         for (let i = this.foods.length - 1; i >= 0; i--) {
           const f = this.foods[i];
           const dist = Math.hypot(s.x - f.x, s.y - f.y);
           if (dist < eatRadius) {
-            s.mass += f.type.mass;
-            s.score += f.type.mass * 10;
+            s.mass += f.type.mass * mult;
+            s.score += f.type.mass * 10 * mult;
             if (s.isPlayer) {
               this.sound.playEat();
+              this.levelStats.foodEaten += 1;
             }
             this.foods.splice(i, 1);
 
@@ -1096,6 +1192,30 @@
             }
           }
         }
+      }
+
+      // 5b. Power-Up Pickups Collection
+      for (const s of this.snakes) {
+        if (s.isDead) continue;
+        const hr = s.getRadius();
+        for (let i = this.powerupItems.length - 1; i >= 0; i--) {
+          const pu = this.powerupItems[i];
+          const dist = Math.hypot(s.x - pu.x, s.y - pu.y);
+          if (dist < hr + 18) {
+            s.powerups[pu.type.id] = pu.type.duration;
+            if (s.isPlayer) {
+              this.sound.playPowerup();
+              this.levelStats.powerupsCollected += 1;
+              if (pu.type.id === 'magnet') {
+                this.levelStats.magnetCollected = (this.levelStats.magnetCollected || 0) + 1;
+              }
+            }
+            this.powerupItems.splice(i, 1);
+          }
+        }
+      }
+      if (this.powerupItems.length < 6 && Math.random() < 0.02) {
+        this.spawnPowerup();
       }
 
       // 6. Combat & Body Collision Checks
@@ -1147,7 +1267,8 @@
 
       // 8. Smooth Camera Tracking
       if (p) {
-        const targetZoom = Math.max(0.68, 1.0 - (p.mass - 20) * 0.001);
+        let targetZoom = Math.max(0.68, 1.0 - (p.mass - 20) * 0.001);
+        if (p.powerups.zoom) targetZoom = 0.54; // Eagle Eye Zoom
         this.camera.zoom += (targetZoom - this.camera.zoom) * 0.08;
         this.camera.x += (p.x - this.camera.x) * 0.12;
         this.camera.y += (p.y - this.camera.y) * 0.12;
@@ -1179,6 +1300,12 @@
         `;
         this.leaderboardList.appendChild(row);
       });
+
+      // Update Power-Ups HUD Badges
+      this.updatePowerupsHUD();
+
+      // Update Campaign Level Tracker
+      this.updateLevelTracker();
 
       // Update Minimap Coordinates
       this.minimapCoords.textContent = `${Math.round(this.player.x)}, ${Math.round(this.player.y)}`;
@@ -1214,6 +1341,9 @@
 
         // 4. Draw Food & Star Remnants
         this.drawFoods(ctx);
+
+        // 4b. Draw Floating Power-Ups
+        this.drawPowerups(ctx);
 
         // 5. Draw All Snakes
         for (const s of this.snakes) {
@@ -1344,6 +1474,307 @@
           ctx.restore();
         }
       }
+    }
+
+    drawPowerups(ctx) {
+      const viewW = this.canvas.width / this.camera.zoom;
+      const viewH = this.canvas.height / this.camera.zoom;
+      const minX = this.camera.x - viewW / 2 - 50;
+      const maxX = this.camera.x + viewW / 2 + 50;
+      const minY = this.camera.y - viewH / 2 - 50;
+      const maxY = this.camera.y + viewH / 2 + 50;
+      const now = performance.now() * 0.005;
+
+      for (const pu of this.powerupItems) {
+        if (pu.x < minX || pu.x > maxX || pu.y < minY || pu.y > maxY) continue;
+        const bob = Math.sin(now + pu.bobPhase) * 4;
+
+        ctx.save();
+        // Pulsing glow aura
+        ctx.shadowColor = pu.type.color;
+        ctx.shadowBlur = 18;
+
+        // Outer Neon Ring
+        ctx.strokeStyle = pu.type.color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(pu.x, pu.y + bob, 18, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inner translucent dark capsule
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        ctx.beginPath();
+        ctx.arc(pu.x, pu.y + bob, 16, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Emoji Icon
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(pu.type.emoji, pu.x, pu.y + bob);
+
+        ctx.restore();
+      }
+    }
+
+    updatePowerupsHUD() {
+      if (!this.player || !this.powerupsHud) return;
+      const activeKeys = Object.keys(this.player.powerups);
+      if (activeKeys.length === 0) {
+        this.powerupsHud.classList.add('hidden');
+        this.powerupsHud.innerHTML = '';
+        return;
+      }
+
+      this.powerupsHud.classList.remove('hidden');
+      this.powerupsHud.innerHTML = '';
+
+      for (const key of activeKeys) {
+        const timeLeft = this.player.powerups[key];
+        const pType = POWERUP_TYPES.find(p => p.id === key);
+        if (!pType) continue;
+
+        const maxDuration = pType.duration;
+        const pct = Math.max(0, Math.min(100, (timeLeft / maxDuration) * 100));
+
+        const badge = document.createElement('div');
+        badge.className = 'powerup-badge';
+        badge.style.setProperty('--pu-color', pType.color);
+        badge.innerHTML = `
+          <span>${pType.emoji}</span>
+          <span>${pType.name}</span>
+          <div class="pu-timer-bar">
+            <div class="pu-timer-fill" style="width: ${pct}%"></div>
+          </div>
+          <span>${Math.ceil(timeLeft)}s</span>
+        `;
+        this.powerupsHud.appendChild(badge);
+      }
+    }
+
+    updateLevelTracker() {
+      if (this.mode !== 'levels' || !this.player || this.levelStats.completed) return;
+      const lvl = CAMPAIGN_LEVELS[this.currentLevel - 1] || CAMPAIGN_LEVELS[0];
+      const p = this.player;
+      let cur = 0;
+      let max = 1;
+      let text = '';
+      let isComplete = false;
+
+      switch (lvl.type) {
+        case 'mass':
+          cur = Math.round(p.mass);
+          max = lvl.target;
+          text = `${cur} / ${max}`;
+          isComplete = (cur >= max);
+          break;
+        case 'food':
+          cur = this.levelStats.foodEaten;
+          max = lvl.target;
+          text = `${cur} / ${max}`;
+          isComplete = (cur >= max);
+          break;
+        case 'kills':
+          cur = p.kills;
+          max = lvl.target;
+          text = `${cur} / ${max}`;
+          isComplete = (cur >= max);
+          break;
+        case 'mass_and_boost':
+          cur = Math.round(p.mass);
+          max = lvl.targetMass;
+          const bCur = Math.round(this.levelStats.boostTime);
+          text = `Mass ${cur}/${max} · Boost ${bCur}/${lvl.targetBoost}s`;
+          isComplete = (cur >= max && this.levelStats.boostTime >= lvl.targetBoost);
+          break;
+        case 'collect_powerup':
+          cur = this.levelStats.magnetCollected || 0;
+          max = lvl.target;
+          text = `${cur} / ${max}`;
+          isComplete = (cur >= max);
+          break;
+        case 'rank':
+          const rank = this.calculatePlayerRank();
+          cur = rank;
+          max = lvl.target;
+          text = `Rank #${rank} (Target: #${max})`;
+          isComplete = (rank <= max);
+          break;
+        case 'any_powerup':
+          cur = this.levelStats.powerupsCollected;
+          max = lvl.target;
+          text = `${cur} / ${max}`;
+          isComplete = (cur >= max);
+          break;
+        case 'survive_rank':
+          const elapsed = Math.floor((performance.now() - this.gameStartTime) / 1000);
+          const r = this.calculatePlayerRank();
+          cur = elapsed;
+          max = lvl.targetTime;
+          text = `${elapsed}s/${max}s · Rank #${r}`;
+          isComplete = (elapsed >= max && r <= lvl.targetRank);
+          break;
+        case 'mass_and_kills':
+          cur = Math.round(p.mass);
+          max = lvl.targetMass;
+          text = `Mass ${cur}/${max} · Kills ${p.kills}/${lvl.targetKills}`;
+          isComplete = (p.mass >= lvl.targetMass && p.kills >= lvl.targetKills);
+          break;
+        default:
+          cur = Math.round(p.mass);
+          max = 50;
+          text = `${cur} / 50`;
+          isComplete = (cur >= 50);
+          break;
+      }
+
+      const pct = Math.max(0, Math.min(100, (cur / max) * 100));
+      if (this.hudLevelProgressBar) this.hudLevelProgressBar.style.width = `${pct}%`;
+      if (this.hudLevelNumVal) this.hudLevelNumVal.textContent = text;
+
+      if (isComplete && !this.levelStats.completed) {
+        this.levelStats.completed = true;
+        this.triggerLevelVictory(lvl);
+      }
+    }
+
+    triggerLevelVictory(lvl) {
+      this.sound.playFanfare();
+      this.state = 'GAMEOVER';
+
+      const elapsed = Math.floor((performance.now() - this.gameStartTime) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      const timeStr = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+      // Calculate Stars (1 to 3)
+      let stars = 1;
+      if (elapsed <= lvl.timePar) stars = 2;
+      if (elapsed <= lvl.timePar * 0.75) stars = 3;
+
+      // Save level progress
+      const prevStars = this.levelProgress.stars[lvl.level] || 0;
+      this.levelProgress.stars[lvl.level] = Math.max(prevStars, stars);
+      if (this.levelProgress.unlocked <= lvl.level && lvl.level < 15) {
+        this.levelProgress.unlocked = lvl.level + 1;
+      }
+      localStorage.setItem('svw_level_progress', JSON.stringify(this.levelProgress));
+
+      // Award Coins
+      const coinsEarned = lvl.rewardCoins + (stars === 3 ? 50 : (stars === 2 ? 25 : 0));
+      this.coins += coinsEarned;
+      localStorage.setItem('svw_coins', this.coins.toString());
+      this.updateCoinDisplays();
+
+      // UI
+      document.getElementById('completeLevelSub').textContent = `Stage ${lvl.level}: ${lvl.title} Completed!`;
+      document.getElementById('lvlFinalMass').textContent = Math.round(this.player.mass).toString();
+      document.getElementById('lvlWormsKilled').textContent = this.player.kills.toString();
+      document.getElementById('lvlTimeTaken').textContent = timeStr;
+      document.getElementById('lvlCoinsEarned').textContent = `+${coinsEarned} 🪙`;
+
+      const starIcons = [document.getElementById('star1'), document.getElementById('star2'), document.getElementById('star3')];
+      starIcons.forEach((st, idx) => {
+        if (st) {
+          st.textContent = idx < stars ? '⭐' : '☆';
+          st.style.opacity = idx < stars ? '1' : '0.3';
+        }
+      });
+
+      if (this.hudControlsBar) this.hudControlsBar.classList.add('hidden');
+      if (this.goalToast) this.goalToast.classList.add('hidden');
+      if (this.levelHudTracker) this.levelHudTracker.classList.add('hidden');
+      this.levelCompleteModal.classList.remove('hidden');
+      this.renderLevelSelect();
+    }
+
+    initLevels() {
+      this.renderLevelSelect();
+
+      // Level Select Open / Close
+      const btnOpenLevels = document.getElementById('btnOpenLevels');
+      if (btnOpenLevels) {
+        btnOpenLevels.addEventListener('click', () => {
+          this.renderLevelSelect();
+          this.levelSelectModal.classList.remove('hidden');
+        });
+      }
+
+      const btnCloseLevels = document.getElementById('btnCloseLevels');
+      if (btnCloseLevels) {
+        btnCloseLevels.addEventListener('click', () => {
+          this.levelSelectModal.classList.add('hidden');
+        });
+      }
+
+      // Level Complete Buttons
+      const btnLvlLevels = document.getElementById('btnLvlLevels');
+      if (btnLvlLevels) {
+        btnLvlLevels.addEventListener('click', () => {
+          this.levelCompleteModal.classList.add('hidden');
+          this.levelSelectModal.classList.remove('hidden');
+        });
+      }
+
+      const btnNextLevel = document.getElementById('btnNextLevel');
+      if (btnNextLevel) {
+        btnNextLevel.addEventListener('click', () => {
+          this.levelCompleteModal.classList.add('hidden');
+          if (this.currentLevel < 15) {
+            this.currentLevel += 1;
+            localStorage.setItem('svw_current_level', this.currentLevel.toString());
+          }
+          this.startNewGame();
+        });
+      }
+    }
+
+    renderLevelSelect() {
+      const grid = document.getElementById('levelsGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      let totalStars = 0;
+      for (const k in this.levelProgress.stars) {
+        totalStars += this.levelProgress.stars[k];
+      }
+      const totalStarsPill = document.getElementById('totalStarsPill');
+      if (totalStarsPill) totalStarsPill.textContent = `⭐ ${totalStars} / 45`;
+
+      CAMPAIGN_LEVELS.forEach(lvl => {
+        const isUnlocked = lvl.level <= this.levelProgress.unlocked;
+        const isActive = lvl.level === this.currentLevel;
+        const stars = this.levelProgress.stars[lvl.level] || 0;
+
+        const card = document.createElement('div');
+        card.className = `level-card ${isUnlocked ? 'unlocked' : 'locked'} ${isActive ? 'active-lvl' : ''}`;
+        
+        let starsStr = '';
+        if (isUnlocked) {
+          starsStr = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+        } else {
+          starsStr = '🔒';
+        }
+
+        card.innerHTML = `
+          <span class="lvl-num">${lvl.level}</span>
+          <span class="lvl-stars">${starsStr}</span>
+          <span class="lvl-desc">${lvl.desc}</span>
+          <span class="lvl-reward">+${lvl.rewardCoins} 🪙</span>
+        `;
+
+        if (isUnlocked) {
+          card.addEventListener('click', () => {
+            this.currentLevel = lvl.level;
+            localStorage.setItem('svw_current_level', this.currentLevel.toString());
+            this.mode = 'levels';
+            this.levelSelectModal.classList.add('hidden');
+            this.startNewGame();
+          });
+        }
+
+        grid.appendChild(card);
+      });
     }
 
     renderMinimap() {
@@ -1518,6 +1949,10 @@
         this.leaderboardCard.classList.add('hidden');
         this.minimapContainer.classList.add('hidden');
         this.mobileTouchLayer.classList.add('hidden');
+        if (this.hudControlsBar) this.hudControlsBar.classList.add('hidden');
+        if (this.goalToast) this.goalToast.classList.add('hidden');
+        if (this.levelHudTracker) this.levelHudTracker.classList.add('hidden');
+        if (this.powerupsHud) this.powerupsHud.classList.add('hidden');
         this.menuScreen.classList.remove('hidden');
       });
 
@@ -1545,12 +1980,15 @@
       // Game Over Action Buttons
       document.getElementById('btnGoMenu').addEventListener('click', () => {
         this.gameOverModal.classList.add('hidden');
+        if (this.levelCompleteModal) this.levelCompleteModal.classList.add('hidden');
         this.gameHud.classList.add('hidden');
         this.leaderboardCard.classList.add('hidden');
         this.minimapContainer.classList.add('hidden');
         this.mobileTouchLayer.classList.add('hidden');
         if (this.hudControlsBar) this.hudControlsBar.classList.add('hidden');
         if (this.goalToast) this.goalToast.classList.add('hidden');
+        if (this.levelHudTracker) this.levelHudTracker.classList.add('hidden');
+        if (this.powerupsHud) this.powerupsHud.classList.add('hidden');
         this.menuScreen.classList.remove('hidden');
         this.state = 'MENU';
       });

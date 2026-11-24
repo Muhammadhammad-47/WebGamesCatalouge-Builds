@@ -50,12 +50,24 @@
         </div>
       </div>
 
-      <!-- Center: Battle Royale Storm Alert / Mode Banner -->
+      <!-- Center: Battle Royale Storm Alert / Mode Banner / Level Tracker -->
       <div class="hud-center">
         <div class="mode-pill" id="hudModePill">
-          <span id="hudModeIcon">🏟️</span>
-          <span id="hudModeText">ARENA</span>
+          <span id="hudModeIcon">🎯</span>
+          <span id="hudModeText">LEVELS</span>
         </div>
+
+        <div class="level-hud-tracker hidden" id="levelHudTracker">
+          <div class="level-info-row">
+            <span class="level-tag" id="hudLevelTag">LVL 1</span>
+            <span class="level-goal-name" id="hudLevelGoalName">Reach 50 Mass</span>
+            <span class="level-num-val" id="hudLevelNumVal">20 / 50</span>
+          </div>
+          <div class="level-progress-bg">
+            <div class="level-progress-bar" id="hudLevelProgressBar" style="width: 40%"></div>
+          </div>
+        </div>
+
         <div class="storm-warning hidden" id="stormWarning">
           ⚠️ DANGER ZONE SHRINKING!
         </div>
@@ -163,7 +175,13 @@
 
         <!-- Mode Selection Tabs -->
         <div class="mode-select-row">
-          <button class="mode-card active" data-mode="arena" id="modeArena">
+          <button class="mode-card active" data-mode="levels" id="modeLevels">
+            <span class="mode-card-icon">🎯</span>
+            <div class="mode-card-name">LEVELS</div>
+            <div class="mode-card-desc">15 Campaign Stages</div>
+          </button>
+
+          <button class="mode-card" data-mode="arena" id="modeArena">
             <span class="mode-card-icon">🏟️</span>
             <div class="mode-card-name">ARENA</div>
             <div class="mode-card-desc">50 Worms Free-For-All</div>
@@ -200,8 +218,13 @@
           <span class="play-text">PLAY NOW</span>
         </button>
 
-        <!-- Bottom Action Row (Shop, Wheel, Customizer, Settings) -->
+        <!-- Bottom Action Row (Levels, Shop, Wheel, Customizer, How-To) -->
         <div class="menu-bottom-row">
+          <button class="menu-circle-btn" id="btnOpenLevels" title="Campaign Level Select">
+            <span class="btn-emoji">🎯</span>
+            <span class="btn-caption">LEVELS</span>
+          </button>
+
           <button class="menu-circle-btn" id="btnOpenShop" title="Skins & Themes Shop">
             <span class="btn-emoji">🛍️</span>
             <span class="btn-caption">SHOP</span>
@@ -412,7 +435,73 @@
     </div>
 
     <!-- =====================================================================
-         MODAL 5: GAME OVER / VICTORY MODAL
+         MODAL 5: LEVEL SELECT CAMPAIGN
+         ===================================================================== -->
+    <div class="modal-dialog hidden" id="levelSelectModal">
+      <div class="modal-card levels-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span>🎯</span> CAMPAIGN STAGES
+            <span class="stars-counter-pill" id="totalStarsPill">⭐ 0 / 45</span>
+          </div>
+          <button class="modal-btn-close" id="btnCloseLevels">✕</button>
+        </div>
+
+        <div class="levels-grid" id="levelsGrid">
+          <!-- Dynamically generated level cards (1 to 15) -->
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL 6: LEVEL COMPLETE CELEBRATION
+         ===================================================================== -->
+    <div class="modal-dialog hidden" id="levelCompleteModal">
+      <div class="modal-card level-complete-card">
+        <div class="complete-header">
+          <span class="complete-crown">🏆</span>
+          <h2 class="complete-title">LEVEL COMPLETE!</h2>
+          <p class="complete-subtitle" id="completeLevelSub">Stage Completed Successfully!</p>
+        </div>
+
+        <div class="stars-earned-row" id="starsEarnedRow">
+          <span class="star-icon star-active" id="star1">⭐</span>
+          <span class="star-icon star-active" id="star2">⭐</span>
+          <span class="star-icon star-active" id="star3">⭐</span>
+        </div>
+
+        <div class="level-stats-grid">
+          <div class="go-stat">
+            <span class="go-label">FINAL MASS</span>
+            <span class="go-val" id="lvlFinalMass">52</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">WORMS DEFEATED</span>
+            <span class="go-val" id="lvlWormsKilled">1</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">TIME TAKEN</span>
+            <span class="go-val" id="lvlTimeTaken">00:24</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">COINS REWARD</span>
+            <span class="go-val coin-gold" id="lvlCoinsEarned">+100 🪙</span>
+          </div>
+        </div>
+
+        <div class="complete-actions">
+          <button class="btn-go-action btn-menu" id="btnLvlLevels">
+            <span>📋</span> LEVELS
+          </button>
+          <button class="btn-go-action btn-replay" id="btnNextLevel">
+            <span>▶</span> NEXT LEVEL
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL 7: GAME OVER / VICTORY MODAL
          ===================================================================== -->
     <div class="modal-dialog hidden" id="gameOverModal">
       <div class="modal-card gameover-card">
