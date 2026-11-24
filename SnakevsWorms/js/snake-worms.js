@@ -213,22 +213,22 @@
   ];
 
   const FOOD_TYPES = [
-    // Fresh Delicious Fruits (Enlarged and vibrant)
-    { name: 'apple', category: 'fruit', emoji: '🍎', mass: 1.5, r: 18 },
-    { name: 'strawberry', category: 'fruit', emoji: '🍓', mass: 1.8, r: 18 },
-    { name: 'banana', category: 'fruit', emoji: '🍌', mass: 2.0, r: 19 },
-    { name: 'watermelon', category: 'fruit', emoji: '🍉', mass: 3.5, r: 22 },
-    { name: 'grapes', category: 'fruit', emoji: '🍇', mass: 2.2, r: 19 },
-    { name: 'orange', category: 'fruit', emoji: '🍊', mass: 1.8, r: 18 },
-    // Crispy & Cheesy Fast Food (Enlarged and appetizing)
-    { name: 'burger', category: 'fastfood', emoji: '🍔', mass: 3.2, r: 21 },
-    { name: 'pizza', category: 'fastfood', emoji: '🍕', mass: 2.8, r: 20 },
-    { name: 'donut', category: 'fastfood', emoji: '🍩', mass: 2.5, r: 20 },
-    { name: 'fries', category: 'fastfood', emoji: '🍟', mass: 2.6, r: 20 },
-    { name: 'hotdog', category: 'fastfood', emoji: '🌭', mass: 3.0, r: 21 },
-    { name: 'cupcake', category: 'fastfood', emoji: '🧁', mass: 2.4, r: 19 },
+    // Fresh Delicious Fruits (Generous mass growth)
+    { name: 'apple', category: 'fruit', emoji: '🍎', mass: 2.0, r: 18 },
+    { name: 'strawberry', category: 'fruit', emoji: '🍓', mass: 2.2, r: 18 },
+    { name: 'banana', category: 'fruit', emoji: '🍌', mass: 2.5, r: 19 },
+    { name: 'watermelon', category: 'fruit', emoji: '🍉', mass: 4.5, r: 22 },
+    { name: 'grapes', category: 'fruit', emoji: '🍇', mass: 2.6, r: 19 },
+    { name: 'orange', category: 'fruit', emoji: '🍊', mass: 2.4, r: 18 },
+    // Crispy & Cheesy Fast Food (Generous mass growth)
+    { name: 'burger', category: 'fastfood', emoji: '🍔', mass: 4.8, r: 21 },
+    { name: 'pizza', category: 'fastfood', emoji: '🍕', mass: 4.2, r: 20 },
+    { name: 'donut', category: 'fastfood', emoji: '🍩', mass: 3.5, r: 20 },
+    { name: 'fries', category: 'fastfood', emoji: '🍟', mass: 3.6, r: 20 },
+    { name: 'hotdog', category: 'fastfood', emoji: '🌭', mass: 4.2, r: 21 },
+    { name: 'cupcake', category: 'fastfood', emoji: '🧁', mass: 3.2, r: 19 },
     // Special Star
-    { name: 'star', category: 'special', emoji: '⭐', mass: 4.5, r: 22 }
+    { name: 'star', category: 'special', emoji: '⭐', mass: 6.0, r: 22 }
   ];
 
   const POWERUP_TYPES = [
@@ -267,8 +267,8 @@
       this.targetAngle = this.angle;
       this.turnSpeed = 4.2;
 
-      // Mass & Speed
-      this.mass = 20;
+      // Mass & Speed (Starts cute and small)
+      this.mass = 10;
       this.score = 0;
       this.kills = 0;
       this.speed = 190;
@@ -277,13 +277,13 @@
       this.boostShedTimer = 0;
       this.spawnImmunity = 3.0; // 3 seconds spawn protection
 
-      // Segments array: [{ x, y }]
+      // Segments array: starts compact with 8 baby segments
       this.segments = [];
-      const initLength = 16;
+      const initLength = 8;
       for (let i = 0; i < initLength; i++) {
         this.segments.push({
-          x: x - Math.cos(this.angle) * i * 14,
-          y: y - Math.sin(this.angle) * i * 14
+          x: x - Math.cos(this.angle) * i * 8,
+          y: y - Math.sin(this.angle) * i * 8
         });
       }
 
@@ -301,11 +301,13 @@
     }
 
     getRadius() {
-      return Math.min(34, 13 + Math.sqrt(this.mass) * 0.42);
+      // Starts small at ~10.6px at mass 10, expands noticeably as snake eats fruits & fast food
+      return Math.min(38, 7.0 + Math.sqrt(this.mass) * 1.15);
     }
 
     getSegmentCount() {
-      return Math.max(12, Math.floor(10 + this.mass * 0.65));
+      // Starts short at 13 segments, grows longer with each bite
+      return Math.max(8, Math.floor(5 + this.mass * 0.85));
     }
 
     update(dt, arenaRadius, isBattleRoyale, stormRadius) {
@@ -356,8 +358,9 @@
         this.x += Math.cos(this.angle) * curSpeed * dt;
         this.y += Math.sin(this.angle) * curSpeed * dt;
 
-        // 5. Constrain Segments Kinematics
-        const spacing = 13;
+        // 5. Constrain Segments Kinematics - Dynamic spacing that scales with snake thickness
+        const r = this.getRadius();
+        const spacing = Math.max(8, r * 0.72);
         let prevX = this.x;
         let prevY = this.y;
 
@@ -872,7 +875,7 @@
       const nickname = (nicknameInput && nicknameInput.value.trim()) || 'SlitherPro';
 
       const startBigger = document.getElementById('checkStartBigger')?.checked;
-      const initialMass = startBigger ? 60 : 20;
+      const initialMass = startBigger ? 35 : 10;
 
       // Reset Entities & Stats
       this.snakes = [];
