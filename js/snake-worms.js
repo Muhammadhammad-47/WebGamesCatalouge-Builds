@@ -25,6 +25,24 @@
       }
     }
 
+    playClick() {
+      if (this.isMuted) return;
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(560, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.05);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.06);
+    }
+
     playEat() {
       if (this.isMuted) return;
       this.init();
@@ -1752,13 +1770,15 @@
 
       // UI
       const btnNextLevel = document.getElementById('btnNextLevel');
+      const titleEl = document.getElementById('completeLevelTitle');
+      const subEl = document.getElementById('completeLevelSub');
       if (lvl.level === 9) {
-        document.getElementById('completeLevelTitle').textContent = '👑 ALL 9 LEVELS CONQUERED! 👑';
-        document.getElementById('completeLevelSub').textContent = 'Mubarak ho! Aapne Snake vs Worms ke saare 9 levels jeet liye!';
+        if (titleEl) titleEl.textContent = '👑 ALL 9 LEVELS CONQUERED! 👑';
+        if (subEl) subEl.textContent = 'Mubarak ho! Aapne Snake vs Worms ke saare 9 levels jeet liye!';
         if (btnNextLevel) btnNextLevel.innerHTML = '<span>🏆</span> CAMPAIGN COMPLETE';
       } else {
-        document.getElementById('completeLevelTitle').textContent = 'STAGE CLEAR!';
-        document.getElementById('completeLevelSub').textContent = `Stage ${lvl.level}: ${lvl.title} Completed!`;
+        if (titleEl) titleEl.textContent = 'STAGE CLEAR!';
+        if (subEl) subEl.textContent = `Stage ${lvl.level}: ${lvl.title} Completed!`;
         if (btnNextLevel) btnNextLevel.innerHTML = '<span>▶</span> NEXT LEVEL';
       }
       document.getElementById('lvlFinalMass').textContent = Math.round(this.player.mass).toString();
@@ -1801,6 +1821,13 @@
       }
 
       // Level Complete Buttons
+      const btnLvlHome = document.getElementById('btnLvlHome');
+      if (btnLvlHome) {
+        btnLvlHome.addEventListener('click', () => {
+          this.goToMenu();
+        });
+      }
+
       const btnLvlLevels = document.getElementById('btnLvlLevels');
       if (btnLvlLevels) {
         btnLvlLevels.addEventListener('click', () => {
@@ -1920,6 +1947,35 @@
         mCtx.lineWidth = 1.5;
         mCtx.stroke();
       }
+    }
+
+    goToMenu() {
+      this.sound.playClick();
+      this.state = 'MENU';
+      if (this.player) {
+        this.player.isMoving = false;
+        this.player.isBoosting = false;
+      }
+      this.keys = {};
+      this.mouse.isDown = false;
+
+      // Hide In-Game HUDs
+      this.gameHud.classList.add('hidden');
+      this.leaderboardCard.classList.add('hidden');
+      this.minimapContainer.classList.add('hidden');
+      this.mobileTouchLayer.classList.add('hidden');
+      if (this.hudControlsBar) this.hudControlsBar.classList.add('hidden');
+      if (this.goalToast) this.goalToast.classList.add('hidden');
+      if (this.levelHudTracker) this.levelHudTracker.classList.add('hidden');
+      if (this.powerupsHud) this.powerupsHud.classList.add('hidden');
+
+      // Hide Modals
+      this.gameOverModal.classList.add('hidden');
+      if (this.levelCompleteModal) this.levelCompleteModal.classList.add('hidden');
+      if (this.levelSelectModal) this.levelSelectModal.classList.add('hidden');
+
+      // Show Main Menu
+      this.menuScreen.classList.remove('hidden');
     }
 
     // =======================================================================
@@ -2052,18 +2108,12 @@
         }
       });
 
-      document.getElementById('btnPause').addEventListener('click', () => {
-        this.state = 'MENU';
-        this.gameHud.classList.add('hidden');
-        this.leaderboardCard.classList.add('hidden');
-        this.minimapContainer.classList.add('hidden');
-        this.mobileTouchLayer.classList.add('hidden');
-        if (this.hudControlsBar) this.hudControlsBar.classList.add('hidden');
-        if (this.goalToast) this.goalToast.classList.add('hidden');
-        if (this.levelHudTracker) this.levelHudTracker.classList.add('hidden');
-        if (this.powerupsHud) this.powerupsHud.classList.add('hidden');
-        this.menuScreen.classList.remove('hidden');
-      });
+      // Home / Pause / Menu Navigation Buttons
+      const btnHome = document.getElementById('btnHome');
+      if (btnHome) btnHome.addEventListener('click', () => this.goToMenu());
+
+      const btnPause = document.getElementById('btnPause');
+      if (btnPause) btnPause.addEventListener('click', () => this.goToMenu());
 
       // Modal Open Buttons
       document.getElementById('btnOpenShop').addEventListener('click', () => {
@@ -2088,18 +2138,7 @@
 
       // Game Over Action Buttons
       document.getElementById('btnGoMenu').addEventListener('click', () => {
-        this.gameOverModal.classList.add('hidden');
-        if (this.levelCompleteModal) this.levelCompleteModal.classList.add('hidden');
-        this.gameHud.classList.add('hidden');
-        this.leaderboardCard.classList.add('hidden');
-        this.minimapContainer.classList.add('hidden');
-        this.mobileTouchLayer.classList.add('hidden');
-        if (this.hudControlsBar) this.hudControlsBar.classList.add('hidden');
-        if (this.goalToast) this.goalToast.classList.add('hidden');
-        if (this.levelHudTracker) this.levelHudTracker.classList.add('hidden');
-        if (this.powerupsHud) this.powerupsHud.classList.add('hidden');
-        this.menuScreen.classList.remove('hidden');
-        this.state = 'MENU';
+        this.goToMenu();
       });
 
       document.getElementById('btnGoReplay').addEventListener('click', () => {
