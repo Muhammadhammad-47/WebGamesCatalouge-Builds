@@ -590,3 +590,6 @@ footer {
     font-size: 28px;
   }
 }
+
+/* "NEW" tag for games without a rating yet */
+.card-badge-new { background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; }

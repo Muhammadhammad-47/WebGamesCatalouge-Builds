@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
             PLAY NOW
           </a>
-          <button class="btn-play-secondary" onclick="openModal('${game.title}', '${game.path}', '${game.orientation || 'portrait'}')">
+          <button class="btn-play-secondary" data-popup>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
             Play in Portal
           </button>
@@ -53,6 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <img src="${game.thumbnail}" alt="${game.title}">
       </div>
     `;
+    const heroBtn = heroCard.querySelector('[data-popup]');
+    if (heroBtn) heroBtn.addEventListener('click', () => openModal(game.title, game.path, game.orientation || 'portrait'));
   }
 
   // Render Games Grid
@@ -76,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.innerHTML = `
         <div class="card-media">
           <img src="${game.thumbnail}" alt="${game.title}" loading="lazy">
-          <div class="card-badge-rating">★ ${game.rating || '5.0'}</div>
+          ${game.rating ? `<div class="card-badge-rating">★ ${game.rating}</div>` : '<div class="card-badge-rating card-badge-new">NEW</div>'}
           <div class="card-badge-cat">${game.category}</div>
         </div>
         <div class="card-body">
@@ -84,12 +86,14 @@ document.addEventListener('DOMContentLoaded', () => {
           <p class="card-desc">${game.description}</p>
           <div class="card-actions">
             <a href="${game.path}" class="btn-card-launch">Play Game</a>
-            <button class="btn-card-popup" title="Play in popup modal" onclick="openModal('${game.title}', '${game.path}', '${game.orientation || 'portrait'}')">
+            <button class="btn-card-popup" title="Play in popup modal" data-popup>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </button>
           </div>
         </div>
       `;
+      // listeners instead of inline onclick: titles with quotes can no longer break the button
+      card.querySelector('[data-popup]').addEventListener('click', () => openModal(game.title, game.path, game.orientation || 'portrait'));
       gamesGrid.appendChild(card);
     });
   }
