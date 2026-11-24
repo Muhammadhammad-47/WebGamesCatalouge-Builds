@@ -1109,7 +1109,7 @@
       document.getElementById('gameOverEmoji').textContent = isVictory ? '👑' : '💥';
       document.getElementById('gameOverTitle').textContent = isVictory ? 'VICTORY ROYALE!' : '💥 SNAKE DESTROYED!';
       // White title with a coloured 3D edge reads well on the bright violet card
-      document.getElementById('gameOverTitle').style.color = isVictory ? '#fde047' : '#ffffff';
+      document.getElementById('gameOverTitle').style.color = isVictory ? '#ca8a04' : '#e11d48';
       document.getElementById('gameOverSub').textContent = isVictory
         ? 'You outsmarted all rival worms and won the crown!'
         : (this.mode === 'levels'
@@ -2008,6 +2008,25 @@
         this.sound.init();
       };
       ['pointerdown', 'keydown', 'touchstart'].forEach(t => window.addEventListener(t, warmAudio, true));
+
+      // Exit button on the main menu, with a confirmation popup
+      const exitModal = document.getElementById('exitModal');
+      const leaveGame = () => {
+        try {
+          if (window.parent && window.parent !== window) { // inside the CIEL portal: ask it to close the game popup
+            window.parent.postMessage({ action: 'closeModal', type: 'GAME_ENDED' }, '*');
+            return;
+          }
+        } catch (e) { /* cross-origin parent */ }
+        try { window.close(); } catch (e) { /* not opened by script */ }
+        setTimeout(() => { if (history.length > 1) history.back(); else window.location.href = '../'; }, 250);
+      };
+      if (exitModal) {
+        document.getElementById('btnExitGame').addEventListener('click', () => { this.sound.playClick(); exitModal.classList.remove('hidden'); });
+        document.getElementById('btnExitCancel').addEventListener('click', () => { this.sound.playClick(); exitModal.classList.add('hidden'); });
+        document.getElementById('btnExitYes').addEventListener('click', () => { exitModal.classList.add('hidden'); leaveGame(); });
+        exitModal.addEventListener('click', (e) => { if (e.target === exitModal) exitModal.classList.add('hidden'); });
+      }
 
       // Mouse & Pointer
       window.addEventListener('mousemove', (e) => {
