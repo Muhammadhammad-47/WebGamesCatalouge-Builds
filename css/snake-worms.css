@@ -653,7 +653,7 @@ html, body {
 .mode-select-row {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   margin-bottom: 18px;
 }
@@ -1379,11 +1379,276 @@ input:checked + .toggle-slider:before {
   box-shadow: 0 6px 20px rgba(249, 115, 22, 0.55);
 }
 
+/* ==========================================================================
+   CAMPAIGN LEVELS MODAL & LEVEL SELECT
+   ========================================================================== */
+.levels-card {
+  max-width: 680px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.stars-counter-pill {
+  margin-left: auto;
+  background: rgba(250, 204, 21, 0.15);
+  border: 1.5px solid rgba(250, 204, 21, 0.45);
+  color: #facc15;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.levels-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+  width: 100%;
+}
+
+.level-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 12px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.level-card.unlocked:hover {
+  transform: translateY(-4px) scale(1.05);
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  box-shadow: 0 8px 20px rgba(56, 189, 248, 0.25);
+}
+
+.level-card.active-lvl {
+  border-color: #f97316;
+  background: rgba(249, 115, 22, 0.15);
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.35);
+}
+
+.level-card.locked {
+  opacity: 0.42;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}
+
+.lvl-num {
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.lvl-stars {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #facc15;
+}
+
+.lvl-desc {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.lvl-reward {
+  font-size: 10px;
+  font-weight: 900;
+  color: #facc15;
+  margin-top: 2px;
+}
+
+/* Level HUD Tracker */
+.level-hud-tracker {
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid #38bdf8;
+  border-radius: 9999px;
+  padding: 4px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 220px;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3);
+  pointer-events: auto;
+  animation: fadeIn 0.3s ease;
+}
+
+.level-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.level-tag {
+  background: #0284c7;
+  color: #ffffff;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+.level-goal-name {
+  color: #f1f5f9;
+  flex: 1;
+  text-align: left;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.level-num-val {
+  color: #facc15;
+  font-variant-numeric: tabular-nums;
+}
+
+.level-progress-bg {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.level-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #22c55e);
+  border-radius: 99px;
+  transition: width 0.25s ease;
+}
+
+/* Level Complete Modal */
+.level-complete-card {
+  max-width: 440px;
+  text-align: center;
+  padding: 32px 24px;
+  background: rgba(15, 23, 42, 0.94);
+  border: 2px solid #22c55e;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(34, 197, 94, 0.3);
+  border-radius: 28px;
+}
+
+.complete-crown {
+  font-size: 48px;
+  display: block;
+  animation: bounceCrown 0.6s ease infinite alternate;
+}
+
+@keyframes bounceCrown {
+  from { transform: translateY(0); }
+  to { transform: translateY(-6px); }
+}
+
+.complete-title {
+  font-size: 28px;
+  font-weight: 900;
+  color: #22c55e;
+  margin-top: 6px;
+}
+
+.complete-subtitle {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.stars-earned-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  font-size: 36px;
+  margin-bottom: 20px;
+}
+
+.star-icon {
+  filter: drop-shadow(0 4px 10px rgba(250, 204, 21, 0.5));
+  animation: popStar 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popStar {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.level-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.complete-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Floating Power-Ups HUD */
+.powerups-hud {
+  position: absolute;
+  bottom: 80px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.powerup-badge {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid var(--pu-color, #facc15);
+  border-radius: 9999px;
+  padding: 5px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  animation: popIn 0.25s ease;
+}
+
+.pu-timer-bar {
+  width: 45px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.pu-timer-fill {
+  height: 100%;
+  background: var(--pu-color, #facc15);
+  border-radius: 99px;
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 600px) {
   .game-logo-title { font-size: 28px; }
   .menu-content-card { padding: 22px 18px; }
   .mode-select-row { grid-template-columns: 1fr; }
+  .levels-grid { grid-template-columns: repeat(3, 1fr); }
   .custom-builder-layout { flex-direction: column; align-items: center; }
   .btn-mobile-boost { right: 30px; }
   .leaderboard-card { display: none; } /* Hide on small screens to reduce clutter */
