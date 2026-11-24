@@ -23,8 +23,12 @@
 
     <!-- TOP HUD (In-Game) -->
     <header class="game-hud hidden" id="gameHud">
-      <!-- Left: Rank, Score, Length -->
+      <!-- Left: Home Button + Rank, Score, Length -->
       <div class="hud-left">
+        <button class="hud-btn-circle btn-hud-home" id="btnHome" title="Return to Main Menu">
+          <span>🏠</span>
+        </button>
+
         <div class="hud-badge score-badge">
           <span class="hud-icon">⭐</span>
           <div class="badge-info">
@@ -73,7 +77,7 @@
         </div>
       </div>
 
-      <!-- Right: Leaderboard, Sound & Pause Buttons -->
+      <!-- Right: Sound, Fullscreen & Home / Menu Buttons -->
       <div class="hud-right">
         <div class="hud-actions">
           <button class="hud-btn-circle" id="btnSound" title="Toggle Sound">
@@ -82,8 +86,8 @@
           <button class="hud-btn-circle" id="btnFullscreen" title="Fullscreen">
             <span>⛶</span>
           </button>
-          <button class="hud-btn-circle" id="btnPause" title="Pause / Menu">
-            <span>⏸️</span>
+          <button class="hud-btn-circle btn-hud-home" id="btnPause" title="Return to Main Menu">
+            <span>🏠</span>
           </button>
         </div>
       </div>
@@ -460,7 +464,7 @@
       <div class="modal-card level-complete-card">
         <div class="complete-header">
           <span class="complete-crown">🏆</span>
-          <h2 class="complete-title">LEVEL COMPLETE!</h2>
+          <h2 class="complete-title" id="completeLevelTitle">LEVEL COMPLETE!</h2>
           <p class="complete-subtitle" id="completeLevelSub">Stage Completed Successfully!</p>
         </div>
 
@@ -490,6 +494,9 @@
         </div>
 
         <div class="complete-actions">
+          <button class="btn-go-action btn-menu" id="btnLvlHome">
+            <span>🏠</span> HOME
+          </button>
           <button class="btn-go-action btn-menu" id="btnLvlLevels">
             <span>📋</span> LEVELS
           </button>
