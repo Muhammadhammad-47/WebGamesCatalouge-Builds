@@ -297,7 +297,8 @@
       let diff = this.targetAngle - this.angle;
       while (diff < -Math.PI) diff += Math.PI * 2;
       while (diff > Math.PI) diff -= Math.PI * 2;
-      this.angle += Math.max(-this.turnSpeed * dt, Math.min(this.turnSpeed * dt, diff * 8 * dt));
+      const turnRate = this.isPlayer ? 7.5 : this.turnSpeed;
+      this.angle += Math.max(-turnRate * dt, Math.min(turnRate * dt, diff * 12 * dt));
 
       // 4. Move Head
       this.x += Math.cos(this.angle) * curSpeed * dt;
@@ -723,6 +724,10 @@
       this.hudModePill = document.getElementById('hudModePill');
       this.hudModeIcon = document.getElementById('hudModeIcon');
       this.hudModeText = document.getElementById('hudModeText');
+      this.hudControlsBar = document.getElementById('hudControlsBar');
+      this.goalToast = document.getElementById('goalToast');
+      this.btnCloseGoalToast = document.getElementById('btnCloseGoalToast');
+      this.toastTimer = null;
 
       // Systems
       this.sound = new SoundEngine();
@@ -755,6 +760,8 @@
 
       // Input Map & Pointer Tracking
       this.mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2, isDown: false };
+      this.mouseMoved = false;
+      this.activeInput = 'keyboard';
       this.keys = {};
 
       // Init subsystems
@@ -819,8 +826,8 @@
         this.spawnBot();
       }
 
-      // Populate Initial Food (1,200 food items scattered across arena)
-      const foodCount = this.mode === 'infinity' ? 1600 : 1200;
+      // Populate Initial Food (Clean, spacious, uncrowded)
+      const foodCount = this.mode === 'infinity' ? 280 : 200;
       for (let i = 0; i < foodCount; i++) {
         this.spawnFood();
       }
@@ -840,6 +847,16 @@
       this.leaderboardCard.classList.remove('hidden');
       this.minimapContainer.classList.remove('hidden');
       this.gameOverModal.classList.add('hidden');
+
+      // Show In-Game HUD Controls Hint & Quick Goal Toast
+      if (this.hudControlsBar) this.hudControlsBar.classList.remove('hidden');
+      if (this.goalToast) {
+        this.goalToast.classList.remove('hidden', 'fade-out');
+        if (this.toastTimer) clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => {
+          if (this.goalToast) this.goalToast.classList.add('fade-out');
+        }, 5500);
+      }
 
       // Check Mobile
       if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
@@ -867,22 +884,41 @@
     }
 
     spawnFood() {
-      const angle = Math.random() * Math.PI * 2;
-      const dist = Math.random() * (this.arenaRadius - 60);
-      const fType = FOOD_TYPES[Math.floor(Math.random() * FOOD_TYPES.length)];
+      // Pick a spaced location to prevent dense clustering
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 80 + Math.random() * Math.max(200, this.arenaRadius - 200);
+        const x = Math.cos(angle) * dist;
+        const y = Math.sin(angle) * dist;
 
-      this.foods.push({
-        x: Math.cos(angle) * dist,
-        y: Math.sin(angle) * dist,
-        type: fType,
-        isRemnant: false
-      });
+        // Check distance to nearby foods to keep arena clean
+        let tooClose = false;
+        const checkCount = Math.min(30, this.foods.length);
+        for (let i = 0; i < checkCount; i++) {
+          const sample = this.foods[Math.floor(Math.random() * this.foods.length)];
+          if (sample && Math.hypot(x - sample.x, y - sample.y) < 75) {
+            tooClose = true;
+            break;
+          }
+        }
+
+        if (!tooClose || attempt === 5) {
+          const fType = FOOD_TYPES[Math.floor(Math.random() * FOOD_TYPES.length)];
+          this.foods.push({
+            x,
+            y,
+            type: fType,
+            isRemnant: false
+          });
+          break;
+        }
+      }
     }
 
     spawnRemnant(x, y, massValue, color) {
       this.foods.push({
-        x: x + (Math.random() - 0.5) * 20,
-        y: y + (Math.random() - 0.5) * 20,
+        x: x + (Math.random() - 0.5) * 16,
+        y: y + (Math.random() - 0.5) * 16,
         type: { name: 'remnant', emoji: '✨', mass: massValue, r: 12 },
         isRemnant: true,
         color: color || '#facc15'
@@ -892,10 +928,10 @@
     handleSnakeDeath(snake) {
       this.sound.playExplosion();
 
-      // Drop food scatter from all body segments
-      for (let i = 0; i < snake.segments.length; i += 2) {
+      // Drop food scatter from body segments (spaced every 4 segments to avoid clutter)
+      for (let i = 0; i < snake.segments.length; i += 4) {
         const seg = snake.segments[i];
-        this.spawnRemnant(seg.x, seg.y, 3.5, snake.skin.primary);
+        this.spawnRemnant(seg.x, seg.y, 4.5, snake.skin.primary);
       }
 
       // Particle death burst
@@ -961,6 +997,9 @@
       document.getElementById('goRank').textContent = `#${this.calculatePlayerRank()}`;
       document.getElementById('goCoins').textContent = `+${earnedCoins} 🪙`;
 
+      if (this.hudControlsBar) this.hudControlsBar.classList.add('hidden');
+      if (this.goalToast) this.goalToast.classList.add('hidden');
+
       this.gameOverModal.classList.remove('hidden');
     }
 
@@ -986,16 +1025,30 @@
     updateGame(dt) {
       const p = this.player;
 
-      // 1. Update Player Target Angle from Mouse / Touch
+      // 1. Update Player Target Angle from Keyboard or Mouse / Touch
       if (p && !p.isDead) {
-        const screenCenterX = this.canvas.width / 2;
-        const screenCenterY = this.canvas.height / 2;
-        const dx = this.mouse.x - screenCenterX;
-        const dy = this.mouse.y - screenCenterY;
-        if (Math.hypot(dx, dy) > 12) {
-          p.targetAngle = Math.atan2(dy, dx);
+        let keyX = 0;
+        let keyY = 0;
+        if (this.keys['ArrowUp'] || this.keys['KeyW']) keyY -= 1;
+        if (this.keys['ArrowDown'] || this.keys['KeyS']) keyY += 1;
+        if (this.keys['ArrowLeft'] || this.keys['KeyA']) keyX -= 1;
+        if (this.keys['ArrowRight'] || this.keys['KeyD']) keyX += 1;
+
+        if (keyX !== 0 || keyY !== 0) {
+          // Direct 8-Way Responsive Keyboard Movement
+          this.activeInput = 'keyboard';
+          p.targetAngle = Math.atan2(keyY, keyX);
+        } else if (this.activeInput === 'mouse' && this.mouseMoved) {
+          const screenCenterX = this.canvas.width / 2;
+          const screenCenterY = this.canvas.height / 2;
+          const dx = this.mouse.x - screenCenterX;
+          const dy = this.mouse.y - screenCenterY;
+          if (Math.hypot(dx, dy) > 25) {
+            p.targetAngle = Math.atan2(dy, dx);
+          }
         }
-        p.isBoosting = this.mouse.isDown || !!this.keys['Space'] || !!this.keys['ShiftLeft'];
+
+        p.isBoosting = this.mouse.isDown || !!this.keys['Space'] || !!this.keys['ShiftLeft'] || !!this.keys['ShiftRight'] || !!this.keys['KeyJ'] || !!this.keys['KeyK'];
       }
 
       // 2. Battle Royale Storm Shrinkage
@@ -1036,8 +1089,9 @@
             }
             this.foods.splice(i, 1);
 
-            // Replenish regular food in arena
-            if (!f.isRemnant && this.foods.length < 1100) {
+            // Replenish regular food in arena (Capped at clean 180 food items)
+            const maxFood = this.mode === 'infinity' ? 260 : 180;
+            if (!f.isRemnant && this.foods.length < maxFood) {
               this.spawnFood();
             }
           }
@@ -1279,11 +1333,13 @@
           ctx.fill();
           ctx.restore();
         } else {
-          // Cartoon Food Emoji Item
+          // Cartoon Food Emoji Item (clean, crisp, spacious)
           ctx.save();
-          ctx.font = '22px sans-serif';
+          ctx.font = '18px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
+          ctx.shadowColor = 'rgba(0,0,0,0.4)';
+          ctx.shadowBlur = 4;
           ctx.fillText(f.type.emoji, f.x, f.y);
           ctx.restore();
         }
@@ -1349,18 +1405,39 @@
       window.addEventListener('mousemove', (e) => {
         this.mouse.x = e.clientX;
         this.mouse.y = e.clientY;
+        this.mouseMoved = true;
+        this.activeInput = 'mouse';
       });
 
       window.addEventListener('mousedown', () => { this.mouse.isDown = true; });
       window.addEventListener('mouseup', () => { this.mouse.isDown = false; });
 
-      // Keyboard
+      // Keyboard Controls (WASD, Arrow Keys, Space, Shift)
+      const GAME_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'];
       window.addEventListener('keydown', (e) => {
         this.keys[e.code] = true;
+        if (GAME_KEYS.includes(e.code)) {
+          this.activeInput = 'keyboard';
+          if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+            e.preventDefault(); // prevent browser scrolling
+          }
+        }
       });
       window.addEventListener('keyup', (e) => {
         this.keys[e.code] = false;
+        if (GAME_KEYS.includes(e.code)) {
+          if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+            e.preventDefault();
+          }
+        }
       });
+
+      // Quick Goal Toast Dismiss
+      if (this.btnCloseGoalToast) {
+        this.btnCloseGoalToast.addEventListener('click', () => {
+          if (this.goalToast) this.goalToast.classList.add('fade-out');
+        });
+      }
 
       // Mobile Boost Button
       const btnBoost = document.getElementById('btnMobileBoost');
@@ -1472,6 +1549,8 @@
         this.leaderboardCard.classList.add('hidden');
         this.minimapContainer.classList.add('hidden');
         this.mobileTouchLayer.classList.add('hidden');
+        if (this.hudControlsBar) this.hudControlsBar.classList.add('hidden');
+        if (this.goalToast) this.goalToast.classList.add('hidden');
         this.menuScreen.classList.remove('hidden');
         this.state = 'MENU';
       });

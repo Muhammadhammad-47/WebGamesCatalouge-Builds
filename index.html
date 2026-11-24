@@ -98,6 +98,32 @@
       <!-- Dynamic active power-up badges -->
     </div>
 
+    <!-- IN-GAME HUD CONTROLS & HOW-TO HINT BAR -->
+    <div class="hud-controls-bar hidden" id="hudControlsBar">
+      <div class="hud-hint-pill">
+        <span class="hint-label">🕹️ MOVE:</span>
+        <span class="kbd-badge">W</span><span class="kbd-badge">A</span><span class="kbd-badge">S</span><span class="kbd-badge">D</span>
+        <span class="hint-sep">or</span>
+        <span class="kbd-badge">↑</span><span class="kbd-badge">←</span><span class="kbd-badge">↓</span><span class="kbd-badge">→</span>
+        <span class="hint-sep">/ Mouse</span>
+      </div>
+      <div class="hud-hint-pill">
+        <span class="hint-label">⚡ BOOST:</span>
+        <span class="kbd-badge">SPACE</span>
+        <span class="hint-sep">/ Click</span>
+      </div>
+    </div>
+
+    <!-- QUICK GOAL TUTORIAL BANNER (Slides in at match start) -->
+    <div class="goal-toast hidden" id="goalToast">
+      <span class="goal-icon">🎯</span>
+      <div class="goal-text">
+        <strong>HOW TO PLAY:</strong>
+        <span>Eat snacks to grow! Cut off rival worms so they crash into your body! Avoid hitting others!</span>
+      </div>
+      <button class="goal-close" id="btnCloseGoalToast" title="Dismiss">✕</button>
+    </div>
+
     <!-- MOBILE ON-SCREEN CONTROLS -->
     <div class="mobile-touch-layer hidden" id="mobileTouchLayer">
       <div class="virtual-joystick" id="virtualJoystick">
