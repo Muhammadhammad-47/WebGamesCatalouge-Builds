@@ -271,6 +271,7 @@
 
       this.isDead = false;
       this.deadTimer = 0;
+      this.isMoving = !isPlayer; // Bots move automatically; player moves on key/mouse input
 
       // Eye animation
       this.blinkTimer = Math.random() * 3 + 2;
@@ -303,52 +304,57 @@
 
       // 2. Determine Speed & Boosting
       const hasFreeBoost = !!(this.powerups.boost || this.powerups.freeBoost);
-      let curSpeed = this.speed;
-      if ((this.isBoosting || hasFreeBoost) && (this.mass > 12 || hasFreeBoost)) {
-        curSpeed = this.boostSpeed;
-        if (!hasFreeBoost) {
-          this.boostShedTimer += dt;
-          if (this.boostShedTimer >= 0.14) {
-            this.boostShedTimer = 0;
-            this.mass = Math.max(10, this.mass - 0.7);
-            // Shed food dropped from tail
-            if (this.segments.length > 0 && window.game) {
-              const tail = this.segments[this.segments.length - 1];
-              window.game.spawnRemnant(tail.x, tail.y, 1.2, this.skin.primary);
+      let curSpeed = 0;
+      if (!this.isPlayer || this.isMoving) {
+        curSpeed = this.speed;
+        if ((this.isBoosting || hasFreeBoost) && (this.mass > 12 || hasFreeBoost)) {
+          curSpeed = this.boostSpeed;
+          if (!hasFreeBoost) {
+            this.boostShedTimer += dt;
+            if (this.boostShedTimer >= 0.14) {
+              this.boostShedTimer = 0;
+              this.mass = Math.max(10, this.mass - 0.7);
+              // Shed food dropped from tail
+              if (this.segments.length > 0 && window.game) {
+                const tail = this.segments[this.segments.length - 1];
+                window.game.spawnRemnant(tail.x, tail.y, 1.2, this.skin.primary);
+              }
             }
           }
+        } else {
+          this.isBoosting = false;
         }
-      } else {
-        this.isBoosting = false;
       }
 
-      // 3. Smooth Angular Rotation
-      let diff = this.targetAngle - this.angle;
-      while (diff < -Math.PI) diff += Math.PI * 2;
-      while (diff > Math.PI) diff -= Math.PI * 2;
-      const turnRate = this.isPlayer ? 7.5 : this.turnSpeed;
-      this.angle += Math.max(-turnRate * dt, Math.min(turnRate * dt, diff * 12 * dt));
+      if (curSpeed > 0) {
+        // 3. Smooth Angular Rotation
+        let diff = this.targetAngle - this.angle;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        const turnRate = this.isPlayer ? 8.5 : this.turnSpeed;
+        this.angle += Math.max(-turnRate * dt, Math.min(turnRate * dt, diff * 14 * dt));
 
-      // 4. Move Head
-      this.x += Math.cos(this.angle) * curSpeed * dt;
-      this.y += Math.sin(this.angle) * curSpeed * dt;
+        // 4. Move Head
+        this.x += Math.cos(this.angle) * curSpeed * dt;
+        this.y += Math.sin(this.angle) * curSpeed * dt;
 
-      // 5. Constrain Segments Kinematics
-      const spacing = 13;
-      let prevX = this.x;
-      let prevY = this.y;
+        // 5. Constrain Segments Kinematics
+        const spacing = 13;
+        let prevX = this.x;
+        let prevY = this.y;
 
-      for (let i = 0; i < this.segments.length; i++) {
-        const seg = this.segments[i];
-        const dx = seg.x - prevX;
-        const dy = seg.y - prevY;
-        const dist = Math.hypot(dx, dy) || 0.001;
-        if (dist > spacing) {
-          seg.x = prevX + (dx / dist) * spacing;
-          seg.y = prevY + (dy / dist) * spacing;
+        for (let i = 0; i < this.segments.length; i++) {
+          const seg = this.segments[i];
+          const dx = seg.x - prevX;
+          const dy = seg.y - prevY;
+          const dist = Math.hypot(dx, dy) || 0.001;
+          if (dist > spacing) {
+            seg.x = prevX + (dx / dist) * spacing;
+            seg.y = prevY + (dy / dist) * spacing;
+          }
+          prevX = seg.x;
+          prevY = seg.y;
         }
-        prevX = seg.x;
-        prevY = seg.y;
       }
 
       // Adjust segment count to match mass
@@ -393,7 +399,7 @@
       }
     }
 
-    draw(ctx, camera) {
+    draw(ctx, camBounds) {
       if (this.isDead) return;
 
       const r = this.getRadius();
@@ -403,11 +409,11 @@
       // 1. Draw Body Segments (From tail to head for proper 3D stacking)
       for (let i = segs.length - 1; i >= 0; i--) {
         const seg = segs[i];
-        const screenX = seg.x - camera.x;
-        const screenY = seg.y - camera.y;
+        const screenX = seg.x;
+        const screenY = seg.y;
 
-        // Viewport culling
-        if (screenX < -60 || screenX > camera.w + 60 || screenY < -60 || screenY > camera.h + 60) {
+        // Viewport culling in world coordinates
+        if (camBounds && (seg.x < camBounds.minX || seg.x > camBounds.maxX || seg.y < camBounds.minY || seg.y > camBounds.maxY)) {
           continue;
         }
 
@@ -466,8 +472,8 @@
       }
 
       // 2. Draw Snake Head
-      const hx = this.x - camera.x;
-      const hy = this.y - camera.y;
+      const hx = this.x;
+      const hy = this.y;
 
       ctx.save();
       ctx.translate(hx, hy);
@@ -1135,17 +1141,26 @@
           // Direct 8-Way Responsive Keyboard Movement
           this.activeInput = 'keyboard';
           p.targetAngle = Math.atan2(keyY, keyX);
+          p.isMoving = true;
         } else if (this.activeInput === 'mouse' && this.mouseMoved) {
           const screenCenterX = this.canvas.width / 2;
           const screenCenterY = this.canvas.height / 2;
           const dx = this.mouse.x - screenCenterX;
           const dy = this.mouse.y - screenCenterY;
-          if (Math.hypot(dx, dy) > 25) {
+          if (Math.hypot(dx, dy) > 35) {
             p.targetAngle = Math.atan2(dy, dx);
+            p.isMoving = true;
+          } else {
+            p.isMoving = false;
           }
+        } else if (this.activeInput === 'touch') {
+          // Controlled by virtual joystick
+        } else {
+          // When no keys are pressed, snake stays still!
+          p.isMoving = false;
         }
 
-        p.isBoosting = this.mouse.isDown || !!this.keys['Space'] || !!this.keys['ShiftLeft'] || !!this.keys['ShiftRight'] || !!this.keys['KeyJ'] || !!this.keys['KeyK'];
+        p.isBoosting = (this.mouse.isDown || !!this.keys['Space'] || !!this.keys['ShiftLeft'] || !!this.keys['ShiftRight'] || !!this.keys['KeyJ'] || !!this.keys['KeyK']) && p.isMoving;
         if (p.isBoosting) {
           this.levelStats.boostTime += dt;
         }
@@ -1398,13 +1413,17 @@
         this.drawPowerups(ctx);
 
         // 5. Draw All Snakes
+        const viewW = w / this.camera.zoom;
+        const viewH = h / this.camera.zoom;
+        const camBounds = {
+          minX: this.camera.x - viewW / 2 - 90,
+          maxX: this.camera.x + viewW / 2 + 90,
+          minY: this.camera.y - viewH / 2 - 90,
+          maxY: this.camera.y + viewH / 2 + 90
+        };
+
         for (const s of this.snakes) {
-          s.draw(ctx, {
-            x: this.camera.x - (w / 2) / this.camera.zoom,
-            y: this.camera.y - (h / 2) / this.camera.zoom,
-            w: w / this.camera.zoom,
-            h: h / this.camera.zoom
-          });
+          s.draw(ctx, camBounds);
         }
 
         // 6. Draw Particles
@@ -1974,6 +1993,7 @@
 
         vJoy.addEventListener('pointerdown', (e) => {
           joyActive = true;
+          this.activeInput = 'touch';
           const rect = vJoy.getBoundingClientRect();
           joyOriginX = rect.left + rect.width / 2;
           joyOriginY = rect.top + rect.height / 2;
@@ -1988,12 +2008,16 @@
           knob.style.transform = `translate(${Math.cos(angle) * dist}px, ${Math.sin(angle) * dist}px)`;
           if (this.player) {
             this.player.targetAngle = angle;
+            this.player.isMoving = (dist > 8);
           }
         });
 
         const resetJoy = () => {
           joyActive = false;
           knob.style.transform = 'translate(0, 0)';
+          if (this.player) {
+            this.player.isMoving = false;
+          }
         };
         window.addEventListener('pointerup', resetJoy);
         window.addEventListener('pointercancel', resetJoy);
