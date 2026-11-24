@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Snake vs Worms | CIEL WebGames</title>
+  <meta name="description" content="Play Snake vs Worms online! Slither into the arcade arena, eat tasty foods, boost to outsmart rival worms, survive Battle Royale, and unlock awesome custom skins!">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>🐍</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;800;900&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/snake-worms.css">
+</head>
+<body>
+  <!-- Official CIEL Games Loader -->
+  <script src="ciel-loader.js"></script>
+
+  <!-- Main Viewport -->
+  <div class="game-viewport" id="gameViewport">
+
+    <!-- Game Rendering Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- TOP HUD (In-Game) -->
+    <header class="game-hud hidden" id="gameHud">
+      <!-- Left: Rank, Score, Length -->
+      <div class="hud-left">
+        <div class="hud-badge score-badge">
+          <span class="hud-icon">⭐</span>
+          <div class="badge-info">
+            <span class="badge-label">SCORE</span>
+            <span class="badge-val" id="hudScore">0</span>
+          </div>
+        </div>
+
+        <div class="hud-badge rank-badge">
+          <span class="hud-icon">🏆</span>
+          <div class="badge-info">
+            <span class="badge-label">RANK</span>
+            <span class="badge-val" id="hudRank">#1 / 50</span>
+          </div>
+        </div>
+
+        <div class="hud-badge kills-badge">
+          <span class="hud-icon">💀</span>
+          <div class="badge-info">
+            <span class="badge-label">KILLS</span>
+            <span class="badge-val" id="hudKills">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Battle Royale Storm Alert / Mode Banner -->
+      <div class="hud-center">
+        <div class="mode-pill" id="hudModePill">
+          <span id="hudModeIcon">🏟️</span>
+          <span id="hudModeText">ARENA</span>
+        </div>
+        <div class="storm-warning hidden" id="stormWarning">
+          ⚠️ DANGER ZONE SHRINKING!
+        </div>
+      </div>
+
+      <!-- Right: Leaderboard, Sound & Pause Buttons -->
+      <div class="hud-right">
+        <div class="hud-actions">
+          <button class="hud-btn-circle" id="btnSound" title="Toggle Sound">
+            <span id="soundIcon">🔊</span>
+          </button>
+          <button class="hud-btn-circle" id="btnFullscreen" title="Fullscreen">
+            <span>⛶</span>
+          </button>
+          <button class="hud-btn-circle" id="btnPause" title="Pause / Menu">
+            <span>⏸️</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- LIVE TOP 10 LEADERBOARD -->
+    <div class="leaderboard-card hidden" id="leaderboardCard">
+      <div class="leaderboard-header">
+        <span>🏆</span> LEADERBOARD
+      </div>
+      <ol class="leaderboard-list" id="leaderboardList">
+        <!-- Populated dynamically via JS -->
+      </ol>
+    </div>
+
+    <!-- MINIMAP & RADAR -->
+    <div class="minimap-container hidden" id="minimapContainer">
+      <canvas id="minimapCanvas" width="140" height="140"></canvas>
+      <div class="minimap-coords" id="minimapCoords">0, 0</div>
+    </div>
+
+    <!-- ACTIVE POWER-UPS BAR -->
+    <div class="powerups-hud hidden" id="powerupsHud">
+      <!-- Dynamic active power-up badges -->
+    </div>
+
+    <!-- IN-GAME HUD CONTROLS & HOW-TO HINT BAR -->
+    <div class="hud-controls-bar hidden" id="hudControlsBar">
+      <div class="hud-hint-pill">
+        <span class="hint-label">🕹️ MOVE:</span>
+        <span class="kbd-badge">W</span><span class="kbd-badge">A</span><span class="kbd-badge">S</span><span class="kbd-badge">D</span>
+        <span class="hint-sep">or</span>
+        <span class="kbd-badge">↑</span><span class="kbd-badge">←</span><span class="kbd-badge">↓</span><span class="kbd-badge">→</span>
+        <span class="hint-sep">/ Mouse</span>
+      </div>
+      <div class="hud-hint-pill">
+        <span class="hint-label">⚡ BOOST:</span>
+        <span class="kbd-badge">SPACE</span>
+        <span class="hint-sep">/ Click</span>
+      </div>
+    </div>
+
+    <!-- QUICK GOAL TUTORIAL BANNER (Slides in at match start) -->
+    <div class="goal-toast hidden" id="goalToast">
+      <span class="goal-icon">🎯</span>
+      <div class="goal-text">
+        <strong>HOW TO PLAY:</strong>
+        <span>Eat snacks to grow! Cut off rival worms so they crash into your body! Avoid hitting others!</span>
+      </div>
+      <button class="goal-close" id="btnCloseGoalToast" title="Dismiss">✕</button>
+    </div>
+
+    <!-- MOBILE ON-SCREEN CONTROLS -->
+    <div class="mobile-touch-layer hidden" id="mobileTouchLayer">
+      <div class="virtual-joystick" id="virtualJoystick">
+        <div class="joystick-ring"></div>
+        <div class="joystick-knob" id="joystickKnob"></div>
+      </div>
+
+      <button class="btn-mobile-boost" id="btnMobileBoost">
+        <span class="boost-icon">⚡</span>
+        <span class="boost-text">BOOST</span>
+      </button>
+    </div>
+
+    <!-- =====================================================================
+         MAIN MENU SCREEN
+         ===================================================================== -->
+    <div class="screen-overlay" id="menuScreen">
+      <div class="menu-backdrop"></div>
+
+      <div class="menu-content-card">
+        <!-- Logo Branding -->
+        <div class="logo-wrap">
+          <div class="logo-emoji-row">
+            <span class="logo-snake">🐍</span>
+            <span class="logo-vs">VS</span>
+            <span class="logo-worm">🐛</span>
+          </div>
+          <h1 class="game-logo-title">SNAKE <span class="vs-text">VS</span> WORMS</h1>
+          <p class="game-subtitle">Arcade Slither & Battle Royale Arena</p>
+        </div>
+
+        <!-- Player Nickname Input -->
+        <div class="nickname-box">
+          <span class="nick-icon">👤</span>
+          <input type="text" id="inputNickname" maxlength="16" placeholder="Enter your worm name..." value="SlitherPro">
+        </div>
+
+        <!-- Mode Selection Tabs -->
+        <div class="mode-select-row">
+          <button class="mode-card active" data-mode="arena" id="modeArena">
+            <span class="mode-card-icon">🏟️</span>
+            <div class="mode-card-name">ARENA</div>
+            <div class="mode-card-desc">50 Worms Free-For-All</div>
+          </button>
+
+          <button class="mode-card" data-mode="battleroyale" id="modeBattleRoyale">
+            <span class="mode-card-icon">👑</span>
+            <div class="mode-card-name">BATTLE ROYALE</div>
+            <div class="mode-card-desc">Shrinking Storm Zone</div>
+          </button>
+
+          <button class="mode-card" data-mode="infinity" id="modeInfinity">
+            <span class="mode-card-icon">♾️</span>
+            <div class="mode-card-name">INFINITY</div>
+            <div class="mode-card-desc">No Boundaries Relax</div>
+          </button>
+        </div>
+
+        <!-- Start Bigger Boost Checkbox -->
+        <div class="start-bigger-bar">
+          <label class="toggle-switch">
+            <input type="checkbox" id="checkStartBigger">
+            <span class="toggle-slider"></span>
+          </label>
+          <div class="start-bigger-info">
+            <span class="start-bigger-title">🚀 START BIGGER (+50 MASS)</span>
+            <span class="start-bigger-sub">Skip newborn phase and jump straight into action!</span>
+          </div>
+        </div>
+
+        <!-- Main Play Action Button -->
+        <button class="btn-play-hero" id="btnPlayGame">
+          <span class="play-icon">▶</span>
+          <span class="play-text">PLAY NOW</span>
+        </button>
+
+        <!-- Bottom Action Row (Shop, Wheel, Customizer, Settings) -->
+        <div class="menu-bottom-row">
+          <button class="menu-circle-btn" id="btnOpenShop" title="Skins & Themes Shop">
+            <span class="btn-emoji">🛍️</span>
+            <span class="btn-caption">SHOP</span>
+          </button>
+
+          <button class="menu-circle-btn" id="btnOpenWheel" title="Lucky Spin Wheel">
+            <span class="btn-emoji">🎡</span>
+            <span class="btn-caption">WHEEL</span>
+            <span class="free-badge">FREE</span>
+          </button>
+
+          <button class="menu-circle-btn" id="btnOpenCustom" title="Custom Skin Creator">
+            <span class="btn-emoji">🎨</span>
+            <span class="btn-caption">CUSTOM</span>
+          </button>
+
+          <button class="menu-circle-btn" id="btnOpenHowTo" title="How To Play">
+            <span class="btn-emoji">❓</span>
+            <span class="btn-caption">HOW TO</span>
+          </button>
+        </div>
+
+        <!-- Coin Balance Pill -->
+        <div class="coin-pill">
+          <span>🪙</span>
+          <span id="menuCoinBalance">250</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL 1: SKINS & BACKGROUND THEMES SHOP
+         ===================================================================== -->
+    <div class="modal-dialog hidden" id="shopModal">
+      <div class="modal-card shop-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span>🛍️</span> WORM SHOP & SKINS
+          </div>
+          <div class="shop-balance">
+            <span>🪙</span> <span id="shopCoins">250</span>
+          </div>
+          <button class="modal-btn-close" id="btnCloseShop">✕</button>
+        </div>
+
+        <!-- Shop Tabs: Skins vs Arena Backgrounds -->
+        <div class="shop-tabs">
+          <button class="tab-btn active" id="tabShopSkins">🐍 Snake Skins</button>
+          <button class="tab-btn" id="tabShopBgs">🎨 Arena Themes</button>
+        </div>
+
+        <div class="shop-grid" id="shopItemsGrid">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL 2: LUCKY SPIN WHEEL
+         ===================================================================== -->
+    <div class="modal-dialog hidden" id="wheelModal">
+      <div class="modal-card wheel-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span>🎡</span> LUCKY SPIN TO WIN
+          </div>
+          <button class="modal-btn-close" id="btnCloseWheel">✕</button>
+        </div>
+
+        <div class="wheel-stage">
+          <div class="wheel-pointer">▼</div>
+          <canvas id="wheelCanvas" width="340" height="340"></canvas>
+        </div>
+
+        <div class="wheel-controls">
+          <button class="btn-spin" id="btnSpinWheel">
+            <span>🎰</span> SPIN THE WHEEL!
+          </button>
+          <div class="wheel-status" id="wheelStatus">Spin for bonus coins and rare skins!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL 3: CUSTOM SKIN CREATOR
+         ===================================================================== -->
+    <div class="modal-dialog hidden" id="customModal">
+      <div class="modal-card custom-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span>🎨</span> CUSTOM WORM CREATOR
+          </div>
+          <button class="modal-btn-close" id="btnCloseCustom">✕</button>
+        </div>
+
+        <div class="custom-builder-layout">
+          <!-- Live Preview Canvas -->
+          <div class="custom-preview-box">
+            <canvas id="customPreviewCanvas" width="220" height="220"></canvas>
+            <div class="preview-caption">LIVE PREVIEW</div>
+          </div>
+
+          <!-- Customization Controls -->
+          <div class="custom-controls-box">
+            <!-- 1. Base Color -->
+            <div class="control-group">
+              <label>1. Body Base Color</label>
+              <div class="color-palette" id="paletteBase"></div>
+            </div>
+
+            <!-- 2. Pattern Style -->
+            <div class="control-group">
+              <label>2. Body Pattern</label>
+              <div class="pattern-chips" id="palettePattern">
+                <button class="chip active" data-pattern="solid">Solid</button>
+                <button class="chip" data-pattern="stripes">Stripes</button>
+                <button class="chip" data-pattern="dots">Dots</button>
+                <button class="chip" data-pattern="rings">Rings</button>
+                <button class="chip" data-pattern="scales">Scales</button>
+              </div>
+            </div>
+
+            <!-- 3. Pattern Accent Color -->
+            <div class="control-group">
+              <label>3. Accent Pattern Color</label>
+              <div class="color-palette" id="paletteAccent"></div>
+            </div>
+
+            <!-- 4. Eye Style -->
+            <div class="control-group">
+              <label>4. Eyes Style</label>
+              <div class="pattern-chips" id="paletteEyes">
+                <button class="chip active" data-eyes="cute">Cute 👀</button>
+                <button class="chip" data-eyes="cool">Cool 🕶️</button>
+                <button class="chip" data-eyes="angry">Angry 😠</button>
+                <button class="chip" data-eyes="anime">Anime ✨</button>
+              </div>
+            </div>
+
+            <!-- 5. Head Accessory -->
+            <div class="control-group">
+              <label>5. Headgear Accessory</label>
+              <div class="pattern-chips" id="paletteHat">
+                <button class="chip active" data-hat="none">None</button>
+                <button class="chip" data-hat="crown">Crown 👑</button>
+                <button class="chip" data-hat="ninja">Ninja 🥷</button>
+                <button class="chip" data-hat="horns">Horns 😈</button>
+                <button class="chip" data-hat="cap">Cap 🧢</button>
+              </div>
+            </div>
+
+            <button class="btn-save-custom" id="btnSaveCustom">
+              <span>💾</span> SAVE & EQUIP CUSTOM SKIN
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL 4: HOW TO PLAY
+         ===================================================================== -->
+    <div class="modal-dialog hidden" id="howToModal">
+      <div class="modal-card info-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span>❓</span> HOW TO PLAY
+          </div>
+          <button class="modal-btn-close" id="btnCloseHowTo">✕</button>
+        </div>
+
+        <div class="info-body">
+          <div class="info-row">
+            <span class="info-icon">🖱️</span>
+            <div>
+              <strong>Controls & Steering:</strong>
+              <p>Move mouse cursor or swipe on mobile to steer your snake. Hold Left Click, Spacebar, or tap BOOST ⚡ to sprint at turbo speed!</p>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <span class="info-icon">🍕</span>
+            <div>
+              <strong>Eat & Grow:</strong>
+              <p>Slither over donuts, pizzas, burgers, and energy stars to expand your worm's size and body mass.</p>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <span class="info-icon">⚔️</span>
+            <div>
+              <strong>Outsmart & Trap Rivals:</strong>
+              <p>Do NOT run your head into another snake's body! Instead, use turbo boost to cut in front of them so their head hits your body and explodes into glowing starlight food!</p>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <span class="info-icon">👑</span>
+            <div>
+              <strong>Game Modes:</strong>
+              <p>Climb the live Top 10 leaderboard in <b>Arena</b>, outlast rivals inside the shrinking storm ring in <b>Battle Royale</b>, or chill in <b>Infinity</b> mode.</p>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-dialog-primary" id="btnGotIt">GOT IT!</button>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL 5: GAME OVER / VICTORY MODAL
+         ===================================================================== -->
+    <div class="modal-dialog hidden" id="gameOverModal">
+      <div class="modal-card gameover-card">
+        <div class="gameover-banner" id="gameOverBanner">
+          <span class="gameover-emoji" id="gameOverEmoji">💀</span>
+          <h2 class="gameover-title" id="gameOverTitle">GAME OVER</h2>
+          <p class="gameover-sub" id="gameOverSub">You crashed into an enemy worm!</p>
+        </div>
+
+        <div class="gameover-stats-grid">
+          <div class="go-stat">
+            <span class="go-label">FINAL SCORE</span>
+            <span class="go-val" id="goScore">0</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">PEAK LENGTH</span>
+            <span class="go-val" id="goLength">0</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">WORMS DEFEATED</span>
+            <span class="go-val" id="goKills">0</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">TIME SURVIVED</span>
+            <span class="go-val" id="goTime">00:00</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">FINAL RANK</span>
+            <span class="go-val" id="goRank">#12</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">COINS EARNED</span>
+            <span class="go-val coin-gold" id="goCoins">+50 🪙</span>
+          </div>
+        </div>
+
+        <div class="gameover-actions">
+          <button class="btn-go-action btn-menu" id="btnGoMenu">
+            <span>🏠</span> MENU
+          </button>
+          <button class="btn-go-action btn-replay" id="btnGoReplay">
+            <span>🔄</span> PLAY AGAIN
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Main Game Engine -->
+  <script src="js/snake-worms.js"></script>
+</body>
+</html>
