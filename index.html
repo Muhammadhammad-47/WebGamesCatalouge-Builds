@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Arrow Escape | CIEL Games</title>
+  <meta name="description" content="Tap the arrows to slide them off the board. Plan the order, avoid crashes and clear every puzzle!">
+  <meta name="theme-color" content="#6366f1">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236366f1'/><path d='M8 16h13M16 9l7 7-7 7' stroke='white' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=1">
+  <!-- CIEL Ads SDK: simulated test ads on localhost, Google H5 ads on the live site once data-client is set -->
+  <script src="ciel-ads.js?v=1" data-client="" data-gap="90" data-first-delay="45"></script>
+</head>
+<body>
+  <!-- CIEL Games loading screen -->
+  <script src="ciel-loader.js?v=1"></script>
+
+  <div class="bg-shapes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+  <!-- ================= MAIN MENU ================= -->
+  <section class="screen" id="screenMenu">
+    <div class="menu-card">
+      <div class="brand-chip"><b>CIEL</b><span>GAMES</span></div>
+      <div class="logo-art" aria-hidden="true">
+        <span class="la la-r">➜</span><span class="la la-u">➜</span><span class="la la-l">➜</span>
+      </div>
+      <h1 class="logo">Arrow <span>Escape</span></h1>
+      <p class="tagline">Slide every arrow off the board!</p>
+
+      <button class="btn btn-big btn-green" id="btnPlay">
+        <svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>
+        <span>Play <small id="playLevelLabel">Level 1</small></span>
+      </button>
+      <div class="menu-row">
+        <button class="btn btn-orange" id="btnLevels">
+          <svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="currentColor"/></svg>Levels
+        </button>
+        <button class="btn btn-blue" id="btnHowTo">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M9.4 9.3a2.7 2.7 0 1 1 3.6 2.6c-.7.3-1 .8-1 1.5v.6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="17.3" r="1.5" fill="currentColor"/></svg>How to Play
+        </button>
+      </div>
+      <div class="menu-row">
+        <button class="btn btn-purple" id="btnSettings">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.6-2-3.4-2.4.9a7.4 7.4 0 0 0-2.6-1.5L14 2.4h-4l-.4 2.5A7.4 7.4 0 0 0 7 6.4l-2.4-.9-2 3.4 2 1.6a7.6 7.6 0 0 0 0 3l-2 1.6 2 3.4 2.4-.9a7.4 7.4 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 2.6-1.5l2.4.9 2-3.4Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>Settings
+        </button>
+        <button class="btn btn-red" id="btnExit">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Exit
+        </button>
+      </div>
+      <div class="menu-stats"><span id="menuStars">⭐ 0</span><span id="menuCleared">0 levels cleared</span></div>
+    </div>
+    <div class="copyright">© 2026 CIEL Games</div>
+  </section>
+
+  <!-- ================= GAME ================= -->
+  <section class="screen hidden" id="screenGame">
+    <header class="hud">
+      <button class="icon-btn" id="btnHome" aria-label="Menu">
+        <svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z" fill="currentColor"/></svg>
+      </button>
+      <div class="hud-center">
+        <div class="level-pill" id="hudLevel">Level 1</div>
+        <div class="hearts" id="hudHearts" aria-label="Lives"></div>
+      </div>
+      <div class="hud-right">
+        <button class="icon-btn" id="btnRestart" aria-label="Restart level">
+          <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v5h5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="icon-btn btn-hint" id="btnHint" aria-label="Hint">
+          <svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="hint-badge" id="hintBadge">1</span>
+        </button>
+      </div>
+    </header>
+    <div class="progress"><i id="progressFill"></i><span id="progressText">0 / 0</span></div>
+    <div class="board-wrap" id="boardWrap"><canvas id="board"></canvas></div>
+    <p class="game-tip" id="gameTip">Tap an arrow. It slides out the way it points.</p>
+  </section>
+
+  <!-- ================= MODALS ================= -->
+  <div class="modal hidden" id="modalWin">
+    <div class="card">
+      <div class="badge badge-green">LEVEL CLEAR!</div>
+      <div class="stars" id="winStars"><i>★</i><i>★</i><i>★</i></div>
+      <p class="card-text" id="winText">Great planning!</p>
+      <div class="card-actions">
+        <button class="btn btn-white" id="btnWinMenu">Menu</button>
+        <button class="btn btn-green" id="btnNext">Next Level ➜</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalFail">
+    <div class="card">
+      <div class="badge badge-red">OUT OF HEARTS</div>
+      <div class="big-emoji">💔</div>
+      <p class="card-text">Arrows crashed too many times. Want one more heart?</p>
+      <button class="btn btn-ad" id="btnReviveAd">▶ Watch ad: +1 ❤️</button>
+      <div class="card-actions">
+        <button class="btn btn-white" id="btnFailMenu">Menu</button>
+        <button class="btn btn-orange" id="btnRetry">Retry</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalHint">
+    <div class="card">
+      <div class="badge badge-blue">NEED A HINT?</div>
+      <div class="big-emoji">💡</div>
+      <p class="card-text">Watch a short ad to light up an arrow that can escape.</p>
+      <div class="card-actions">
+        <button class="btn btn-white" id="btnHintNo">No thanks</button>
+        <button class="btn btn-ad" id="btnHintAd">▶ Watch ad</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalLevels">
+    <div class="card card-wide">
+      <div class="card-head"><h2>Levels</h2><button class="close-btn" data-close="modalLevels">✕</button></div>
+      <div class="level-grid" id="levelGrid"></div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalHowTo">
+    <div class="card">
+      <div class="card-head"><h2>How to Play</h2><button class="close-btn" data-close="modalHowTo">✕</button></div>
+      <ol class="howto">
+        <li><b>Tap an arrow</b> and it slides off the board in the direction it points.</li>
+        <li>If another arrow is in its way, they <b>crash</b> and you lose a ❤️.</li>
+        <li>Find the right order and <b>clear the whole board</b> to win.</li>
+        <li>Stuck? Tap 💡 to light up an arrow that can escape.</li>
+      </ol>
+      <button class="btn btn-green btn-block" data-close="modalHowTo">Got it!</button>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalSettings">
+    <div class="card">
+      <div class="card-head"><h2>Settings</h2><button class="close-btn" data-close="modalSettings">✕</button></div>
+      <div class="set-row"><span>🔊 Sound</span><button class="switch" id="setSound" role="switch" aria-checked="true"><i></i></button></div>
+      <div class="set-row"><span>📳 Vibration</span><button class="switch" id="setVibe" role="switch" aria-checked="true"><i></i></button></div>
+      <div class="set-row"><span>🗑️ Reset progress</span><button class="btn btn-red btn-small" id="btnReset">Reset</button></div>
+      <button class="btn btn-green btn-block" data-close="modalSettings">Done</button>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalConfirm">
+    <div class="card">
+      <div class="badge badge-red" id="confirmTitle">LEAVE GAME?</div>
+      <p class="card-text" id="confirmText">Your progress is saved.</p>
+      <div class="card-actions">
+        <button class="btn btn-white" id="btnConfirmNo">Cancel</button>
+        <button class="btn btn-red" id="btnConfirmYes">Yes</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="game.js?v=1"></script>
+</body>
+</html>
