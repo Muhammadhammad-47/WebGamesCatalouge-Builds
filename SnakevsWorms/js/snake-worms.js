@@ -195,13 +195,22 @@
   ];
 
   const FOOD_TYPES = [
-    { name: 'pizza', emoji: '🍕', mass: 2, r: 12 },
-    { name: 'donut', emoji: '🍩', mass: 2.5, r: 13 },
-    { name: 'burger', emoji: '🍔', mass: 3, r: 14 },
-    { name: 'cupcake', emoji: '🧁', mass: 2.2, r: 12 },
-    { name: 'apple', emoji: '🍎', mass: 1.5, r: 11 },
-    { name: 'watermelon', emoji: '🍉', mass: 3.5, r: 15 },
-    { name: 'star', emoji: '⭐', mass: 4, r: 14 }
+    // Fresh Delicious Fruits
+    { name: 'apple', category: 'fruit', emoji: '🍎', mass: 1.5, r: 12 },
+    { name: 'strawberry', category: 'fruit', emoji: '🍓', mass: 1.8, r: 12 },
+    { name: 'banana', category: 'fruit', emoji: '🍌', mass: 2.0, r: 13 },
+    { name: 'watermelon', category: 'fruit', emoji: '🍉', mass: 3.5, r: 15 },
+    { name: 'grapes', category: 'fruit', emoji: '🍇', mass: 2.2, r: 13 },
+    { name: 'orange', category: 'fruit', emoji: '🍊', mass: 1.8, r: 12 },
+    // Crispy & Cheesy Fast Food
+    { name: 'burger', category: 'fastfood', emoji: '🍔', mass: 3.2, r: 14 },
+    { name: 'pizza', category: 'fastfood', emoji: '🍕', mass: 2.8, r: 13 },
+    { name: 'donut', category: 'fastfood', emoji: '🍩', mass: 2.5, r: 13 },
+    { name: 'fries', category: 'fastfood', emoji: '🍟', mass: 2.6, r: 13 },
+    { name: 'hotdog', category: 'fastfood', emoji: '🌭', mass: 3.0, r: 14 },
+    { name: 'cupcake', category: 'fastfood', emoji: '🧁', mass: 2.4, r: 12 },
+    // Special Star
+    { name: 'star', category: 'special', emoji: '⭐', mass: 4.5, r: 15 }
   ];
 
   const POWERUP_TYPES = [
@@ -212,21 +221,15 @@
   ];
 
   const CAMPAIGN_LEVELS = [
-    { level: 1, title: "Baby Steps", desc: "Reach 50 Mass", type: "mass", target: 50, rewardCoins: 100, timePar: 35 },
-    { level: 2, title: "Snack Feast", desc: "Eat 15 Food Snacks", type: "food", target: 15, rewardCoins: 120, timePar: 40 },
-    { level: 3, title: "First Elimination", desc: "Defeat 1 Rival Worm", type: "kills", target: 1, rewardCoins: 150, timePar: 45 },
-    { level: 4, title: "Turbo Rush", desc: "Reach 85 Mass & Boost for 6s", type: "mass_and_boost", targetMass: 85, targetBoost: 6, rewardCoins: 160, timePar: 50 },
-    { level: 5, title: "Magnet Master", desc: "Collect 2 Magnet Orbs", type: "collect_powerup", powerup: "magnet", target: 2, rewardCoins: 180, timePar: 55 },
-    { level: 6, title: "Double Strike", desc: "Defeat 2 Rival Worms", type: "kills", target: 2, rewardCoins: 200, timePar: 60 },
-    { level: 7, title: "Top 5 Contender", desc: "Climb to Top 5 on Leaderboard", type: "rank", target: 5, rewardCoins: 220, timePar: 60 },
-    { level: 8, title: "Heavyweight Viper", desc: "Reach 140 Mass", type: "mass", target: 140, rewardCoins: 250, timePar: 70 },
-    { level: 9, title: "Triple Threat", desc: "Defeat 3 Rival Worms", type: "kills", target: 3, rewardCoins: 280, timePar: 75 },
-    { level: 10, title: "Arena Champion", desc: "Reach Rank #1 on Leaderboard", type: "rank", target: 1, rewardCoins: 350, timePar: 80 },
-    { level: 11, title: "Power Frenzy", desc: "Collect 3 Power-Up Orbs", type: "any_powerup", target: 3, rewardCoins: 380, timePar: 85 },
-    { level: 12, title: "Giant Anaconda", desc: "Reach 220 Mass", type: "mass", target: 220, rewardCoins: 400, timePar: 90 },
-    { level: 13, title: "Apex Predator", desc: "Defeat 4 Rival Worms", type: "kills", target: 4, rewardCoins: 450, timePar: 95 },
-    { level: 14, title: "Survival Master", desc: "Survive 60s & Reach Top 3", type: "survive_rank", targetTime: 60, targetRank: 3, rewardCoins: 500, timePar: 90 },
-    { level: 15, title: "Mythic Dragon God", desc: "Reach 320 Mass & Defeat 5 Worms", type: "mass_and_kills", targetMass: 320, targetKills: 5, rewardCoins: 1000, timePar: 110 }
+    { level: 1, title: "Fruit Feeder", desc: "Eat Fruits & Snacks to Reach 45 Mass", type: "mass", target: 45, bots: 3, arenaR: 1400, rewardCoins: 100, timePar: 35 },
+    { level: 2, title: "Fast Food Feast", desc: "Eat 15 Food Snacks to Reach 70 Mass", type: "food", target: 15, targetMass: 70, bots: 4, arenaR: 1500, rewardCoins: 120, timePar: 40 },
+    { level: 3, title: "Snake Evasion", desc: "Grow to 95 Mass while dodging 5 Rivals", type: "mass", target: 95, bots: 5, arenaR: 1600, rewardCoins: 150, timePar: 45 },
+    { level: 4, title: "Turbo Rush", desc: "Reach 120 Mass & Boost for 5s (Space/Click)", type: "mass_and_boost", targetMass: 120, targetBoost: 5, bots: 6, arenaR: 1700, rewardCoins: 180, timePar: 50 },
+    { level: 5, title: "Magnet Master", desc: "Collect 2 Magnet Orbs & Reach 150 Mass", type: "collect_powerup", powerup: "magnet", target: 2, targetMass: 150, bots: 7, arenaR: 1800, rewardCoins: 200, timePar: 55 },
+    { level: 6, title: "Leaderboard Climb", desc: "Reach Top 5 on Leaderboard & 190 Mass", type: "rank_and_mass", targetRank: 5, targetMass: 190, bots: 8, arenaR: 1900, rewardCoins: 240, timePar: 60 },
+    { level: 7, title: "Coil Crusher", desc: "Trap 2 Rivals (2 Kills) & Reach 230 Mass", type: "kills_and_mass", targetKills: 2, targetMass: 230, bots: 10, arenaR: 2000, rewardCoins: 280, timePar: 65 },
+    { level: 8, title: "Apex Predator", desc: "Reach Rank #1 on Leaderboard & 270 Mass", type: "rank", target: 1, targetMass: 270, bots: 12, arenaR: 2100, rewardCoins: 350, timePar: 70 },
+    { level: 9, title: "Mythic Dragon King", desc: "Defeat 3 Worms & Reach 340 Mass (Final Stage)", type: "mass_and_kills", targetMass: 340, targetKills: 3, bots: 14, isFinal: true, arenaR: 2200, rewardCoins: 1000, timePar: 90 }
   ];
 
   // =========================================================================
@@ -785,6 +788,7 @@
 
       // Camera
       this.camera = { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight, zoom: 1 };
+      this.cameraShake = 0;
 
       // User Economy & Inventory
       this.coins = parseInt(localStorage.getItem('svw_coins') || '250', 10);
@@ -854,7 +858,7 @@
       this.particles = [];
       this.levelStats = { foodEaten: 0, boostTime: 0, powerupsCollected: 0, magnetCollected: 0, completed: false, startTime: performance.now() };
 
-      this.arenaRadius = (this.mode === 'infinity') ? 99999 : (this.mode === 'levels' ? 2200 : 2600);
+      this.arenaRadius = (this.mode === 'infinity') ? 99999 : (this.mode === 'levels' ? (CAMPAIGN_LEVELS[this.currentLevel - 1]?.arenaR || 1600) : 2600);
       this.stormRadius = this.arenaRadius;
 
       // Spawn Player
@@ -865,14 +869,17 @@
       // Spawn AI Bots
       let botCount = 45;
       if (this.mode === 'infinity') botCount = 35;
-      if (this.mode === 'levels') botCount = Math.min(38, 12 + this.currentLevel * 2);
+      if (this.mode === 'levels') {
+        const lvl = CAMPAIGN_LEVELS[this.currentLevel - 1] || CAMPAIGN_LEVELS[0];
+        botCount = lvl.bots || Math.min(14, 3 + this.currentLevel);
+      }
 
       for (let i = 0; i < botCount; i++) {
         this.spawnBot();
       }
 
       // Populate Initial Food (Clean, spacious, uncrowded)
-      const foodCount = this.mode === 'infinity' ? 280 : (this.mode === 'levels' ? 170 : 200);
+      const foodCount = this.mode === 'infinity' ? 280 : (this.mode === 'levels' ? Math.min(200, 95 + this.currentLevel * 12) : 200);
       for (let i = 0; i < foodCount; i++) {
         this.spawnFood();
       }
@@ -1032,6 +1039,7 @@
       if (snake.isPlayer) {
         this.sound.playDeath();
         this.state = 'GAMEOVER';
+        this.cameraShake = 24;
         this.showGameOverModal(false);
       } else {
         // If an AI bot died in Arena/Infinity mode, respawn a replacement after delay
@@ -1061,12 +1069,23 @@
       this.coins += earnedCoins;
       this.updateCoinDisplays();
 
-      document.getElementById('gameOverEmoji').textContent = isVictory ? '👑' : '💀';
-      document.getElementById('gameOverTitle').textContent = isVictory ? 'VICTORY ROYALE!' : 'GAME OVER';
+      document.getElementById('gameOverEmoji').textContent = isVictory ? '👑' : '💥';
+      document.getElementById('gameOverTitle').textContent = isVictory ? 'VICTORY ROYALE!' : '💥 SNAKE DESTROYED!';
       document.getElementById('gameOverTitle').style.color = isVictory ? '#facc15' : '#ef4444';
       document.getElementById('gameOverSub').textContent = isVictory
         ? 'You outsmarted all rival worms and won the crown!'
-        : 'Your head crashed into an enemy worm!';
+        : (this.mode === 'levels'
+            ? 'Aapka snake doosre snake se takra gaya! Game shuru se restart hogi.'
+            : 'Your head crashed into an enemy worm!');
+
+      const replayBtn = document.getElementById('btnGoReplay');
+      if (replayBtn) {
+        replayBtn.innerHTML = `<span>🔄</span> ${this.mode === 'levels' ? 'RESTART LEVEL' : 'PLAY AGAIN'}`;
+      }
+      const btnRestartLvl1 = document.getElementById('btnGoRestartLvl1');
+      if (btnRestartLvl1) {
+        btnRestartLvl1.style.display = (this.mode === 'levels') ? 'block' : 'none';
+      }
 
       document.getElementById('goScore').textContent = Math.round(p.score).toString();
       document.getElementById('goLength').textContent = Math.round(p.mass).toString();
@@ -1231,13 +1250,36 @@
           }
         }
 
-        // Check head vs other snakes' bodies
+        // Check head vs other snakes' heads and bodies
         const hr = attacker.getRadius();
         for (const target of this.snakes) {
           if (target === attacker || target.isDead || target.spawnImmunity > 0) continue;
 
-          // Check against target segments
-          for (let i = 2; i < target.segments.length; i++) {
+          // 1. Head-to-Head Collision Check
+          const headDist = Math.hypot(attacker.x - target.x, attacker.y - target.y);
+          if (headDist < hr + target.getRadius() * 0.85) {
+            if (attacker.isPlayer) {
+              attacker.triggerDeath();
+              target.kills += 1;
+              target.score += 250;
+              break;
+            } else if (target.isPlayer) {
+              attacker.triggerDeath();
+              target.kills += 1;
+              target.score += 250;
+              break;
+            } else {
+              if (attacker.mass <= target.mass) {
+                attacker.triggerDeath();
+                target.kills += 1;
+                break;
+              }
+            }
+          }
+
+          // 2. Check against target segments (i >= 1)
+          let collided = false;
+          for (let i = 1; i < target.segments.length; i++) {
             const seg = target.segments[i];
             const dist = Math.hypot(attacker.x - seg.x, attacker.y - seg.y);
             if (dist < hr + target.getRadius() * 0.75) {
@@ -1245,9 +1287,11 @@
               attacker.triggerDeath();
               target.kills += 1;
               target.score += 250;
+              collided = true;
               break;
             }
           }
+          if (collided) break;
         }
       }
 
@@ -1272,6 +1316,14 @@
         this.camera.zoom += (targetZoom - this.camera.zoom) * 0.08;
         this.camera.x += (p.x - this.camera.x) * 0.12;
         this.camera.y += (p.y - this.camera.y) * 0.12;
+      }
+
+      // Camera Shake Effect on Destruction
+      if (this.cameraShake > 0) {
+        this.camera.x += (Math.random() - 0.5) * this.cameraShake;
+        this.camera.y += (Math.random() - 0.5) * this.cameraShake;
+        this.cameraShake *= 0.88;
+        if (this.cameraShake < 0.5) this.cameraShake = 0;
       }
 
       // 9. Update In-Game HUD & Leaderboard
@@ -1571,8 +1623,8 @@
         case 'food':
           cur = this.levelStats.foodEaten;
           max = lvl.target;
-          text = `${cur} / ${max}`;
-          isComplete = (cur >= max);
+          text = `Snacks ${cur}/${max} · Mass ${Math.round(p.mass)}/${lvl.targetMass || 70}`;
+          isComplete = (cur >= max || p.mass >= (lvl.targetMass || 70));
           break;
         case 'kills':
           cur = p.kills;
@@ -1590,15 +1642,28 @@
         case 'collect_powerup':
           cur = this.levelStats.magnetCollected || 0;
           max = lvl.target;
-          text = `${cur} / ${max}`;
-          isComplete = (cur >= max);
+          text = `Magnets ${cur}/${max} · Mass ${Math.round(p.mass)}/${lvl.targetMass || 150}`;
+          isComplete = (cur >= max && p.mass >= (lvl.targetMass || 150));
+          break;
+        case 'rank_and_mass':
+          const curRank = this.calculatePlayerRank();
+          cur = Math.round(p.mass);
+          max = lvl.targetMass;
+          text = `Mass ${cur}/${max} · Rank #${curRank} (Top ${lvl.targetRank})`;
+          isComplete = (curRank <= lvl.targetRank && p.mass >= lvl.targetMass);
+          break;
+        case 'kills_and_mass':
+          cur = Math.round(p.mass);
+          max = lvl.targetMass;
+          text = `Mass ${cur}/${max} · Kills ${p.kills}/${lvl.targetKills}`;
+          isComplete = (p.kills >= lvl.targetKills && p.mass >= lvl.targetMass);
           break;
         case 'rank':
           const rank = this.calculatePlayerRank();
-          cur = rank;
-          max = lvl.target;
-          text = `Rank #${rank} (Target: #${max})`;
-          isComplete = (rank <= max);
+          cur = Math.round(p.mass);
+          max = lvl.targetMass || 270;
+          text = `Rank #${rank} (Target: #${lvl.target}) · Mass ${cur}/${max}`;
+          isComplete = (rank <= lvl.target && p.mass >= max);
           break;
         case 'any_powerup':
           cur = this.levelStats.powerupsCollected;
@@ -1655,7 +1720,7 @@
       // Save level progress
       const prevStars = this.levelProgress.stars[lvl.level] || 0;
       this.levelProgress.stars[lvl.level] = Math.max(prevStars, stars);
-      if (this.levelProgress.unlocked <= lvl.level && lvl.level < 15) {
+      if (this.levelProgress.unlocked <= lvl.level && lvl.level < 9) {
         this.levelProgress.unlocked = lvl.level + 1;
       }
       localStorage.setItem('svw_level_progress', JSON.stringify(this.levelProgress));
@@ -1667,7 +1732,16 @@
       this.updateCoinDisplays();
 
       // UI
-      document.getElementById('completeLevelSub').textContent = `Stage ${lvl.level}: ${lvl.title} Completed!`;
+      const btnNextLevel = document.getElementById('btnNextLevel');
+      if (lvl.level === 9) {
+        document.getElementById('completeLevelTitle').textContent = '👑 ALL 9 LEVELS CONQUERED! 👑';
+        document.getElementById('completeLevelSub').textContent = 'Mubarak ho! Aapne Snake vs Worms ke saare 9 levels jeet liye!';
+        if (btnNextLevel) btnNextLevel.innerHTML = '<span>🏆</span> CAMPAIGN COMPLETE';
+      } else {
+        document.getElementById('completeLevelTitle').textContent = 'STAGE CLEAR!';
+        document.getElementById('completeLevelSub').textContent = `Stage ${lvl.level}: ${lvl.title} Completed!`;
+        if (btnNextLevel) btnNextLevel.innerHTML = '<span>▶</span> NEXT LEVEL';
+      }
       document.getElementById('lvlFinalMass').textContent = Math.round(this.player.mass).toString();
       document.getElementById('lvlWormsKilled').textContent = this.player.kills.toString();
       document.getElementById('lvlTimeTaken').textContent = timeStr;
@@ -1720,11 +1794,14 @@
       if (btnNextLevel) {
         btnNextLevel.addEventListener('click', () => {
           this.levelCompleteModal.classList.add('hidden');
-          if (this.currentLevel < 15) {
+          if (this.currentLevel < 9) {
             this.currentLevel += 1;
             localStorage.setItem('svw_current_level', this.currentLevel.toString());
+            this.startNewGame();
+          } else {
+            this.renderLevelSelect();
+            this.levelSelectModal.classList.remove('hidden');
           }
-          this.startNewGame();
         });
       }
     }
@@ -1739,7 +1816,7 @@
         totalStars += this.levelProgress.stars[k];
       }
       const totalStarsPill = document.getElementById('totalStarsPill');
-      if (totalStarsPill) totalStarsPill.textContent = `⭐ ${totalStars} / 45`;
+      if (totalStarsPill) totalStarsPill.textContent = `⭐ ${totalStars} / 27`;
 
       CAMPAIGN_LEVELS.forEach(lvl => {
         const isUnlocked = lvl.level <= this.levelProgress.unlocked;
@@ -1847,6 +1924,14 @@
       const GAME_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'];
       window.addEventListener('keydown', (e) => {
         this.keys[e.code] = true;
+        // Immediate restart on Game Over if Space / Enter / KeyR is pressed
+        if (this.state === 'GAMEOVER') {
+          if (['Space', 'Enter', 'KeyR'].includes(e.code)) {
+            this.gameOverModal.classList.add('hidden');
+            this.startNewGame();
+            return;
+          }
+        }
         if (GAME_KEYS.includes(e.code)) {
           this.activeInput = 'keyboard';
           if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
@@ -1997,6 +2082,16 @@
         this.gameOverModal.classList.add('hidden');
         this.startNewGame();
       });
+
+      const btnGoRestartLvl1 = document.getElementById('btnGoRestartLvl1');
+      if (btnGoRestartLvl1) {
+        btnGoRestartLvl1.addEventListener('click', () => {
+          this.currentLevel = 1;
+          localStorage.setItem('svw_current_level', '1');
+          this.gameOverModal.classList.add('hidden');
+          this.startNewGame();
+        });
+      }
     }
 
     // =======================================================================
