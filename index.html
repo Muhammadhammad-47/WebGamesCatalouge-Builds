@@ -83,6 +83,9 @@
           <button class="hud-btn-circle" id="btnSound" title="Toggle Sound">
             <span id="soundIcon">🔊</span>
           </button>
+          <button class="hud-btn-circle" id="btnSettings" title="Game & Sound Settings">
+            <span>⚙️</span>
+          </button>
           <button class="hud-btn-circle" id="btnFullscreen" title="Fullscreen">
             <span>⛶</span>
           </button>
@@ -247,6 +250,11 @@
           <button class="menu-circle-btn" id="btnOpenHowTo" title="How To Play">
             <span class="btn-emoji">❓</span>
             <span class="btn-caption">HOW TO</span>
+          </button>
+
+          <button class="menu-circle-btn" id="btnOpenSettings" title="Sound & Game Settings">
+            <span class="btn-emoji">⚙️</span>
+            <span class="btn-caption">SETTINGS</span>
           </button>
 
           <button class="menu-circle-btn" id="btnExitGame" title="Leave the game">
@@ -507,6 +515,84 @@
           <button class="btn-go-action btn-replay" id="btnNextLevel">
             <span>▶</span> NEXT LEVEL
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL 6.5: SOUND & SETTINGS MODAL
+         ===================================================================== -->
+    <div class="modal-dialog hidden" id="settingsModal">
+      <div class="modal-card settings-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span>⚙️</span> SOUND & SETTINGS
+          </div>
+          <button class="modal-btn-close" id="btnCloseSettings">✕</button>
+        </div>
+
+        <div class="settings-body">
+          <!-- Master Volume Slider -->
+          <div class="settings-group">
+            <div class="settings-label-row">
+              <span class="settings-label">🔊 Master Volume</span>
+              <span class="settings-val" id="valMasterVolume">80%</span>
+            </div>
+            <input type="range" class="settings-slider" id="sliderMasterVolume" min="0" max="100" value="80">
+          </div>
+
+          <!-- Sound FX Toggle -->
+          <div class="settings-row">
+            <div class="settings-info">
+              <span class="settings-title">🎵 Sound Effects (SFX)</span>
+              <span class="settings-desc">Eating snacks, boost turbo, and victory sounds</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggleSoundFX" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Screen Shake Toggle -->
+          <div class="settings-row">
+            <div class="settings-info">
+              <span class="settings-title">📳 Screen Shake</span>
+              <span class="settings-desc">Dynamic impact rumble on snake crash or speed boost</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggleScreenShake" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Control Scheme Selection -->
+          <div class="settings-group">
+            <div class="settings-label-row">
+              <span class="settings-label">🎮 Steering Control Mode</span>
+            </div>
+            <div class="control-style-grid">
+              <button class="control-opt-btn active" data-style="hybrid" id="optControlHybrid">
+                <span class="control-opt-icon">🕹️</span>
+                <span class="control-opt-name">Keys + Mouse</span>
+                <span class="control-opt-sub">WASD / Arrows + Pointer</span>
+              </button>
+              <button class="control-opt-btn" data-style="mouse" id="optControlMouse">
+                <span class="control-opt-icon">🖱️</span>
+                <span class="control-opt-name">Mouse / Touch</span>
+                <span class="control-opt-sub">Cursor Direction</span>
+              </button>
+              <button class="control-opt-btn" data-style="keyboard" id="optControlKeys">
+                <span class="control-opt-icon">⌨️</span>
+                <span class="control-opt-name">Keys Only</span>
+                <span class="control-opt-sub">WASD & Arrow Keys</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Done / Save Button -->
+          <div class="settings-actions">
+            <button class="btn-settings-done" id="btnSaveSettings">DONE</button>
+          </div>
         </div>
       </div>
     </div>
