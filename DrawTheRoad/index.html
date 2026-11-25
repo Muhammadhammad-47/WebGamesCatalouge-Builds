@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Draw The Road | CIEL WebGames</title>
+  <meta name="description" content="Play Draw The Road on Poki! Sketch custom bridges and ramps, guide your physics car safely across perilous chasms, avoid spikes and TNT, collect gold coins, and conquer all 20 challenging levels!">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🚗</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;800;900&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/draw-the-road.css">
+</head>
+<body>
+  <!-- Official CIEL Games Loader -->
+  <script src="ciel-loader.js"></script>
+
+  <!-- Main Viewport -->
+  <div class="game-viewport" id="gameViewport">
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- IN-GAME HUD -->
+    <header class="game-hud hidden" id="gameHud">
+      <!-- Left: Home, Sound, Restart -->
+      <div class="hud-left">
+        <button class="hud-btn-circle" id="btnHome" title="Main Menu">
+          <span>🏠</span>
+        </button>
+        <button class="hud-btn-circle" id="btnSound" title="Toggle Sound">
+          <span id="soundIcon">🔊</span>
+        </button>
+        <button class="hud-btn-circle" id="btnRestart" title="Restart Level">
+          <span>🔄</span>
+        </button>
+      </div>
+
+      <!-- Center: Level Tag & Ink Bar -->
+      <div class="hud-center">
+        <div class="level-badge" id="hudLevelBadge">
+          <span class="level-icon">🏁</span>
+          <span id="hudLevelText">LEVEL 1</span>
+        </div>
+
+        <div class="ink-meter-card" id="inkMeterCard">
+          <div class="ink-meter-header">
+            <span class="ink-label">✏️ INK</span>
+            <span class="ink-pct" id="inkPctText">100%</span>
+          </div>
+          <div class="ink-bar-bg">
+            <div class="ink-bar-fill" id="inkBarFill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Undo, Drive, Coins -->
+      <div class="hud-right">
+        <div class="hud-coin-badge">
+          <span>🪙</span>
+          <span id="hudCoinsText">0</span>
+        </div>
+
+        <button class="hud-pill-btn btn-undo" id="btnUndo" title="Clear Line">
+          <span>🗑️</span>
+          <span>CLEAR</span>
+        </button>
+
+        <button class="hud-pill-btn btn-drive" id="btnDrive" title="Drive Car!">
+          <span>🚀</span>
+          <span id="btnDriveText">DRIVE!</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ON-SCREEN DRAW HINT / STATUS TOAST -->
+    <div class="draw-hint-toast hidden" id="drawHintToast">
+      <span class="hint-icon">✏️</span>
+      <span class="hint-text" id="hintText">Draw a road from the car to the finish line!</span>
+    </div>
+
+    <!-- MAIN MENU SCREEN -->
+    <div class="menu-screen" id="menuScreen">
+      <!-- Floating Background Clouds -->
+      <div class="cloud cloud-1"></div>
+      <div class="cloud cloud-2"></div>
+      <div class="cloud cloud-3"></div>
+
+      <div class="menu-content-card">
+        <!-- Game Logo Banner -->
+        <div class="logo-container">
+          <div class="logo-badge">POKI ARCADE HIT</div>
+          <h1 class="game-logo">
+            <span class="logo-draw">DRAW</span>
+            <span class="logo-the">THE</span>
+            <span class="logo-road">ROAD</span>
+          </h1>
+          <div class="logo-road-strip">
+            <div class="road-dash"></div>
+            <div class="road-dash"></div>
+            <div class="road-dash"></div>
+            <div class="road-dash"></div>
+            <div class="road-dash"></div>
+          </div>
+          <p class="logo-tagline">Sketch the path · Defy gravity · Reach the finish!</p>
+        </div>
+
+        <!-- 3D-Like Vehicle Showcase Preview -->
+        <div class="car-showcase-box">
+          <canvas id="menuCarCanvas" width="260" height="130"></canvas>
+          <div class="car-name-pill" id="menuCarName">Red Roadster</div>
+        </div>
+
+        <!-- Main Action Buttons -->
+        <div class="menu-actions">
+          <button class="btn-hero-play" id="btnPlayGame">
+            <span class="play-icon">▶</span>
+            <span class="play-label">PLAY NOW</span>
+          </button>
+
+          <div class="menu-secondary-row">
+            <button class="menu-circle-btn" id="btnOpenLevels" title="Select Level">
+              <span class="btn-emoji">📋</span>
+              <span class="btn-caption">LEVELS</span>
+            </button>
+
+            <button class="menu-circle-btn" id="btnOpenGarage" title="Vehicle Garage">
+              <span class="btn-emoji">🚗</span>
+              <span class="btn-caption">GARAGE</span>
+            </button>
+
+            <button class="menu-circle-btn" id="btnOpenHowTo" title="How To Play">
+              <span class="btn-emoji">❓</span>
+              <span class="btn-caption">HOW TO</span>
+            </button>
+
+            <button class="menu-circle-btn" id="btnMenuSound" title="Toggle Sound">
+              <span class="btn-emoji" id="menuSoundIcon">🔊</span>
+              <span class="btn-caption">SOUND</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Total Coins Pill -->
+        <div class="coin-pill">
+          <span>🪙</span>
+          <span id="menuCoinBalance">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL COMPLETE / VICTORY MODAL -->
+    <div class="modal-dialog hidden" id="victoryModal">
+      <div class="modal-card victory-card">
+        <div class="victory-header">
+          <span class="victory-banner-badge">AWESOME!</span>
+          <h2 class="victory-title" id="victoryTitle">STAGE CLEAR!</h2>
+          <p class="victory-sub" id="victorySub">You successfully crossed the finish line!</p>
+        </div>
+
+        <!-- 3 Animated Stars -->
+        <div class="stars-row" id="victoryStarsRow">
+          <div class="star-slot" id="vStar1">⭐</div>
+          <div class="star-slot" id="vStar2">⭐</div>
+          <div class="star-slot" id="vStar3">⭐</div>
+        </div>
+
+        <!-- Stats Breakdown -->
+        <div class="victory-stats-grid">
+          <div class="vstat-item">
+            <span class="vstat-label">INK SAVED</span>
+            <span class="vstat-val" id="vStatInk">65%</span>
+          </div>
+          <div class="vstat-item">
+            <span class="vstat-label">TIME</span>
+            <span class="vstat-val" id="vStatTime">02.4s</span>
+          </div>
+          <div class="vstat-item highlight">
+            <span class="vstat-label">COINS EARNED</span>
+            <span class="vstat-val gold" id="vStatCoins">+60 🪙</span>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="modal-actions-row">
+          <button class="modal-btn btn-secondary" id="btnVictoryHome">
+            <span>🏠</span> MENU
+          </button>
+          <button class="modal-btn btn-secondary" id="btnVictoryRetry">
+            <span>🔄</span> RETRY
+          </button>
+          <button class="modal-btn btn-primary" id="btnVictoryNext">
+            <span>▶</span> NEXT LEVEL
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL FAILED / CRASH MODAL -->
+    <div class="modal-dialog hidden" id="defeatModal">
+      <div class="modal-card defeat-card">
+        <div class="defeat-header">
+          <span class="defeat-emoji" id="defeatEmoji">💥</span>
+          <h2 class="defeat-title" id="defeatTitle">CRASHED!</h2>
+          <p class="defeat-sub" id="defeatSub">Your car tumbled off the bridge!</p>
+        </div>
+
+        <!-- Tip card -->
+        <div class="defeat-tip-box">
+          <span class="tip-bulb">💡</span>
+          <span class="tip-text" id="defeatTip">Draw a gentler curve so your car doesn't flip over!</span>
+        </div>
+
+        <!-- Buttons -->
+        <div class="modal-actions-row">
+          <button class="modal-btn btn-secondary" id="btnDefeatHome">
+            <span>🏠</span> MENU
+          </button>
+          <button class="modal-btn btn-primary btn-retry-pulsing" id="btnDefeatRetry">
+            <span>🔄</span> TRY AGAIN
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL SELECT MODAL -->
+    <div class="modal-dialog hidden" id="levelSelectModal">
+      <div class="modal-card levels-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span>📋</span> SELECT LEVEL
+          </div>
+          <div class="level-stars-total">
+            <span id="totalStarsCount">⭐ 0 / 60</span>
+          </div>
+          <button class="modal-btn-close" id="btnCloseLevels">✕</button>
+        </div>
+
+        <div class="levels-grid" id="levelsGrid">
+          <!-- Populated dynamically via JS: 20 levels -->
+        </div>
+      </div>
+    </div>
+
+    <!-- GARAGE / VEHICLE SHOP MODAL -->
+    <div class="modal-dialog hidden" id="garageModal">
+      <div class="modal-card garage-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span>🚗</span> VEHICLE GARAGE
+          </div>
+          <div class="garage-balance">
+            <span>🪙</span>
+            <span id="garageCoinsText">0</span>
+          </div>
+          <button class="modal-btn-close" id="btnCloseGarage">✕</button>
+        </div>
+
+        <!-- Active Vehicle Big Stage -->
+        <div class="garage-preview-stage">
+          <canvas id="garagePreviewCanvas" width="280" height="140"></canvas>
+          <div class="garage-car-info">
+            <h3 class="garage-car-title" id="garageCarTitle">Red Roadster</h3>
+            <p class="garage-car-desc" id="garageCarDesc">Nimble and balanced sports car for all-round racing.</p>
+          </div>
+          <!-- Stat Bars -->
+          <div class="car-stats-bars">
+            <div class="cstat-row">
+              <span class="cstat-name">SPEED</span>
+              <div class="cstat-track"><div class="cstat-fill" id="statBarSpeed" style="width: 70%"></div></div>
+            </div>
+            <div class="cstat-row">
+              <span class="cstat-name">SUSPENSION</span>
+              <div class="cstat-track"><div class="cstat-fill" id="statBarSusp" style="width: 60%"></div></div>
+            </div>
+            <div class="cstat-row">
+              <span class="cstat-name">GRIP</span>
+              <div class="cstat-track"><div class="cstat-fill" id="statBarGrip" style="width: 80%"></div></div>
+            </div>
+          </div>
+          <!-- Action Buy / Equip Button -->
+          <button class="btn-garage-action" id="btnGarageAction">EQUIPPED</button>
+        </div>
+
+        <!-- Vehicle Selection Carousel / Grid -->
+        <div class="garage-vehicles-grid" id="garageVehiclesGrid">
+          <!-- Populated dynamically: 6 cars -->
+        </div>
+      </div>
+    </div>
+
+    <!-- HOW TO PLAY MODAL -->
+    <div class="modal-dialog hidden" id="howToModal">
+      <div class="modal-card howto-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span>❓</span> HOW TO PLAY
+          </div>
+          <button class="modal-btn-close" id="btnCloseHowTo">✕</button>
+        </div>
+
+        <div class="howto-body">
+          <div class="howto-row">
+            <span class="howto-icon">✏️</span>
+            <div>
+              <strong>1. Sketch Roads & Bridges</strong>
+              <p>Drag with your mouse or swipe on touch screens to draw solid physics paths across gaps, hills, and canyons.</p>
+            </div>
+          </div>
+          <div class="howto-row">
+            <span class="howto-icon">💧</span>
+            <div>
+              <strong>2. Watch Your Ink Limit</strong>
+              <p>The ink meter depletes as you sketch. Conserving ink earns you up to 3 stars upon reaching the finish line!</p>
+            </div>
+          </div>
+          <div class="howto-row">
+            <span class="howto-icon">⚠️</span>
+            <div>
+              <strong>3. Avoid Deadly Hazards</strong>
+              <p>Steer clear of red spike strips, explosive TNT barrels, and perilous abysses!</p>
+            </div>
+          </div>
+          <div class="howto-row">
+            <span class="howto-icon">🚗</span>
+            <div>
+              <strong>4. Unlock Cool Cars</strong>
+              <p>Gather shiny gold coins on each track to unlock off-road buggies, monster trucks, police interceptors, and cyber racers in the garage!</p>
+            </div>
+          </div>
+        </div>
+
+        <button class="modal-btn btn-primary" id="btnHowToGotIt" style="width:100%; margin-top:16px;">
+          GOT IT, LET'S RACE! 🚀
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Game Logic -->
+  <script src="js/draw-the-road.js"></script>
+</body>
+</html>
