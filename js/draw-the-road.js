@@ -425,19 +425,23 @@
     },
     {
       id: 5,
-      title: "Twin Ravines",
-      hint: "Two gaps! Draw a continuous road across both canyons.",
+      title: "🎮 FREE DRIVE: Stunt Valley",
+      hint: "Every 5th level is Free Drive! Use Arrow Keys / WASD or On-Screen Pedals to race!",
       inkBudget: 600,
       theme: 'canyon',
+      isFreeDrive: true,
       start: { x: 100, y: 360 },
       platforms: [
-        { x: 0, y: 380, w: 170, h: 250 },
-        { x: 330, y: 380, w: 100, h: 250 },
-        { x: 580, y: 380, w: 260, h: 250 }
+        { x: 0, y: 380, w: 200, h: 250 },
+        { x: 180, y: 380, w: 170, h: 24 },
+        { x: 330, y: 380, w: 140, h: 260 },
+        { x: 450, y: 380, w: 160, h: 24 },
+        { x: 590, y: 380, w: 320, h: 250 }
       ],
-      spikes: [{ x: 210, y: 460, w: 80, h: 24 }, { x: 460, y: 460, w: 80, h: 24 }],
-      coins: [{ x: 250, y: 330 }, { x: 380, y: 340 }, { x: 500, y: 330 }],
-      finish: { x: 720, y: 380 }
+      boosters: [{ x: 140, y: 370, w: 70, h: 18 }, { x: 480, y: 370, w: 70, h: 18 }],
+      springs: [],
+      coins: [{ x: 240, y: 330 }, { x: 390, y: 280 }, { x: 520, y: 330 }],
+      finish: { x: 780, y: 380 }
     },
     {
       id: 6,
@@ -499,19 +503,23 @@
     },
     {
       id: 10,
-      title: "Moving Ferry",
-      hint: "The middle platform glides left and right! Time your bridge onto it.",
+      title: "🎮 FREE DRIVE: Turbo Skyway",
+      hint: "Every 5th level is Free Drive! Race over moving sky platforms using Arrow Keys or Pedals!",
       inkBudget: 560,
       theme: 'sky',
+      isFreeDrive: true,
       start: { x: 100, y: 360 },
       platforms: [
-        { x: 0, y: 380, w: 160, h: 250 },
-        { x: 620, y: 380, w: 260, h: 250 }
+        { x: 0, y: 380, w: 190, h: 250 },
+        { x: 180, y: 380, w: 160, h: 24 },
+        { x: 460, y: 380, w: 170, h: 24 },
+        { x: 610, y: 380, w: 260, h: 250 }
       ],
       movingPlatforms: [
-        { x: 280, y: 380, w: 120, h: 28, minX: 250, maxX: 470, speed: 85 }
+        { x: 310, y: 380, w: 170, h: 28, minX: 300, maxX: 480, speed: 75 }
       ],
-      coins: [{ x: 320, y: 330 }, { x: 410, y: 310 }, { x: 530, y: 340 }],
+      boosters: [{ x: 120, y: 370, w: 70, h: 18 }, { x: 500, y: 370, w: 70, h: 18 }],
+      coins: [{ x: 250, y: 320 }, { x: 390, y: 310 }, { x: 540, y: 320 }],
       finish: { x: 740, y: 380 }
     },
     {
@@ -580,18 +588,23 @@
     },
     {
       id: 15,
-      title: "The Leap of Faith",
-      hint: "Massive gorge! Draw a steep launch ramp to fly across.",
+      title: "🎮 FREE DRIVE: Mega Stunt Highway",
+      hint: "Every 5th level is Free Drive! Floor the accelerator and tilt in mid-air for a clean landing!",
       inkBudget: 480,
       theme: 'sunset',
+      isFreeDrive: true,
       start: { x: 100, y: 320 },
       platforms: [
-        { x: 0, y: 340, w: 180, h: 300 },
-        { x: 620, y: 460, w: 280, h: 200 }
+        { x: 0, y: 340, w: 200, h: 300 },
+        { x: 180, y: 360, w: 180, h: 24 },
+        { x: 340, y: 380, w: 180, h: 24 },
+        { x: 500, y: 400, w: 180, h: 24 },
+        { x: 660, y: 400, w: 280, h: 250 }
       ],
-      spikes: [{ x: 260, y: 520, w: 280, h: 26 }],
-      coins: [{ x: 320, y: 270 }, { x: 430, y: 290 }, { x: 540, y: 360 }],
-      finish: { x: 760, y: 460 }
+      boosters: [{ x: 140, y: 330, w: 70, h: 18 }, { x: 360, y: 370, w: 70, h: 18 }],
+      springs: [],
+      coins: [{ x: 270, y: 320 }, { x: 420, y: 340 }, { x: 570, y: 360 }],
+      finish: { x: 800, y: 400 }
     },
     {
       id: 16,
@@ -659,23 +672,25 @@
     },
     {
       id: 20,
-      title: "Grand Championship Gauntlet",
-      hint: "The ultimate 20th stage! Boosters, moving platforms, and TNT!",
+      title: "🎮 FREE DRIVE: Grand Gauntlet",
+      hint: "The Grand Finale! Speed boosters, moving bridges and loops — drive to glory!",
       inkBudget: 750,
       theme: 'neon',
+      isFreeDrive: true,
       start: { x: 90, y: 400 },
       platforms: [
-        { x: 0, y: 420, w: 150, h: 250 },
-        { x: 680, y: 360, w: 260, h: 300 }
+        { x: 0, y: 420, w: 180, h: 250 },
+        { x: 160, y: 410, w: 150, h: 24 },
+        { x: 440, y: 370, w: 150, h: 24 },
+        { x: 660, y: 370, w: 280, h: 290 }
       ],
       movingPlatforms: [
-        { x: 250, y: 400, w: 100, h: 26, minX: 220, maxX: 360, speed: 90 },
-        { x: 460, y: 340, w: 100, h: 26, minX: 430, maxX: 570, speed: -90 }
+        { x: 290, y: 390, w: 170, h: 26, minX: 270, maxX: 460, speed: 85 }
       ],
-      tnt: [{ x: 390, y: 470, r: 24 }],
-      spikes: [{ x: 220, y: 500, w: 380, h: 26 }],
-      coins: [{ x: 290, y: 330 }, { x: 400, y: 270 }, { x: 520, y: 290 }],
-      finish: { x: 800, y: 360 }
+      boosters: [{ x: 110, y: 410, w: 70, h: 18 }, { x: 490, y: 360, w: 70, h: 18 }],
+      springs: [{ x: 210, y: 400, w: 60, h: 20, force: 750 }],
+      coins: [{ x: 240, y: 320 }, { x: 370, y: 270 }, { x: 540, y: 300 }],
+      finish: { x: 800, y: 370 }
     }
   ];
 
@@ -743,6 +758,10 @@
       this.shake = 0;
       this.levelStartTime = 0;
       this.stuckTimer = 0;
+
+      // Direct Driving Input & Mode
+      this.input = { left: false, right: false, boost: false };
+      this.isFreeDrive = false;
 
       // Initialize
       this.initEvents();
@@ -840,9 +859,25 @@
       this.updateInkBar();
       document.getElementById('btnDriveText').textContent = 'DRIVE!';
 
+      // Free Drive Mode (every 5th level or marked)
+      this.isFreeDrive = (this.currentLevel % 5 === 0) || !!stage.isFreeDrive;
+      const driveOverlay = document.getElementById('driveControlsOverlay');
+      const inkPctText = document.getElementById('inkPctText');
+
+      if (this.isFreeDrive) {
+        if (driveOverlay) driveOverlay.classList.remove('hidden');
+        if (inkPctText) inkPctText.textContent = 'FREE DRIVE';
+      } else {
+        if (driveOverlay) driveOverlay.classList.add('hidden');
+      }
+
       // Show Hint Toast
       if (this.drawHintToast) {
-        this.hintText.textContent = stage.hint || 'Draw a road to the finish line!';
+        if (this.isFreeDrive) {
+          this.hintText.textContent = stage.hint || `🎮 LEVEL ${this.currentLevel}: FREE DRIVE! Use Arrow Keys / WASD or On-Screen Pedals!`;
+        } else {
+          this.hintText.textContent = stage.hint || 'Draw a road to the finish line!';
+        }
         this.drawHintToast.classList.remove('hidden');
         setTimeout(() => {
           if (this.drawHintToast) this.drawHintToast.classList.add('hidden');
@@ -854,6 +889,15 @@
       this.victoryModal.classList.add('hidden');
       this.defeatModal.classList.add('hidden');
       this.gameHud.classList.remove('hidden');
+
+      // Auto-start drive on Free Drive levels so player can steer immediately without drawing
+      if (this.isFreeDrive) {
+        setTimeout(() => {
+          if (this.state === 'DRAWING' && this.isFreeDrive) {
+            this.startDrive();
+          }
+        }, 300);
+      }
     }
 
     startDrive() {
@@ -869,6 +913,10 @@
       this.car.vx = 240; // Punchy initial roll
       const btnDriveText = document.getElementById('btnDriveText');
       if (btnDriveText) btnDriveText.textContent = 'RETRY';
+
+      // Always show direct controls while driving
+      const driveOverlay = document.getElementById('driveControlsOverlay');
+      if (driveOverlay) driveOverlay.classList.remove('hidden');
     }
 
     // =======================================================================
@@ -1122,6 +1170,44 @@
         c.angularVelocity *= Math.exp(-2.5 * dt);
       }
 
+      // Apply direct user driving inputs (Continuous Gas, Brake, Tilt, Nitro)
+      if (this.input.boost) {
+        c.vx += 850 * dt;
+        // Nitro flame exhaust particles
+        if (Math.random() < 0.5) {
+          this.particles.push({
+            x: c.x - Math.cos(c.angle) * (v.chassisW / 2 + 8),
+            y: c.y - Math.sin(c.angle) * (v.chassisW / 2 + 8) + 4,
+            vx: -Math.cos(c.angle) * 140 + (Math.random() - 0.5) * 25,
+            vy: -Math.sin(c.angle) * 140 + (Math.random() - 0.5) * 25,
+            r: Math.random() * 4 + 3,
+            color: '#38bdf8',
+            alpha: 1,
+            life: 0.25
+          });
+        }
+      }
+
+      if (this.input.right) {
+        if (anyGrounded) {
+          c.vx += Math.cos(c.angle) * 750 * dt;
+          c.vy += Math.sin(c.angle) * 750 * dt * 0.4;
+        } else {
+          // Mid-air pitch down
+          c.angularVelocity += 3.5 * dt;
+          c.vx += 160 * dt;
+        }
+      }
+
+      if (this.input.left) {
+        if (anyGrounded) {
+          c.vx = Math.max(-120, c.vx - 850 * dt);
+        } else {
+          // Mid-air pitch up (prevent nose dive crashes)
+          c.angularVelocity -= 4.5 * dt;
+        }
+      }
+
       // Apply drag
       c.vx *= Math.exp(-0.35 * dt);
       c.vy *= Math.exp(-0.2 * dt);
@@ -1138,34 +1224,45 @@
 
       // Check Spring Pads
       for (const sp of this.stageSprings) {
+        if (sp.cooldown > 0) sp.cooldown -= dt;
         if (c.x >= sp.x && c.x <= sp.x + sp.w && Math.abs(c.y + 12 - sp.y) < 28) {
-          c.vy = -sp.force;
-          c.vx += 180;
-          this.sound.playSpring();
-          this.shake = 12;
-          // Spring particles
-          for (let i = 0; i < 10; i++) {
-            this.particles.push({
-              x: sp.x + sp.w / 2,
-              y: sp.y,
-              vx: (Math.random() - 0.5) * 80,
-              vy: -Math.random() * 120 - 40,
-              r: 3,
-              color: '#facc15',
-              alpha: 1,
-              life: 0.4
-            });
+          if (!sp.cooldown || sp.cooldown <= 0) {
+            sp.cooldown = 0.5;
+            c.vy = -Math.min(sp.force, 540);
+            c.vx = Math.min(v.speed * 1.15, c.vx + 60);
+            this.sound.playSpring();
+            this.shake = 10;
+            // Spring particles
+            for (let i = 0; i < 10; i++) {
+              this.particles.push({
+                x: sp.x + sp.w / 2,
+                y: sp.y,
+                vx: (Math.random() - 0.5) * 80,
+                vy: -Math.random() * 120 - 40,
+                r: 3,
+                color: '#facc15',
+                alpha: 1,
+                life: 0.4
+              });
+            }
           }
         }
       }
 
       // Check Speed Boosters
       for (const b of this.stageBoosters) {
+        if (b.cooldown > 0) b.cooldown -= dt;
         if (c.x >= b.x && c.x <= b.x + b.w && Math.abs(c.y - b.y) < 32) {
-          c.vx += 350;
-          this.shake = 8;
+          if (!b.cooldown || b.cooldown <= 0) {
+            b.cooldown = 0.6;
+            c.vx = Math.min(v.speed * 1.25, Math.max(c.vx + 140, 360));
+            this.shake = 8;
+          }
         }
       }
+
+      // Clamp forward velocity to prevent cosmic escape velocity
+      c.vx = Math.min(v.speed * 1.35, Math.max(-200, c.vx));
 
       // Check Spikes
       for (const spk of this.stageSpikes) {
@@ -1216,10 +1313,16 @@
         this.stuckTimer = 0;
       }
 
-      // Check Finish Line
+      // Check Finish Line — ONLY triggers when car touches the finish line on the platform deck
       if (this.stageFinish) {
         const f = this.stageFinish;
-        if (c.x >= f.x - 15 && Math.abs(c.y - f.y) < 60) {
+        const wheelBottomY = c.y + 12 + v.wheelR;
+        // 1. Car must be on or touching the platform deck (wheels touching the floor, NOT flying high in the sky)
+        const isTouchingDeck = (Math.abs(wheelBottomY - f.y) <= 18) || (anyGrounded && Math.abs(c.y - (f.y - 12 - v.wheelR)) <= 22);
+        // 2. Car front or wheels must actually be at or crossing the finish line on the platform
+        const isAtFinishLine = (c.x >= f.x - 8) && (c.x <= f.x + 80);
+
+        if (isTouchingDeck && isAtFinishLine) {
           this.triggerVictory();
         }
       }
@@ -1677,22 +1780,42 @@
       ctx.save();
       ctx.translate(f.x, f.y);
 
-      // Dual flagpole
-      ctx.fillStyle = '#64748b';
-      ctx.fillRect(-4, -68, 6, 68);
+      // 1. Checkered Ground Finish Strip (Painted onto the platform road deck)
+      const stripCols = 8;
+      const stripRows = 2;
+      const sW = 6;
+      const sH = 7;
+      for (let r = 0; r < stripRows; r++) {
+        for (let c = 0; c < stripCols; c++) {
+          ctx.fillStyle = (r + c) % 2 === 0 ? '#ffffff' : '#0f172a';
+          ctx.fillRect(-12 + c * sW, r * sH, sW, sH);
+        }
+      }
 
-      // Checkered Flag Archway
-      const rows = 4;
-      const cols = 5;
-      const cellW = 8;
-      const cellH = 7;
+      // 2. Twin Archway Flagpoles
+      ctx.fillStyle = '#64748b';
+      ctx.fillRect(-6, -72, 6, 72);
+      ctx.fillRect(36, -72, 6, 72);
+
+      // 3. Checkered Overhead Archway Banner
+      const rows = 3;
+      const cols = 6;
+      const cellW = 7;
+      const cellH = 6;
 
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           ctx.fillStyle = (r + c) % 2 === 0 ? '#ffffff' : '#0f172a';
-          ctx.fillRect(2 + c * cellW, -68 + r * cellH, cellW, cellH);
+          ctx.fillRect(-2 + c * cellW, -72 + r * cellH, cellW, cellH);
         }
       }
+
+      // 4. "FINISH" Label on Arch
+      ctx.fillStyle = '#facc15';
+      ctx.font = '900 10px Fredoka, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('FINISH', 19, -80);
 
       ctx.restore();
     }
@@ -1934,11 +2057,12 @@
       LEVELS.forEach(lvl => {
         const isUnlocked = lvl.id <= this.unlockedLevel;
         const isActive = lvl.id === this.currentLevel;
+        const isFree = (lvl.id % 5 === 0) || !!lvl.isFreeDrive;
         const stars = this.levelStars[lvl.id] || 0;
         totalStars += stars;
 
         const btn = document.createElement('button');
-        btn.className = `level-btn ${isUnlocked ? 'unlocked' : 'locked'} ${isActive ? 'active' : ''}`;
+        btn.className = `level-btn ${isUnlocked ? 'unlocked' : 'locked'} ${isActive ? 'active' : ''} ${isFree ? 'free-drive-level' : ''}`;
 
         let starsStr = '';
         for (let i = 0; i < 3; i++) {
@@ -2050,24 +2174,51 @@
         }
       });
 
-      // Keyboard Controls
-      window.addEventListener('keydown', (e) => {
-        if (['Space', 'Enter', 'ArrowUp', 'KeyW', 'ArrowRight', 'KeyD'].includes(e.code)) {
-          if (this.state === 'DRAWING') {
-            this.startDrive();
-          } else if (this.state === 'DRIVING' && this.car) {
-            this.car.vx = Math.min(this.car.spec.speed * 1.3, this.car.vx + 60);
-          }
-        } else if (['ArrowLeft', 'KeyA'].includes(e.code)) {
-          if (this.state === 'DRIVING' && this.car) {
-            this.car.angularVelocity -= 3;
-          }
-        } else if (e.code === 'KeyR') {
+      // Keyboard Controls (Continuous Input Tracking)
+      const setKey = (code, isDown) => {
+        if (['ArrowRight', 'KeyD'].includes(code)) {
+          this.input.right = isDown;
+          if (isDown && this.state === 'DRAWING' && this.isFreeDrive) this.startDrive();
+        } else if (['ArrowLeft', 'KeyA'].includes(code)) {
+          this.input.left = isDown;
+          if (isDown && this.state === 'DRAWING' && this.isFreeDrive) this.startDrive();
+        } else if (['ArrowUp', 'KeyW', 'Space', 'ShiftLeft', 'ShiftRight'].includes(code)) {
+          this.input.boost = isDown;
+          if (isDown && this.state === 'DRAWING') this.startDrive();
+        } else if (code === 'KeyR' && isDown) {
           if (this.state === 'DRIVING' || this.state === 'DRAWING' || this.state === 'DEFEAT') {
             this.loadLevel(this.currentLevel);
           }
         }
-      });
+      };
+
+      window.addEventListener('keydown', (e) => setKey(e.code, true));
+      window.addEventListener('keyup', (e) => setKey(e.code, false));
+
+      // On-Screen Touch / Mouse Pedals
+      const wireTouchBtn = (elId, prop) => {
+        const btn = document.getElementById(elId);
+        if (!btn) return;
+        const press = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.input[prop] = true;
+          btn.classList.add('active');
+          if (this.state === 'DRAWING') this.startDrive();
+        };
+        const release = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.input[prop] = false;
+          btn.classList.remove('active');
+        };
+        ['pointerdown', 'touchstart', 'mousedown'].forEach(t => btn.addEventListener(t, press));
+        ['pointerup', 'pointercancel', 'touchend', 'mouseup', 'mouseleave'].forEach(t => btn.addEventListener(t, release));
+      };
+
+      wireTouchBtn('btnTouchGas', 'right');
+      wireTouchBtn('btnTouchBrake', 'left');
+      wireTouchBtn('btnTouchNitro', 'boost');
 
       // Menu Actions
       document.getElementById('btnPlayGame').addEventListener('click', () => {

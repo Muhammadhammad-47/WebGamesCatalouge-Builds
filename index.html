@@ -78,6 +78,32 @@
       <span class="hint-text" id="hintText">Draw a road from the car to the finish line!</span>
     </div>
 
+    <!-- ON-SCREEN DRIVE CONTROLS (Active in Drive Mode & Every 5th Level) -->
+    <div class="drive-controls-overlay hidden" id="driveControlsOverlay">
+      <div class="drive-ctrl-group drive-ctrl-left">
+        <button class="drive-touch-btn btn-brake" id="btnTouchBrake" title="Brake / Tilt Left (A / ◄)">
+          <span class="btn-ctrl-icon">◀</span>
+          <span class="btn-ctrl-label">BRAKE</span>
+        </button>
+      </div>
+
+      <div class="drive-ctrl-center-hint" id="driveControlHint">
+        <span class="ctrl-hint-badge">🎮 KEY CONTROLS ACTIVE</span>
+        <span class="ctrl-hint-text">USE ARROW KEYS / WASD OR BUTTONS</span>
+      </div>
+
+      <div class="drive-ctrl-group drive-ctrl-right">
+        <button class="drive-touch-btn btn-nitro" id="btnTouchNitro" title="Turbo Boost (Space / W)">
+          <span class="btn-ctrl-icon">⚡</span>
+          <span class="btn-ctrl-label">BOOST</span>
+        </button>
+        <button class="drive-touch-btn btn-gas" id="btnTouchGas" title="Drive Forward (D / ►)">
+          <span class="btn-ctrl-icon">▶</span>
+          <span class="btn-ctrl-label">GAS</span>
+        </button>
+      </div>
+    </div>
+
     <!-- MAIN MENU SCREEN -->
     <div class="menu-screen" id="menuScreen">
       <!-- Floating Background Clouds -->
