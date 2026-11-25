@@ -1065,163 +1065,157 @@
 
       if (c.isCrashed || c.isFinished) return;
 
-      // Gravity
+      // 4x Physics Sub-Stepping for silky-smooth road contact, slope climbing, and zero tunneling
+      const subSteps = 4;
+      const subDt = dt / subSteps;
       const gravity = 880;
-      c.vy += gravity * dt;
-
-      // Forward Motor Torque
-      const motorAccel = v.speed * (v.grip / 80);
-      const forwardX = Math.cos(c.angle);
-      const forwardY = Math.sin(c.angle);
-
-      // Check Wheel Ground Contacts
-      const wheels = [c.rearWheel, c.frontWheel];
-      const halfBase = v.wheelBase / 2;
-      const cosA = Math.cos(c.angle);
-      const sinA = Math.sin(c.angle);
-      const targetWheelOffsets = [
-        { dx: -halfBase * cosA - 12 * sinA, dy: -halfBase * sinA + 12 * cosA },
-        { dx:  halfBase * cosA - 12 * sinA, dy:  halfBase * sinA + 12 * cosA }
-      ];
-
-      let anyGrounded = false;
-      let groundHits = 0;
-      let avgSlope = 0;
-
-      wheels.forEach((w, idx) => {
-        const targetPos = {
-          x: c.x + targetWheelOffsets[idx].dx,
-          y: c.y + targetWheelOffsets[idx].dy
-        };
-
-        // Query collision with terrain, drawn road, moving platforms
-        const col = this.checkSurfaceCollision(targetPos.x, targetPos.y, v.wheelR);
-
-        if (col.hit) {
-          w.grounded = true;
-          anyGrounded = true;
-          groundHits++;
-          avgSlope += (col.slopeAngle !== undefined ? col.slopeAngle : 0);
-
-          // Direct position penetration resolution (prevents sinking into surface, clamped to prevent catapulting)
-          const maxPush = Math.min(col.depth, 5.0);
-          const pushFraction = 0.55;
-          c.y += col.normalY * maxPush * pushFraction;
-          c.x += col.normalX * maxPush * 0.15;
-
-          // Absorb downward velocity into ground
-          if (c.vy > 0 && col.normalY < -0.3) {
-            c.vy = Math.min(0, c.vy * -0.1);
-          }
-
-          // Traction & Forward Drive
-          const driveAngle = col.slopeAngle !== undefined ? col.slopeAngle : c.angle;
-          const driveX = Math.cos(driveAngle);
-          const driveY = Math.sin(driveAngle);
-
-          // Wheel spin visual based on actual car velocity
-          w.rot += (c.vx * dt) / v.wheelR;
-
-          // Tire smoke puff when driving forward
-          if (this.input.right && Math.abs(c.vx) > 120 && Math.random() < 0.25) {
-            this.particles.push({
-              x: w.x,
-              y: w.y + v.wheelR,
-              vx: -driveX * 30 + (Math.random() - 0.5) * 15,
-              vy: -15 + (Math.random() - 0.5) * 10,
-              r: Math.random() * 4 + 3,
-              color: 'rgba(255, 255, 255, 0.7)',
-              alpha: 0.7,
-              life: 0.35
-            });
-          }
-        } else {
-          w.grounded = false;
-        }
-
-        w.x = targetPos.x;
-        w.y = targetPos.y;
-      });
-
-      // Align vehicle chassis smoothly to terrain slope
-      if (groundHits > 0) {
-        const targetAng = avgSlope / groundHits;
-        let diff = targetAng - c.angle;
-        while (diff < -Math.PI) diff += Math.PI * 2;
-        while (diff > Math.PI) diff -= Math.PI * 2;
-        c.angle += diff * 12 * dt;
-        c.angularVelocity *= 0.5;
-      } else {
-        // Natural air self-righting (levels car out)
-        c.angle += (0 - c.angle) * 1.5 * dt;
-        c.angularVelocity *= Math.exp(-2.5 * dt);
-      }
-
-      // ARROW KEY / PEDAL CONTROLS:
-      // Pressing arrow key moves car forward; releasing it STOPS the car completely!
       const isGas = this.input.right;
       const isReverse = this.input.left;
       const isBoost = this.input.boost;
+      const maxCruiseSpeed = v.speed * 0.62;
+      const maxBoostSpeed = v.speed * 0.88;
 
-      if (isBoost) {
-        c.vx += 880 * dt;
-        // Nitro flame exhaust particles
-        if (Math.random() < 0.5) {
-          this.particles.push({
-            x: c.x - Math.cos(c.angle) * (v.chassisW / 2 + 8),
-            y: c.y - Math.sin(c.angle) * (v.chassisW / 2 + 8) + 4,
-            vx: -Math.cos(c.angle) * 140 + (Math.random() - 0.5) * 25,
-            vy: -Math.sin(c.angle) * 140 + (Math.random() - 0.5) * 25,
-            r: Math.random() * 4 + 3,
-            color: '#38bdf8',
-            alpha: 1,
-            life: 0.25
-          });
+      let anyGrounded = false;
+
+      for (let step = 0; step < subSteps; step++) {
+        c.vy += gravity * subDt;
+
+        const wheels = [c.rearWheel, c.frontWheel];
+        const halfBase = v.wheelBase / 2;
+        const cosA = Math.cos(c.angle);
+        const sinA = Math.sin(c.angle);
+        const targetWheelOffsets = [
+          { dx: -halfBase * cosA - 12 * sinA, dy: -halfBase * sinA + 12 * cosA },
+          { dx:  halfBase * cosA - 12 * sinA, dy:  halfBase * sinA + 12 * cosA }
+        ];
+
+        let stepGrounded = false;
+        let groundHits = 0;
+        let avgSlope = 0;
+
+        wheels.forEach((w, idx) => {
+          const targetPos = {
+            x: c.x + targetWheelOffsets[idx].dx,
+            y: c.y + targetWheelOffsets[idx].dy
+          };
+
+          const col = this.checkSurfaceCollision(targetPos.x, targetPos.y, v.wheelR);
+
+          if (col.hit) {
+            w.grounded = true;
+            stepGrounded = true;
+            anyGrounded = true;
+            groundHits++;
+            avgSlope += (col.slopeAngle !== undefined ? col.slopeAngle : 0);
+
+            const maxPush = Math.min(col.depth, 4.5);
+            c.y += col.normalY * maxPush * 0.72;
+            c.x += col.normalX * maxPush * 0.15;
+
+            if (c.vy > 0 && col.normalY < -0.3) {
+              c.vy = 0;
+            }
+
+            w.rot += (c.vx * subDt) / v.wheelR;
+
+            if (step === 0 && isGas && Math.abs(c.vx) > 100 && Math.random() < 0.22) {
+              const driveX = Math.cos(col.slopeAngle !== undefined ? col.slopeAngle : c.angle);
+              this.particles.push({
+                x: w.x,
+                y: w.y + v.wheelR,
+                vx: -driveX * 30 + (Math.random() - 0.5) * 15,
+                vy: -15 + (Math.random() - 0.5) * 10,
+                r: Math.random() * 4 + 3,
+                color: 'rgba(255, 255, 255, 0.7)',
+                alpha: 0.7,
+                life: 0.35
+              });
+            }
+          } else {
+            w.grounded = false;
+          }
+
+          w.x = targetPos.x;
+          w.y = targetPos.y;
+        });
+
+        // Align vehicle chassis smoothly to terrain slope
+        if (groundHits > 0) {
+          const targetAng = Math.max(-0.95, Math.min(0.95, avgSlope / groundHits));
+          let diff = targetAng - c.angle;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          c.angle += diff * (1 - Math.exp(-16 * subDt));
+          c.angularVelocity *= 0.4;
+        } else {
+          c.angle += (0 - c.angle) * 1.8 * subDt;
+          c.angularVelocity *= Math.exp(-2.8 * subDt);
         }
+
+        // ARROW KEY / PEDAL CONTROLS:
+        if (isBoost) {
+          if (c.vx < maxBoostSpeed) {
+            c.vx += 1100 * subDt;
+          }
+          if (step === 0 && Math.random() < 0.5) {
+            this.particles.push({
+              x: c.x - Math.cos(c.angle) * (v.chassisW / 2 + 8),
+              y: c.y - Math.sin(c.angle) * (v.chassisW / 2 + 8) + 4,
+              vx: -Math.cos(c.angle) * 140 + (Math.random() - 0.5) * 25,
+              vy: -Math.sin(c.angle) * 140 + (Math.random() - 0.5) * 25,
+              r: Math.random() * 4 + 3,
+              color: '#38bdf8',
+              alpha: 1,
+              life: 0.25
+            });
+          }
+        }
+
+        if (isGas) {
+          if (stepGrounded) {
+            // Snappy low-end torque & smooth cruise along slope
+            const uphillBoost = c.angle < -0.1 ? 1.25 : 1.0;
+            const targetVx = Math.cos(c.angle) * maxCruiseSpeed;
+            if (c.vx < targetVx) {
+              c.vx += Math.cos(c.angle) * 960 * uphillBoost * subDt;
+            } else {
+              c.vx += (targetVx - c.vx) * (1 - Math.exp(-6 * subDt));
+            }
+            // Gentle slope-hugging vertical velocity so car stays planted on ramps
+            c.vy = Math.min(c.vy, Math.sin(c.angle) * Math.max(0, c.vx) * 0.85 + 25);
+          } else {
+            c.angularVelocity += 3.2 * subDt;
+            c.vx += 140 * subDt;
+          }
+        } else if (isReverse) {
+          if (stepGrounded) {
+            c.vx = Math.max(-180, c.vx - 820 * subDt);
+          } else {
+            c.angularVelocity -= 4.0 * subDt;
+          }
+        } else if (!isBoost) {
+          // ARROW KEY RELEASED: Rapidly decelerate to a complete stop!
+          if (stepGrounded) {
+            c.vx *= Math.exp(-8.5 * subDt);
+            if (Math.abs(c.vx) < 10) c.vx = 0;
+          } else {
+            c.vx *= Math.exp(-1.5 * subDt);
+          }
+        }
+
+        c.vx *= Math.exp(-0.2 * subDt);
+        c.vy *= Math.exp(-0.12 * subDt);
+        c.angularVelocity *= Math.exp(-4.0 * subDt);
+
+        c.x += c.vx * subDt;
+        c.y += c.vy * subDt;
+        c.angle += c.angularVelocity * subDt;
       }
-
-      if (isGas) {
-        // Accelerate forward along road slope
-        if (anyGrounded) {
-          c.vx += Math.cos(c.angle) * 820 * dt;
-          c.vy += Math.sin(c.angle) * 820 * dt * 0.4;
-        } else {
-          // Mid-air pitch down
-          c.angularVelocity += 3.5 * dt;
-          c.vx += 160 * dt;
-        }
-      } else if (isReverse) {
-        // Reverse / Brake
-        if (anyGrounded) {
-          c.vx -= 750 * dt;
-        } else {
-          // Mid-air pitch up (prevent nose dive crashes)
-          c.angularVelocity -= 4.5 * dt;
-        }
-      } else if (!isBoost) {
-        // ARROW KEY RELEASED: Rapidly decelerate to a complete stop!
-        if (anyGrounded) {
-          c.vx *= Math.exp(-6.5 * dt);
-          if (Math.abs(c.vx) < 12) c.vx = 0;
-        } else {
-          c.vx *= Math.exp(-1.5 * dt);
-        }
-      }
-
-      // Drag on velocity
-      c.vx *= Math.exp(-0.25 * dt);
-      c.vy *= Math.exp(-0.15 * dt);
-      c.angularVelocity *= Math.exp(-4.0 * dt);
-
-      // Integrate velocities
-      c.x += c.vx * dt;
-      c.y += c.vy * dt;
-      c.angle += c.angularVelocity * dt;
 
       // Update sound engine pitch
       const speed = Math.hypot(c.vx, c.vy);
       if (isGas || isBoost) {
-        this.sound.updateEngine(Math.min(1.4, speed / v.speed + 0.35));
+        this.sound.updateEngine(Math.min(1.4, speed / maxCruiseSpeed + 0.35));
       } else if (isReverse) {
         this.sound.updateEngine(0.5);
       } else {
@@ -1268,8 +1262,9 @@
         }
       }
 
-      // Clamp forward velocity to prevent cosmic escape velocity
-      c.vx = Math.min(v.speed * 1.35, Math.max(-200, c.vx));
+      // Clamp forward velocity to keep speed smooth and controllable
+      const topLimit = isBoost ? maxBoostSpeed : maxCruiseSpeed * 1.15;
+      c.vx = Math.min(topLimit, Math.max(-200, c.vx));
 
       // Check Spikes
       for (const spk of this.stageSpikes) {
