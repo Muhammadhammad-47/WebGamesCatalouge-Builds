@@ -12,23 +12,52 @@
   class SoundEngine {
     constructor() {
       this.ctx = null;
+      this.masterGain = null;
       this.isMuted = localStorage.getItem('svw_muted') === 'true';
+      this.volume = parseFloat(localStorage.getItem('svw_volume') || '0.8');
+      this.sfxEnabled = localStorage.getItem('svw_sfx') !== 'false';
     }
 
     init() {
       if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         this.ctx = new AudioCtx();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime);
+        this.masterGain.connect(this.ctx.destination);
       }
       if (this.ctx && this.ctx.state === 'suspended') {
         this.ctx.resume();
       }
     }
 
+    getDestination() {
+      if (!this.masterGain && this.ctx) {
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime);
+        this.masterGain.connect(this.ctx.destination);
+      }
+      return this.masterGain || (this.ctx ? this.ctx.destination : null);
+    }
+
+    setVolume(vol) {
+      this.volume = Math.max(0, Math.min(1, vol));
+      localStorage.setItem('svw_volume', this.volume.toString());
+      if (this.masterGain && this.ctx) {
+        this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime);
+      }
+    }
+
+    setSfx(enabled) {
+      this.sfxEnabled = !!enabled;
+      localStorage.setItem('svw_sfx', this.sfxEnabled.toString());
+    }
+
     playClick() {
-      if (this.isMuted) return;
+      if (this.isMuted || !this.sfxEnabled) return;
       this.init();
-      if (!this.ctx) return;
+      const dest = this.getDestination();
+      if (!this.ctx || !dest) return;
       const now = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -38,15 +67,16 @@
       gain.gain.setValueAtTime(0.12, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(dest);
       osc.start(now);
       osc.stop(now + 0.06);
     }
 
     playEat() {
-      if (this.isMuted) return;
+      if (this.isMuted || !this.sfxEnabled) return;
       this.init();
-      if (!this.ctx) return;
+      const dest = this.getDestination();
+      if (!this.ctx || !dest) return;
       const now = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -59,15 +89,16 @@
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
 
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(dest);
       osc.start(now);
       osc.stop(now + 0.08);
     }
 
     playPowerup() {
-      if (this.isMuted) return;
+      if (this.isMuted || !this.sfxEnabled) return;
       this.init();
-      if (!this.ctx) return;
+      const dest = this.getDestination();
+      if (!this.ctx || !dest) return;
       const now = this.ctx.currentTime;
       const notes = [440, 554, 659, 880];
       notes.forEach((freq, idx) => {
@@ -79,16 +110,17 @@
         gain.gain.setValueAtTime(0.15, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
         osc.connect(gain);
-        gain.connect(this.ctx.destination);
+        gain.connect(dest);
         osc.start(t);
         osc.stop(t + 0.13);
       });
     }
 
     playExplosion() {
-      if (this.isMuted) return;
+      if (this.isMuted || !this.sfxEnabled) return;
       this.init();
-      if (!this.ctx) return;
+      const dest = this.getDestination();
+      if (!this.ctx || !dest) return;
       const now = this.ctx.currentTime;
       // White noise buffer burst
       const bufferSize = this.ctx.sampleRate * 0.35;
@@ -111,14 +143,15 @@
 
       whiteNoise.connect(filter);
       filter.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(dest);
       whiteNoise.start(now);
     }
 
     playDeath() {
-      if (this.isMuted) return;
+      if (this.isMuted || !this.sfxEnabled) return;
       this.init();
-      if (!this.ctx) return;
+      const dest = this.getDestination();
+      if (!this.ctx || !dest) return;
       const now = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -128,15 +161,16 @@
       gain.gain.setValueAtTime(0.25, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(dest);
       osc.start(now);
       osc.stop(now + 0.45);
     }
 
     playWheelTick() {
-      if (this.isMuted) return;
+      if (this.isMuted || !this.sfxEnabled) return;
       this.init();
-      if (!this.ctx) return;
+      const dest = this.getDestination();
+      if (!this.ctx || !dest) return;
       const now = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -145,15 +179,16 @@
       gain.gain.setValueAtTime(0.08, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(dest);
       osc.start(now);
       osc.stop(now + 0.03);
     }
 
     playFanfare() {
-      if (this.isMuted) return;
+      if (this.isMuted || !this.sfxEnabled) return;
       this.init();
-      if (!this.ctx) return;
+      const dest = this.getDestination();
+      if (!this.ctx || !dest) return;
       const now = this.ctx.currentTime;
       const chords = [523.25, 659.25, 783.99, 1046.50];
       chords.forEach((freq, idx) => {
@@ -165,7 +200,7 @@
         gain.gain.setValueAtTime(0.22, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
         osc.connect(gain);
-        gain.connect(this.ctx.destination);
+        gain.connect(dest);
         osc.start(t);
         osc.stop(t + 0.55);
       });
@@ -174,6 +209,9 @@
     toggleMute() {
       this.isMuted = !this.isMuted;
       localStorage.setItem('svw_muted', this.isMuted.toString());
+      if (this.masterGain && this.ctx) {
+        this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime);
+      }
       return this.isMuted;
     }
   }
@@ -239,15 +277,15 @@
   ];
 
   const CAMPAIGN_LEVELS = [
-    { level: 1, title: "Fruit Feeder", desc: "Eat Fruits & Snacks to Reach 45 Mass", type: "mass", target: 45, bots: 3, arenaR: 1400, rewardCoins: 100, timePar: 35 },
-    { level: 2, title: "Fast Food Feast", desc: "Eat 15 Food Snacks to Reach 70 Mass", type: "food", target: 15, targetMass: 70, bots: 4, arenaR: 1500, rewardCoins: 120, timePar: 40 },
-    { level: 3, title: "Snake Evasion", desc: "Grow to 95 Mass while dodging 5 Rivals", type: "mass", target: 95, bots: 5, arenaR: 1600, rewardCoins: 150, timePar: 45 },
-    { level: 4, title: "Turbo Rush", desc: "Reach 120 Mass & Boost for 5s (Space/Click)", type: "mass_and_boost", targetMass: 120, targetBoost: 5, bots: 6, arenaR: 1700, rewardCoins: 180, timePar: 50 },
-    { level: 5, title: "Magnet Master", desc: "Collect 2 Magnet Orbs & Reach 150 Mass", type: "collect_powerup", powerup: "magnet", target: 2, targetMass: 150, bots: 7, arenaR: 1800, rewardCoins: 200, timePar: 55 },
-    { level: 6, title: "Leaderboard Climb", desc: "Reach Top 5 on Leaderboard & 190 Mass", type: "rank_and_mass", targetRank: 5, targetMass: 190, bots: 8, arenaR: 1900, rewardCoins: 240, timePar: 60 },
-    { level: 7, title: "Coil Crusher", desc: "Trap 2 Rivals (2 Kills) & Reach 230 Mass", type: "kills_and_mass", targetKills: 2, targetMass: 230, bots: 10, arenaR: 2000, rewardCoins: 280, timePar: 65 },
-    { level: 8, title: "Apex Predator", desc: "Reach Rank #1 on Leaderboard & 270 Mass", type: "rank", target: 1, targetMass: 270, bots: 12, arenaR: 2100, rewardCoins: 350, timePar: 70 },
-    { level: 9, title: "Mythic Dragon King", desc: "Defeat 3 Worms & Reach 340 Mass (Final Stage)", type: "mass_and_kills", targetMass: 340, targetKills: 3, bots: 14, isFinal: true, arenaR: 2200, rewardCoins: 1000, timePar: 90 }
+    { level: 1, title: "Fruit Feeder", desc: "Eat Fruits & Snacks to Reach 35 Mass", type: "mass", target: 35, bots: 3, arenaR: 1400, rewardCoins: 100, timePar: 30 },
+    { level: 2, title: "Fast Food Feast", desc: "Eat 12 Snacks to Reach 50 Mass", type: "food", target: 12, targetMass: 50, bots: 4, arenaR: 1500, rewardCoins: 120, timePar: 35 },
+    { level: 3, title: "Snake Evasion", desc: "Grow to 70 Mass while dodging Rivals", type: "mass", target: 70, bots: 5, arenaR: 1600, rewardCoins: 150, timePar: 40 },
+    { level: 4, title: "Turbo Rush", desc: "Reach 90 Mass & Boost for 4s (Space/Click)", type: "mass_and_boost", targetMass: 90, targetBoost: 4, bots: 6, arenaR: 1700, rewardCoins: 180, timePar: 45 },
+    { level: 5, title: "Magnet Master", desc: "Collect 2 Magnet Orbs & Reach 110 Mass", type: "collect_powerup", powerup: "magnet", target: 2, targetMass: 110, bots: 7, arenaR: 1800, rewardCoins: 200, timePar: 50 },
+    { level: 6, title: "Leaderboard Climb", desc: "Reach Top 5 on Leaderboard & 130 Mass", type: "rank_and_mass", targetRank: 5, targetMass: 130, bots: 8, arenaR: 1900, rewardCoins: 240, timePar: 55 },
+    { level: 7, title: "Coil Crusher", desc: "Trap 1 Rival (1 Kill) & Reach 150 Mass", type: "kills_and_mass", targetKills: 1, targetMass: 150, bots: 9, arenaR: 2000, rewardCoins: 280, timePar: 60 },
+    { level: 8, title: "Apex Predator", desc: "Reach Rank #1 on Leaderboard & 170 Mass", type: "rank", target: 1, targetMass: 170, bots: 11, arenaR: 2100, rewardCoins: 350, timePar: 65 },
+    { level: 9, title: "Grand Dragon King", desc: "Reach 180 Mass (Max Growth!) & 2 Kills", type: "mass_and_kills", targetMass: 180, targetKills: 2, bots: 12, isFinal: true, arenaR: 2200, rewardCoins: 1000, timePar: 80 }
   ];
 
   // =========================================================================
@@ -301,13 +339,14 @@
     }
 
     getRadius() {
-      // Starts small at ~10.6px at mass 10, expands noticeably as snake eats fruits & fast food
-      return Math.min(38, 7.0 + Math.sqrt(this.mass) * 1.15);
+      // Starts small at ~10.4px at mass 10, expands cleanly with a strict maximum cap of 19.5px
+      // so it never becomes overblown, bloated, or screen-blocking
+      return Math.min(19.5, 8.2 + Math.sqrt(Math.min(180, this.mass)) * 0.84);
     }
 
     getSegmentCount() {
-      // Starts short at 13 segments, grows longer with each bite
-      return Math.max(8, Math.floor(5 + this.mass * 0.85));
+      // Starts at 10 segments, grows longer with each bite, strictly capped at 65 segments max
+      return Math.min(65, Math.max(9, Math.floor(7 + Math.min(180, this.mass) * 0.38)));
     }
 
     update(dt, arenaRadius, isBattleRoyale, stormRadius) {
@@ -367,7 +406,7 @@
 
         // 5. Constrain Segments Kinematics - Dynamic spacing that scales with snake thickness
         const r = this.getRadius();
-        const spacing = Math.max(8, r * 0.72);
+        const spacing = Math.max(7.5, Math.min(14, r * 0.72));
         let prevX = this.x;
         let prevY = this.y;
 
@@ -847,6 +886,7 @@
       this.initShop();
       this.initWheel();
       this.initCustomizer();
+      this.initSettings();
 
       // Main Loop
       this.lastTime = performance.now();
@@ -1169,12 +1209,16 @@
         if (this.keys['ArrowLeft'] || this.keys['KeyA']) keyX -= 1;
         if (this.keys['ArrowRight'] || this.keys['KeyD']) keyX += 1;
 
-        if (keyX !== 0 || keyY !== 0) {
+        const ctrlStyle = this.settings?.controlStyle || 'hybrid';
+        const allowKeys = (ctrlStyle === 'hybrid' || ctrlStyle === 'keyboard');
+        const allowMouse = (ctrlStyle === 'hybrid' || ctrlStyle === 'mouse');
+
+        if (allowKeys && (keyX !== 0 || keyY !== 0)) {
           // Direct 8-Way Responsive Keyboard Movement
           this.activeInput = 'keyboard';
           p.targetAngle = Math.atan2(keyY, keyX);
           p.isMoving = true;
-        } else if (this.activeInput === 'mouse' && this.mouseMoved) {
+        } else if (allowMouse && (this.activeInput === 'mouse' || ctrlStyle === 'mouse') && this.mouseMoved) {
           const screenCenterX = this.viewW / 2;
           const screenCenterY = this.viewH / 2;
           const dx = this.mouse.x - screenCenterX;
@@ -1355,7 +1399,7 @@
 
       // Camera Shake Effect on Destruction: applied as a render offset, the camera itself never drifts.
       this.shakeX = 0; this.shakeY = 0;
-      if (this.cameraShake > 0) {
+      if (this.cameraShake > 0 && (!this.settings || this.settings.screenShake !== false)) {
         this.shakeX = (Math.random() - 0.5) * this.cameraShake;
         this.shakeY = (Math.random() - 0.5) * this.cameraShake;
         this.cameraShake *= Math.exp(-8 * dt);
@@ -1677,8 +1721,8 @@
         case 'food':
           cur = this.levelStats.foodEaten;
           max = lvl.target;
-          text = `Snacks ${cur}/${max} · Mass ${Math.round(p.mass)}/${lvl.targetMass || 70}`;
-          isComplete = (cur >= max || p.mass >= (lvl.targetMass || 70));
+          text = `Snacks ${cur}/${max} · Mass ${Math.round(p.mass)}/${lvl.targetMass || 50}`;
+          isComplete = (cur >= max || p.mass >= (lvl.targetMass || 50));
           break;
         case 'kills':
           cur = p.kills;
@@ -1696,8 +1740,8 @@
         case 'collect_powerup':
           cur = this.levelStats.magnetCollected || 0;
           max = lvl.target;
-          text = `Magnets ${cur}/${max} · Mass ${Math.round(p.mass)}/${lvl.targetMass || 150}`;
-          isComplete = (cur >= max && p.mass >= (lvl.targetMass || 150));
+          text = `Magnets ${cur}/${max} · Mass ${Math.round(p.mass)}/${lvl.targetMass || 110}`;
+          isComplete = (cur >= max && p.mass >= (lvl.targetMass || 110));
           break;
         case 'rank_and_mass':
           const curRank = this.calculatePlayerRank();
@@ -1715,7 +1759,7 @@
         case 'rank':
           const rank = this.calculatePlayerRank();
           cur = Math.round(p.mass);
-          max = lvl.targetMass || 270;
+          max = lvl.targetMass || 170;
           text = `Rank #${rank} (Target: #${lvl.target}) · Mass ${cur}/${max}`;
           isComplete = (rank <= lvl.target && p.mass >= max);
           break;
@@ -2518,6 +2562,100 @@
         alert('🎉 Custom Skin Saved and Equipped!');
         this.customModal.classList.add('hidden');
       });
+    }
+
+    // =======================================================================
+    // 7. SOUND & GAME SETTINGS CONTROLLER
+    // =======================================================================
+    initSettings() {
+      this.settings = {
+        volume: parseInt(localStorage.getItem('svw_volume_pct') || '80', 10),
+        sfx: localStorage.getItem('svw_sfx') !== 'false',
+        screenShake: localStorage.getItem('svw_screenshake') !== 'false',
+        controlStyle: localStorage.getItem('svw_controlstyle') || 'hybrid'
+      };
+
+      const settingsModal = document.getElementById('settingsModal');
+      const btnOpenSettings = document.getElementById('btnOpenSettings');
+      const btnSettings = document.getElementById('btnSettings');
+      const btnCloseSettings = document.getElementById('btnCloseSettings');
+      const btnSaveSettings = document.getElementById('btnSaveSettings');
+
+      const sliderMasterVolume = document.getElementById('sliderMasterVolume');
+      const valMasterVolume = document.getElementById('valMasterVolume');
+      const toggleSoundFX = document.getElementById('toggleSoundFX');
+      const toggleScreenShake = document.getElementById('toggleScreenShake');
+
+      // Initialize UI values
+      if (sliderMasterVolume && valMasterVolume) {
+        sliderMasterVolume.value = this.settings.volume;
+        valMasterVolume.textContent = `${this.settings.volume}%`;
+        this.sound.setVolume(this.settings.volume / 100);
+
+        sliderMasterVolume.addEventListener('input', (e) => {
+          const val = parseInt(e.target.value, 10);
+          this.settings.volume = val;
+          valMasterVolume.textContent = `${val}%`;
+          localStorage.setItem('svw_volume_pct', val.toString());
+          this.sound.setVolume(val / 100);
+        });
+      }
+
+      if (toggleSoundFX) {
+        toggleSoundFX.checked = this.settings.sfx;
+        this.sound.setSfx(this.settings.sfx);
+        toggleSoundFX.addEventListener('change', (e) => {
+          this.settings.sfx = e.target.checked;
+          this.sound.setSfx(this.settings.sfx);
+          localStorage.setItem('svw_sfx', this.settings.sfx.toString());
+        });
+      }
+
+      if (toggleScreenShake) {
+        toggleScreenShake.checked = this.settings.screenShake;
+        toggleScreenShake.addEventListener('change', (e) => {
+          this.settings.screenShake = e.target.checked;
+          localStorage.setItem('svw_screenshake', this.settings.screenShake.toString());
+        });
+      }
+
+      // Steering Control Mode Options
+      const controlBtns = document.querySelectorAll('.control-opt-btn');
+      controlBtns.forEach(btn => {
+        if (btn.dataset.style === this.settings.controlStyle) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+        btn.addEventListener('click', () => {
+          this.sound.playClick();
+          controlBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          this.settings.controlStyle = btn.dataset.style;
+          localStorage.setItem('svw_controlstyle', this.settings.controlStyle);
+        });
+      });
+
+      const openSettings = () => {
+        this.sound.playClick();
+        if (settingsModal) settingsModal.classList.remove('hidden');
+      };
+
+      const closeSettings = () => {
+        this.sound.playClick();
+        if (settingsModal) settingsModal.classList.add('hidden');
+      };
+
+      if (btnOpenSettings) btnOpenSettings.addEventListener('click', openSettings);
+      if (btnSettings) btnSettings.addEventListener('click', openSettings);
+      if (btnCloseSettings) btnCloseSettings.addEventListener('click', closeSettings);
+      if (btnSaveSettings) btnSaveSettings.addEventListener('click', closeSettings);
+
+      if (settingsModal) {
+        settingsModal.addEventListener('click', (e) => {
+          if (e.target === settingsModal) closeSettings();
+        });
+      }
     }
   }
 
