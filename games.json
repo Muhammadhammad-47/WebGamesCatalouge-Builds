@@ -1,5 +1,18 @@
 [
   {
+    "id": "draw-the-road",
+    "title": "Draw The Road",
+    "category": "Arcade",
+    "branch": "DrawTheRoad",
+    "path": "./DrawTheRoad/",
+    "thumbnail": "./assets/DrawTheRoad.jpg",
+    "rating": "4.9",
+    "plays": "24.6K",
+    "featured": true,
+    "orientation": "landscape",
+    "description": "Draw custom roads, bridge dangerous canyons, drive stunt vehicles with arrow key controls, and conquer 20 challenging stages!"
+  },
+  {
     "id": "nuts-and-bolts",
     "title": "Nuts and Bolts: Screwing Puzzle",
     "category": "Puzzle",
@@ -24,6 +37,19 @@
     "featured": true,
     "orientation": "portrait",
     "description": "Sort passengers into color-coded buses in this addictive, fast-paced puzzle arcade game!"
+  },
+  {
+    "id": "gravity-flip-painter",
+    "title": "Gravity Flip Painter",
+    "category": "Arcade",
+    "branch": "GravityPainter",
+    "path": "./GravityPainter/",
+    "thumbnail": "./assets/GravityPainter.jpg",
+    "rating": "4.8",
+    "plays": "11.4K",
+    "featured": false,
+    "orientation": "landscape",
+    "description": "Roll through tunnels, flip gravity with precise timing, paint every tile, dodge deadly spikes, and clear 90 exciting levels!"
   },
   {
     "id": "traffic-jam",
@@ -136,11 +162,11 @@
     "branch": "SnakevsWorms",
     "path": "./SnakevsWorms/",
     "thumbnail": "./assets/SnakevsWorms.jpg",
-    "rating": "",
-    "plays": "",
-    "featured": false,
+    "rating": "4.9",
+    "plays": "21.3K",
+    "featured": true,
     "orientation": "landscape",
-    "description": "Slither around the arena, eat tasty food, boost past rival worms and grow into the biggest snake!"
+    "description": "Slither around the arena, eat tasty fruit & burgers, unlock campaign levels, and grow into the biggest snake!"
   },
   {
     "id": "blocky-blast-puzzle",
