@@ -810,8 +810,9 @@
 
       // Initialize Car Entity
       const v = this.getEquippedVehicle();
+      const firstPlat = stage.platforms[0];
       const startX = stage.start.x;
-      const startY = stage.start.y;
+      const startY = firstPlat ? (firstPlat.y - v.wheelR - 12) : stage.start.y;
 
       this.car = {
         x: startX,
@@ -821,8 +822,8 @@
         angle: 0,
         angularVelocity: 0,
         spec: v,
-        rearWheel: { x: startX - v.wheelBase / 2, y: startY + v.chassisH / 2, vx: 0, vy: 0, grounded: false, rot: 0 },
-        frontWheel: { x: startX + v.wheelBase / 2, y: startY + v.chassisH / 2, vx: 0, vy: 0, grounded: false, rot: 0 },
+        rearWheel: { x: startX - v.wheelBase / 2, y: startY + 12, vx: 0, vy: 0, grounded: true, rot: 0 },
+        frontWheel: { x: startX + v.wheelBase / 2, y: startY + 12, vx: 0, vy: 0, grounded: true, rot: 0 },
         isCrashed: false,
         isFinished: false,
         driveActive: false
@@ -856,12 +857,18 @@
     }
 
     startDrive() {
-      if (this.state !== 'DRAWING' || !this.car) return;
+      if (!this.car || this.state === 'VICTORY' || this.state === 'DEFEAT') return;
+      if (this.state === 'DRIVING') {
+        this.loadLevel(this.currentLevel);
+        return;
+      }
       this.sound.playClick();
       this.sound.startEngine();
       this.state = 'DRIVING';
       this.car.driveActive = true;
-      document.getElementById('btnDriveText').textContent = 'RESET';
+      this.car.vx = 240; // Punchy initial roll
+      const btnDriveText = document.getElementById('btnDriveText');
+      if (btnDriveText) btnDriveText.textContent = 'RETRY';
     }
 
     // =======================================================================
@@ -917,6 +924,15 @@
       if (this.isDrawing) {
         this.isDrawing = false;
         this.sound.stopDraw();
+
+        // If player has drawn a bridge line, automatically start driving!
+        if (this.drawnPoints.length >= 2 && this.totalDrawnLength > 20 && this.state === 'DRAWING') {
+          setTimeout(() => {
+            if (this.state === 'DRAWING') {
+              this.startDrive();
+            }
+          }, 180);
+        }
       }
     }
 
@@ -1015,12 +1031,16 @@
       // Check Wheel Ground Contacts
       const wheels = [c.rearWheel, c.frontWheel];
       const halfBase = v.wheelBase / 2;
+      const cosA = Math.cos(c.angle);
+      const sinA = Math.sin(c.angle);
       const targetWheelOffsets = [
-        { dx: -halfBase * Math.cos(c.angle) + 12 * Math.sin(c.angle), dy: -halfBase * Math.sin(c.angle) - 12 * Math.cos(c.angle) },
-        { dx:  halfBase * Math.cos(c.angle) + 12 * Math.sin(c.angle), dy:  halfBase * Math.sin(c.angle) - 12 * Math.cos(c.angle) }
+        { dx: -halfBase * cosA - 12 * sinA, dy: -halfBase * sinA + 12 * cosA },
+        { dx:  halfBase * cosA - 12 * sinA, dy:  halfBase * sinA + 12 * cosA }
       ];
 
       let anyGrounded = false;
+      let groundHits = 0;
+      let avgSlope = 0;
 
       wheels.forEach((w, idx) => {
         const targetPos = {
@@ -1034,46 +1054,50 @@
         if (col.hit) {
           w.grounded = true;
           anyGrounded = true;
+          groundHits++;
+          avgSlope += (col.slopeAngle !== undefined ? col.slopeAngle : 0);
 
-          // Push chassis away along normal (Suspension Spring Force)
-          const springStiffness = 380 * (v.suspension / 60);
-          const damping = 18;
-          const normalX = col.normalX;
-          const normalY = col.normalY;
+          // Direct position penetration resolution (prevents sinking into surface)
+          const pushFraction = 0.65;
+          c.y += col.normalY * col.depth * pushFraction;
+          c.x += col.normalX * col.depth * 0.2;
 
-          // Apply impulse to car
-          c.vx += normalX * col.depth * springStiffness * dt;
-          c.vy += normalY * col.depth * springStiffness * dt;
-
-          // Damping
-          c.vx -= c.vx * damping * dt * 0.15;
-          c.vy -= c.vy * damping * dt * 0.15;
+          // Absorb downward velocity into ground
+          if (c.vy > 0 && col.normalY < -0.3) {
+            c.vy = Math.min(0, c.vy * -0.1);
+          }
 
           // Traction & Forward Drive
-          c.vx += forwardX * motorAccel * dt;
-          c.vy += forwardY * motorAccel * dt * 0.4;
+          const driveAngle = col.slopeAngle !== undefined ? col.slopeAngle : c.angle;
+          const driveX = Math.cos(driveAngle);
+          const driveY = Math.sin(driveAngle);
+
+          // Cruise towards vehicle top speed
+          const cruiseSpeed = v.speed; // e.g. 260-320
+          if (c.vx < cruiseSpeed) {
+            c.vx += driveX * motorAccel * dt;
+            c.vy += driveY * motorAccel * dt * 0.4;
+          }
+
+          // Minimum forward drive assist so it never stalls on flat or gentle climbs
+          if (c.vx < 180) {
+            c.vx += 360 * dt;
+          }
 
           // Wheel spin visual
           w.rot += (c.vx * dt) / v.wheelR;
 
-          // Torque rotation alignment
-          const targetAng = Math.atan2(normalY, normalX) + Math.PI / 2;
-          let diff = targetAng - c.angle;
-          while (diff < -Math.PI) diff += Math.PI * 2;
-          while (diff > Math.PI) diff -= Math.PI * 2;
-          c.angularVelocity += diff * 16 * dt;
-
           // Tire smoke puff
-          if (Math.abs(c.vx) > 180 && Math.random() < 0.25) {
+          if (Math.abs(c.vx) > 160 && Math.random() < 0.2) {
             this.particles.push({
               x: w.x,
               y: w.y + v.wheelR,
-              vx: -forwardX * 30 + (Math.random() - 0.5) * 15,
+              vx: -driveX * 30 + (Math.random() - 0.5) * 15,
               vy: -15 + (Math.random() - 0.5) * 10,
               r: Math.random() * 4 + 3,
               color: 'rgba(255, 255, 255, 0.7)',
               alpha: 0.7,
-              life: 0.4
+              life: 0.35
             });
           }
         } else {
@@ -1084,14 +1108,23 @@
         w.y = targetPos.y;
       });
 
-      // Air stabilization & gyro controls (A/D or Left/Right keys while airborne)
-      if (!anyGrounded) {
-        c.angularVelocity *= Math.exp(-2.5 * dt); // air damping
+      // Align vehicle chassis smoothly to terrain slope
+      if (groundHits > 0) {
+        const targetAng = avgSlope / groundHits;
+        let diff = targetAng - c.angle;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        c.angle += diff * 12 * dt;
+        c.angularVelocity *= 0.5;
+      } else {
+        // Natural air self-righting (levels car out)
+        c.angle += (0 - c.angle) * 1.5 * dt;
+        c.angularVelocity *= Math.exp(-2.5 * dt);
       }
 
       // Apply drag
-      c.vx *= Math.exp(-0.45 * dt);
-      c.vy *= Math.exp(-0.25 * dt);
+      c.vx *= Math.exp(-0.35 * dt);
+      c.vy *= Math.exp(-0.2 * dt);
       c.angularVelocity *= Math.exp(-4.0 * dt);
 
       // Integrate velocities
@@ -1193,15 +1226,16 @@
     }
 
     checkSurfaceCollision(px, py, radius) {
-      let deepest = { hit: false, depth: 0, normalX: 0, normalY: -1 };
+      let deepest = { hit: false, depth: 0, normalX: 0, normalY: -1, slopeAngle: 0 };
 
-      // 1. Static Platforms
+      // 1. Static Platforms (Solid flat top surfaces)
       for (const p of this.stagePlatforms) {
         if (px >= p.x - radius && px <= p.x + p.w + radius) {
-          if (py + radius >= p.y && py - radius <= p.y + p.h) {
-            const depth = (p.y) - (py + radius);
-            if (depth < 0 && Math.abs(depth) < radius * 1.8) {
-              return { hit: true, depth: Math.abs(depth), normalX: 0, normalY: -1 };
+          const surfaceY = p.y;
+          if (py + radius >= surfaceY && py - radius <= surfaceY + 32) {
+            const depth = (py + radius) - surfaceY;
+            if (depth > deepest.depth) {
+              deepest = { hit: true, depth, normalX: 0, normalY: -1, slopeAngle: 0 };
             }
           }
         }
@@ -1210,10 +1244,11 @@
       // 2. Moving Platforms
       for (const mp of this.stageMovingPlatforms) {
         if (px >= mp.curX - radius && px <= mp.curX + mp.w + radius) {
-          if (py + radius >= mp.y && py - radius <= mp.y + mp.h) {
-            const depth = mp.y - (py + radius);
-            if (depth < 0 && Math.abs(depth) < radius * 1.8) {
-              return { hit: true, depth: Math.abs(depth), normalX: 0, normalY: -1 };
+          const surfaceY = mp.y;
+          if (py + radius >= surfaceY && py - radius <= surfaceY + 32) {
+            const depth = (py + radius) - surfaceY;
+            if (depth > deepest.depth) {
+              deepest = { hit: true, depth, normalX: 0, normalY: -1, slopeAngle: 0 };
             }
           }
         }
@@ -1221,7 +1256,7 @@
 
       // 3. Hand-Drawn Road Segments (Line to Circle collision)
       const pts = this.drawnPoints;
-      const roadRadius = 9; // half road thickness
+      const roadRadius = 10; // road half thickness
 
       for (let i = 0; i < pts.length - 1; i++) {
         const p1 = pts[i];
@@ -1230,7 +1265,7 @@
         const lineDx = p2.x - p1.x;
         const lineDy = p2.y - p1.y;
         const lineLenSq = lineDx * lineDx + lineDy * lineDy;
-        if (lineLenSq === 0) continue;
+        if (lineLenSq < 1) continue;
 
         // Project point onto line segment
         const t = Math.max(0, Math.min(1, ((px - p1.x) * lineDx + (py - p1.y) * lineDy) / lineLenSq));
@@ -1242,11 +1277,18 @@
 
         if (dist < touchDist) {
           const depth = touchDist - dist;
-          const normalX = dist > 0.001 ? (px - projX) / dist : 0;
-          const normalY = dist > 0.001 ? (py - projY) / dist : -1;
+          let nx = dist > 0.001 ? (px - projX) / dist : 0;
+          let ny = dist > 0.001 ? (py - projY) / dist : -1;
+          // Ensure upward support so the car never gets sucked downwards through the road
+          if (ny > 0) ny = -ny;
+
+          let sDx = lineDx;
+          let sDy = lineDy;
+          if (sDx < 0) { sDx = -sDx; sDy = -sDy; }
+          const slopeAngle = Math.atan2(sDy, sDx);
 
           if (depth > deepest.depth) {
-            deepest = { hit: true, depth, normalX, normalY };
+            deepest = { hit: true, depth, normalX: nx, normalY: ny, slopeAngle };
           }
         }
       }
@@ -1996,6 +2038,36 @@
 
       window.addEventListener('pointerup', () => this.handlePointerUp());
       window.addEventListener('pointercancel', () => this.handlePointerUp());
+
+      // Tap on car directly to start drive
+      this.canvas.addEventListener('click', (e) => {
+        if (this.state === 'DRAWING' && this.car && this.totalDrawnLength < 15) {
+          const p = getCoords(e);
+          const distToCar = Math.hypot(p.x - this.car.x, p.y - this.car.y);
+          if (distToCar < 90) {
+            this.startDrive();
+          }
+        }
+      });
+
+      // Keyboard Controls
+      window.addEventListener('keydown', (e) => {
+        if (['Space', 'Enter', 'ArrowUp', 'KeyW', 'ArrowRight', 'KeyD'].includes(e.code)) {
+          if (this.state === 'DRAWING') {
+            this.startDrive();
+          } else if (this.state === 'DRIVING' && this.car) {
+            this.car.vx = Math.min(this.car.spec.speed * 1.3, this.car.vx + 60);
+          }
+        } else if (['ArrowLeft', 'KeyA'].includes(e.code)) {
+          if (this.state === 'DRIVING' && this.car) {
+            this.car.angularVelocity -= 3;
+          }
+        } else if (e.code === 'KeyR') {
+          if (this.state === 'DRIVING' || this.state === 'DRAWING' || this.state === 'DEFEAT') {
+            this.loadLevel(this.currentLevel);
+          }
+        }
+      });
 
       // Menu Actions
       document.getElementById('btnPlayGame').addEventListener('click', () => {
