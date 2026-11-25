@@ -23,6 +23,7 @@
         <div class="logo-icon">C</div>
         <div class="logo-text">CIEL ARCADE</div>
         <span class="logo-badge">WEBGL</span>
+        <span class="total-games-pill" id="headerTotalGames">0 Games</span>
       </a>
 
       <!-- Search Box -->
@@ -45,8 +46,19 @@
 
     <!-- Categories & Filter Section -->
     <section class="category-section">
-      <div class="section-heading">
-        <span>🎮</span> All Catalogue Games
+      <div class="category-header-row">
+        <div class="section-heading">
+          <span>🎮</span> All Catalogue Games
+          <span class="games-count-badge" id="gamesCountBadge">0</span>
+        </div>
+        <div class="sort-controls">
+          <label for="sortSelect" class="sort-label">Sort:</label>
+          <select id="sortSelect" class="sort-select">
+            <option value="recent" selected>🕒 Recent First</option>
+            <option value="rating">⭐ Top Rated</option>
+            <option value="az">🔤 Name (A–Z)</option>
+          </select>
+        </div>
       </div>
       <div class="filter-pills">
         <button class="pill-btn active" data-category="all">All Games</button>
@@ -82,6 +94,50 @@
       </div>
       <div class="modal-body">
         <iframe id="modalIframe" src="" allow="autoplay; fullscreen; camera; focus-without-user-activation *"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Module Details / Assets Download Modal -->
+  <div class="modal-overlay" id="gameInfoModal">
+    <div class="info-modal-container">
+      <div class="modal-header">
+        <div class="modal-title" id="infoModalTitle">Game Details</div>
+        <button id="infoModalCloseBtn" class="btn-modal-icon btn-modal-close" title="Close">✕</button>
+      </div>
+      <div class="info-modal-body">
+        <div class="info-modal-top">
+          <img id="infoModalThumb" class="info-modal-thumb" src="" alt="Game Thumbnail">
+          <div class="info-modal-meta">
+            <div class="info-badges">
+              <span class="info-badge-cat" id="infoModalCategory">Arcade</span>
+              <span class="info-badge-orient" id="infoModalOrient">Landscape</span>
+              <span class="info-badge-rating" id="infoModalRating">★ 4.9</span>
+            </div>
+            <p class="info-modal-desc" id="infoModalDesc"></p>
+          </div>
+        </div>
+
+        <div class="info-link-section">
+          <label class="info-label">🔗 Live Game Link</label>
+          <div class="info-link-row">
+            <input type="text" id="infoModalLinkInput" class="info-link-input" readonly>
+            <button id="infoCopyLinkBtn" class="btn-info-action btn-copy">📋 Copy</button>
+            <a id="infoOpenLinkBtn" href="#" target="_blank" class="btn-info-action btn-open">↗ Open</a>
+          </div>
+        </div>
+
+        <div class="info-downloads-section">
+          <button id="infoDownloadJsonBtn" class="btn-download btn-download-json">
+            <span>📄</span> Download JSON
+          </button>
+          <button id="infoDownloadThumbBtn" class="btn-download btn-download-thumb">
+            <span>🖼️</span> Download Thumbnail
+          </button>
+          <button id="infoPlayPortalBtn" class="btn-download btn-play-now">
+            <span>▶</span> Play in Portal
+          </button>
+        </div>
       </div>
     </div>
   </div>

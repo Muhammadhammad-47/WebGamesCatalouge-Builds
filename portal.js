@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('searchInput');
   const filterPills = document.querySelectorAll('.pill-btn');
   const heroCard = document.getElementById('heroCard');
+  const headerTotalGames = document.getElementById('headerTotalGames');
+  const gamesCountBadge = document.getElementById('gamesCountBadge');
+  const sortSelect = document.getElementById('sortSelect');
   
   // Modal Elements
   const gameModal = document.getElementById('gameModal');
@@ -15,15 +18,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalFullscreenBtn = document.getElementById('modalFullscreenBtn');
   const modalExternalBtn = document.getElementById('modalExternalBtn');
 
+  // Game Module Info / Download Modal Elements
+  const gameInfoModal = document.getElementById('gameInfoModal');
+  const infoModalCloseBtn = document.getElementById('infoModalCloseBtn');
+  const infoModalTitle = document.getElementById('infoModalTitle');
+  const infoModalThumb = document.getElementById('infoModalThumb');
+  const infoModalCategory = document.getElementById('infoModalCategory');
+  const infoModalOrient = document.getElementById('infoModalOrient');
+  const infoModalRating = document.getElementById('infoModalRating');
+  const infoModalDesc = document.getElementById('infoModalDesc');
+  const infoModalLinkInput = document.getElementById('infoModalLinkInput');
+  const infoCopyLinkBtn = document.getElementById('infoCopyLinkBtn');
+  const infoOpenLinkBtn = document.getElementById('infoOpenLinkBtn');
+  const infoDownloadJsonBtn = document.getElementById('infoDownloadJsonBtn');
+  const infoDownloadThumbBtn = document.getElementById('infoDownloadThumbBtn');
+  const infoPlayPortalBtn = document.getElementById('infoPlayPortalBtn');
+
   let currentActiveCategory = 'all';
+  let currentSort = 'recent';
+  let activeInfoGame = null;
 
   // Fetch games configuration (with cache-busting so new games show immediately)
   fetch('./games.json?t=' + Date.now())
     .then(res => res.json())
     .then(data => {
-      allGames = data;
+      allGames = data.map((g, idx) => ({ ...g, _origIdx: idx }));
+      if (headerTotalGames) headerTotalGames.textContent = `${allGames.length} Games`;
       renderHero(allGames.find(g => g.featured) || allGames[0]);
-      renderGames(allGames);
+      applyFilters();
     })
     .catch(err => {
       console.error('Error loading games.json:', err);
@@ -61,6 +83,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderGames(games) {
     if (!gamesGrid) return;
     gamesGrid.innerHTML = '';
+    if (gamesCountBadge) {
+      gamesCountBadge.textContent = `${games.length} / ${allGames.length}`;
+    }
 
     if (games.length === 0) {
       gamesGrid.innerHTML = `
@@ -86,29 +111,172 @@ document.addEventListener('DOMContentLoaded', () => {
           <p class="card-desc">${game.description}</p>
           <div class="card-actions">
             <a href="${game.path}" class="btn-card-launch">Play Game</a>
+            <button class="btn-card-info" title="Game Link, JSON & Thumbnail" data-info>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </button>
             <button class="btn-card-popup" title="Play in popup modal" data-popup>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </button>
           </div>
         </div>
       `;
-      // listeners instead of inline onclick: titles with quotes can no longer break the button
-      card.querySelector('[data-popup]').addEventListener('click', () => openModal(game.title, game.path, game.orientation || 'portrait'));
+      card.querySelector('[data-popup]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openModal(game.title, game.path, game.orientation || 'portrait');
+      });
+      card.querySelector('[data-info]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openInfoModal(game);
+      });
+      card.querySelector('.btn-card-launch').addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+      // Clicking the game card/module itself opens the module details (link + JSON + Thumbnail downloads)
+      card.addEventListener('click', () => openInfoModal(game));
       gamesGrid.appendChild(card);
     });
   }
 
-  // Filter & Search Logic
+  // Filter, Sort & Search Logic
   function applyFilters() {
     const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-    const filtered = allGames.filter(game => {
+    let filtered = allGames.filter(game => {
       const matchesCategory = currentActiveCategory === 'all' || game.category.toLowerCase() === currentActiveCategory;
       const matchesSearch = game.title.toLowerCase().includes(query) || game.description.toLowerCase().includes(query) || game.category.toLowerCase().includes(query);
       return matchesCategory && matchesSearch;
     });
 
+    if (currentSort === 'recent') {
+      filtered.sort((a, b) => {
+        const da = a.addedDate || '';
+        const db = b.addedDate || '';
+        if (da !== db) return db.localeCompare(da);
+        return (a._origIdx ?? 0) - (b._origIdx ?? 0);
+      });
+    } else if (currentSort === 'rating') {
+      filtered.sort((a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0));
+    } else if (currentSort === 'az') {
+      filtered.sort((a, b) => a.title.localeCompare(b.title));
+    }
+
     renderGames(filtered);
+  }
+
+  if (sortSelect) {
+    sortSelect.addEventListener('change', () => {
+      currentSort = sortSelect.value;
+      applyFilters();
+    });
+  }
+
+  function getGameFullUrl(game) {
+    try {
+      return new URL(game.path, window.location.href).href;
+    } catch (e) {
+      return game.path;
+    }
+  }
+
+  function openInfoModal(game) {
+    if (!gameInfoModal || !game) return;
+    activeInfoGame = game;
+    const fullUrl = getGameFullUrl(game);
+    if (infoModalTitle) infoModalTitle.textContent = game.title;
+    if (infoModalThumb) infoModalThumb.src = game.thumbnail;
+    if (infoModalCategory) infoModalCategory.textContent = game.category;
+    if (infoModalOrient) infoModalOrient.textContent = (game.orientation || 'landscape').toUpperCase();
+    if (infoModalRating) infoModalRating.textContent = game.rating ? `★ ${game.rating}` : 'NEW';
+    if (infoModalDesc) infoModalDesc.textContent = game.description;
+    if (infoModalLinkInput) infoModalLinkInput.value = fullUrl;
+    if (infoOpenLinkBtn) infoOpenLinkBtn.href = fullUrl;
+    if (infoCopyLinkBtn) infoCopyLinkBtn.textContent = '📋 Copy';
+
+    gameInfoModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeInfoModal() {
+    if (!gameInfoModal) return;
+    gameInfoModal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+  }
+
+  if (infoModalCloseBtn) infoModalCloseBtn.addEventListener('click', closeInfoModal);
+  if (gameInfoModal) {
+    gameInfoModal.addEventListener('click', (e) => {
+      if (e.target === gameInfoModal) closeInfoModal();
+    });
+  }
+
+  if (infoCopyLinkBtn) {
+    infoCopyLinkBtn.addEventListener('click', async () => {
+      if (!infoModalLinkInput) return;
+      try {
+        await navigator.clipboard.writeText(infoModalLinkInput.value);
+      } catch (e) {
+        infoModalLinkInput.select();
+        document.execCommand('copy');
+      }
+      infoCopyLinkBtn.textContent = '✓ Copied!';
+      setTimeout(() => { infoCopyLinkBtn.textContent = '📋 Copy'; }, 1800);
+    });
+  }
+
+  if (infoDownloadJsonBtn) {
+    infoDownloadJsonBtn.addEventListener('click', () => {
+      if (!activeInfoGame) return;
+      const cleanObj = { ...activeInfoGame };
+      delete cleanObj._origIdx;
+      cleanObj.liveUrl = getGameFullUrl(activeInfoGame);
+      const blob = new Blob([JSON.stringify(cleanObj, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${activeInfoGame.id || activeInfoGame.branch || 'game'}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  if (infoDownloadThumbBtn) {
+    infoDownloadThumbBtn.addEventListener('click', async () => {
+      if (!activeInfoGame) return;
+      const thumbPath = activeInfoGame.thumbnail;
+      const extMatch = thumbPath.match(/\.(jpg|jpeg|png|webp|svg)(\?.*)?$/i);
+      const ext = extMatch ? extMatch[1].toLowerCase() : 'jpg';
+      const filename = `${activeInfoGame.branch || activeInfoGame.id || 'thumbnail'}.${ext}`;
+      try {
+        const res = await fetch(thumbPath);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        const a = document.createElement('a');
+        a.href = thumbPath;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+    });
+  }
+
+  if (infoPlayPortalBtn) {
+    infoPlayPortalBtn.addEventListener('click', () => {
+      if (!activeInfoGame) return;
+      const g = activeInfoGame;
+      closeInfoModal();
+      openModal(g.title, g.path, g.orientation || 'portrait');
+    });
   }
 
   // Search Listener
