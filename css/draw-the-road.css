@@ -1197,6 +1197,16 @@ html, body {
   line-height: 1;
 }
 
+.drive-touch-btn .btn-ctrl-sub {
+  font-family: var(--font-body);
+  font-size: 8px;
+  font-weight: 900;
+  opacity: 0.85;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  margin-top: 1px;
+}
+
 .drive-touch-btn:active,
 .drive-touch-btn.active {
   transform: translateY(4px) scale(0.95);

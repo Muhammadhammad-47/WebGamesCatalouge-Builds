@@ -859,16 +859,14 @@
       this.updateInkBar();
       document.getElementById('btnDriveText').textContent = 'DRIVE!';
 
-      // Free Drive Mode (every 5th level or marked)
+      // Direct car key controller visible on ALL levels
       this.isFreeDrive = (this.currentLevel % 5 === 0) || !!stage.isFreeDrive;
       const driveOverlay = document.getElementById('driveControlsOverlay');
       const inkPctText = document.getElementById('inkPctText');
 
-      if (this.isFreeDrive) {
-        if (driveOverlay) driveOverlay.classList.remove('hidden');
-        if (inkPctText) inkPctText.textContent = 'FREE DRIVE';
-      } else {
-        if (driveOverlay) driveOverlay.classList.add('hidden');
+      if (driveOverlay) driveOverlay.classList.remove('hidden');
+      if (this.isFreeDrive && inkPctText) {
+        inkPctText.textContent = 'FREE DRIVE';
       }
 
       // Show Hint Toast
@@ -1409,6 +1407,9 @@
       this.sound.playVictory();
       this.state = 'VICTORY';
 
+      const driveOverlay = document.getElementById('driveControlsOverlay');
+      if (driveOverlay) driveOverlay.classList.add('hidden');
+
       const elapsed = ((performance.now() - this.levelStartTime) / 1000).toFixed(1);
 
       // Star calculation
@@ -1479,6 +1480,9 @@
       this.sound.playCrash();
       this.shake = 20;
       this.state = 'DEFEAT';
+
+      const driveOverlay = document.getElementById('driveControlsOverlay');
+      if (driveOverlay) driveOverlay.classList.add('hidden');
 
       // Flying debris parts
       for (let i = 0; i < 20; i++) {
@@ -2174,16 +2178,23 @@
         }
       });
 
-      // Keyboard Controls (Continuous Input Tracking)
+      // Keyboard Controls (Continuous Input Tracking & Button Highlighting)
+      const btnGas = document.getElementById('btnTouchGas');
+      const btnBrake = document.getElementById('btnTouchBrake');
+      const btnNitro = document.getElementById('btnTouchNitro');
+
       const setKey = (code, isDown) => {
         if (['ArrowRight', 'KeyD'].includes(code)) {
           this.input.right = isDown;
-          if (isDown && this.state === 'DRAWING' && this.isFreeDrive) this.startDrive();
+          if (btnGas) btnGas.classList.toggle('active', isDown);
+          if (isDown && this.state === 'DRAWING') this.startDrive();
         } else if (['ArrowLeft', 'KeyA'].includes(code)) {
           this.input.left = isDown;
-          if (isDown && this.state === 'DRAWING' && this.isFreeDrive) this.startDrive();
+          if (btnBrake) btnBrake.classList.toggle('active', isDown);
+          if (isDown && this.state === 'DRAWING') this.startDrive();
         } else if (['ArrowUp', 'KeyW', 'Space', 'ShiftLeft', 'ShiftRight'].includes(code)) {
           this.input.boost = isDown;
+          if (btnNitro) btnNitro.classList.toggle('active', isDown);
           if (isDown && this.state === 'DRAWING') this.startDrive();
         } else if (code === 'KeyR' && isDown) {
           if (this.state === 'DRIVING' || this.state === 'DRAWING' || this.state === 'DEFEAT') {
@@ -2259,6 +2270,8 @@
         this.sound.stopEngine();
         this.state = 'MENU';
         this.gameHud.classList.add('hidden');
+        const driveOverlay = document.getElementById('driveControlsOverlay');
+        if (driveOverlay) driveOverlay.classList.add('hidden');
         this.menuScreen.classList.remove('hidden');
         this.updateMenuCarPreview();
       });
