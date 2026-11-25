@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const infoCopyLinkBtn = document.getElementById('infoCopyLinkBtn');
   const infoOpenLinkBtn = document.getElementById('infoOpenLinkBtn');
   const infoDownloadJsonBtn = document.getElementById('infoDownloadJsonBtn');
+  const infoViewThumbBtn = document.getElementById('infoViewThumbBtn');
   const infoDownloadThumbBtn = document.getElementById('infoDownloadThumbBtn');
   const infoPlayPortalBtn = document.getElementById('infoPlayPortalBtn');
 
@@ -190,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (infoModalDesc) infoModalDesc.textContent = game.description;
     if (infoModalLinkInput) infoModalLinkInput.value = fullUrl;
     if (infoOpenLinkBtn) infoOpenLinkBtn.href = fullUrl;
+    if (infoViewThumbBtn) infoViewThumbBtn.href = game.thumbnail;
     if (infoCopyLinkBtn) infoCopyLinkBtn.textContent = '📋 Copy';
 
     gameInfoModal.classList.add('active');
