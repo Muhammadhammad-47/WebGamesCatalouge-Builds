@@ -1,1812 +1,1023 @@
 /* ==========================================================================
-   RESCUE THE FISH - PHYSICS ENGINE & GAMEPLAY
-   Fluid particle dynamics, pull-pin physics, audio synth, and 20 levels
+   GRAVITY FLIP PAINTER – CIEL Games
+   Splotch the paint-blob rolls through a tunnel on its own. Tap to flip
+   gravity between the floor and the ceiling. Every tile it rolls over gets
+   painted. Gaps and spikes are deadly. Collect 3 paint drops for 3 stars.
    ========================================================================== */
-
 (function () {
   'use strict';
-
-  // ==========================================================================
-  // WEB AUDIO SYNTHESIZER
-  // ==========================================================================
-  var AudioEngine = (function () {
-    var ctx = null;
-    var soundEnabled = true;
-
-    function getContext() {
-      if (!ctx && (window.AudioContext || window.webkitAudioContext)) {
-        ctx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (ctx && ctx.state === 'suspended') {
-        ctx.resume();
-      }
-      return ctx;
-    }
-
-    return {
-      toggle: function () {
-        soundEnabled = !soundEnabled;
-        return soundEnabled;
-      },
-      isEnabled: function () {
-        return soundEnabled;
-      },
-      playPin: function () {
-        if (!soundEnabled) return;
-        var ac = getContext();
-        if (!ac) return;
-        // Metallic clink followed by slide
-        var osc = ac.createOscillator();
-        var gain = ac.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(1200, ac.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(300, ac.currentTime + 0.18);
-        gain.gain.setValueAtTime(0.3, ac.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.18);
-        osc.connect(gain);
-        gain.connect(ac.destination);
-        osc.start();
-        osc.stop(ac.currentTime + 0.18);
-      },
-      playWater: function () {
-        if (!soundEnabled) return;
-        var ac = getContext();
-        if (!ac) return;
-        var osc = ac.createOscillator();
-        var gain = ac.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(500 + Math.random() * 200, ac.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(800 + Math.random() * 200, ac.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.12, ac.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.08);
-        osc.connect(gain);
-        gain.connect(ac.destination);
-        osc.start();
-        osc.stop(ac.currentTime + 0.08);
-      },
-      playSizzle: function () {
-        if (!soundEnabled) return;
-        var ac = getContext();
-        if (!ac) return;
-        // White noise burst for steam sizzle
-        var bufferSize = ac.sampleRate * 0.15;
-        var buffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
-        var data = buffer.getChannelData(0);
-        for (var i = 0; i < bufferSize; i++) {
-          data[i] = Math.random() * 2 - 1;
-        }
-        var noise = ac.createBufferSource();
-        noise.buffer = buffer;
-        var filter = ac.createBiquadFilter();
-        filter.type = 'highpass';
-        filter.frequency.value = 1000;
-        var gain = ac.createGain();
-        gain.gain.setValueAtTime(0.2, ac.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.15);
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(ac.destination);
-        noise.start();
-      },
-      playWin: function () {
-        if (!soundEnabled) return;
-        var ac = getContext();
-        if (!ac) return;
-        var notes = [440, 554.37, 659.25, 880]; // A4, C#5, E5, A5
-        notes.forEach(function (freq, i) {
-          var osc = ac.createOscillator();
-          var gain = ac.createGain();
-          var t = ac.currentTime + i * 0.1;
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, t);
-          gain.gain.setValueAtTime(0.25, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
-          osc.connect(gain);
-          gain.connect(ac.destination);
-          osc.start(t);
-          osc.stop(t + 0.4);
-        });
-      },
-      playFail: function () {
-        if (!soundEnabled) return;
-        var ac = getContext();
-        if (!ac) return;
-        var osc = ac.createOscillator();
-        var gain = ac.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(280, ac.currentTime);
-        osc.frequency.linearRampToValueAtTime(140, ac.currentTime + 0.35);
-        gain.gain.setValueAtTime(0.25, ac.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.35);
-        osc.connect(gain);
-        gain.connect(ac.destination);
-        osc.start();
-        osc.stop(ac.currentTime + 0.35);
-      },
-      playCoin: function () {
-        if (!soundEnabled) return;
-        var ac = getContext();
-        if (!ac) return;
-        var osc = ac.createOscillator();
-        var gain = ac.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(987.77, ac.currentTime); // B5
-        osc.frequency.setValueAtTime(1318.51, ac.currentTime + 0.08); // E6
-        gain.gain.setValueAtTime(0.2, ac.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.28);
-        osc.connect(gain);
-        gain.connect(ac.destination);
-        osc.start();
-        osc.stop(ac.currentTime + 0.28);
-      }
-    };
-  })();
-
-  // ==========================================================================
-  // CONFETTI SYSTEM
-  // ==========================================================================
-  var Confetti = (function () {
-    var canvas = document.getElementById('confettiCanvas');
-    var ctx = canvas ? canvas.getContext('2d') : null;
-    var particles = [];
-    var animating = false;
-    var colors = ['#ff7a00', '#00b4d8', '#2ecc71', '#facc15', '#a855f7', '#ff4d6d'];
-
-    function resize() {
-      if (!canvas) return;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    function update() {
-      if (!animating || !ctx) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      var alive = false;
-      for (var i = 0; i < particles.length; i++) {
-        var p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += p.gravity;
-        p.rotation += p.rotSpeed;
-        p.alpha -= 0.008;
-
-        if (p.alpha > 0) {
-          alive = true;
-          ctx.save();
-          ctx.globalAlpha = Math.max(0, p.alpha);
-          ctx.translate(p.x, p.y);
-          ctx.rotate(p.rotation);
-          ctx.fillStyle = p.color;
-          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.5);
-          ctx.restore();
-        }
-      }
-
-      if (alive) {
-        requestAnimationFrame(update);
-      } else {
-        animating = false;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-    }
-
-    return {
-      launch: function (count) {
-        if (!canvas) return;
-        resize();
-        particles = [];
-        var num = count || 90;
-        var startX = canvas.width / 2;
-        var startY = canvas.height * 0.45;
-
-        for (var i = 0; i < num; i++) {
-          var angle = Math.random() * Math.PI * 2;
-          var speed = 5 + Math.random() * 12;
-          particles.push({
-            x: startX + (Math.random() - 0.5) * 80,
-            y: startY + (Math.random() - 0.5) * 40,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed - 6,
-            gravity: 0.35,
-            size: 8 + Math.random() * 8,
-            rotation: Math.random() * Math.PI * 2,
-            rotSpeed: (Math.random() - 0.5) * 0.25,
-            color: colors[Math.floor(Math.random() * colors.length)],
-            alpha: 1
-          });
-        }
-        if (!animating) {
-          animating = true;
-          requestAnimationFrame(update);
-        }
-      }
-    };
-  })();
-
-  // ==========================================================================
-  // GAME STATE & PERSISTENCE
-  // ==========================================================================
-  var TOTAL_LEVELS = 20;
-  var STORAGE_KEY = 'ciel_rescuefish_save_v1';
-  var gameState = {
-    unlockedLevels: 1,
-    levelStars: {}
-  };
-
-  function loadGameState() {
-    try {
-      var saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        gameState = JSON.parse(saved);
-      }
-    } catch (e) { }
-  }
-
-  function saveGameState() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
-    } catch (e) { }
-  }
-
-  loadGameState();
-
-  // ==========================================================================
-  // 2D FLUID PHYSICS & PIN SIMULATOR
-  // Virtual World coordinate space: 400 x 540
-  // ==========================================================================
-  var V_WIDTH = 400;
-  var V_HEIGHT = 540;
-
-  var PARTICLE_WATER = 1;
-  var PARTICLE_LAVA = 2;
-  var PARTICLE_STONE = 3;
-  var PARTICLE_STEAM = 4;
-
-  function PhysicsWorld() {
-    this.particles = [];
-    this.walls = [];
-    this.pins = [];
-    this.fish = null;
-    this.crabs = [];
-    this.coins = [];
-    this.steamParticles = [];
-    this.waterDelivered = 0;
-    this.waterTarget = 12;
-    this.isOver = false;
-    this.won = false;
-  }
-
-  PhysicsWorld.prototype.addWall = function (x1, y1, x2, y2, thickness) {
-    this.walls.push({
-      x1: x1, y1: y1,
-      x2: x2, y2: y2,
-      thickness: thickness || 8
-    });
-  };
-
-  PhysicsWorld.prototype.addPin = function (id, x1, y1, x2, y2, pullDir, handleSide) {
-    // Pin is a movable wall segment that can be pulled
-    var len = Math.hypot(x2 - x1, y2 - y1);
-    this.pins.push({
-      id: id,
-      x1: x1, y1: y1,
-      x2: x2, y2: y2,
-      origX1: x1, origY1: y1,
-      origX2: x2, origY2: y2,
-      pullDir: pullDir || 'right', // 'right', 'left', 'up', 'down'
-      handleSide: handleSide || 'end', // 'start' or 'end'
-      length: len,
-      pulled: false,
-      pullProgress: 0, // 0 to 1
-      isAnimating: false,
-      isRemoved: false
-    });
-  };
-
-  PhysicsWorld.prototype.addFluid = function (type, cx, cy, count, radius) {
-    radius = radius || 30;
-    for (var i = 0; i < count; i++) {
-      var angle = Math.random() * Math.PI * 2;
-      var dist = Math.random() * radius;
-      this.particles.push({
-        type: type,
-        x: cx + Math.cos(angle) * dist,
-        y: cy + Math.sin(angle) * dist,
-        vx: (Math.random() - 0.5) * 0.8,
-        vy: (Math.random() - 0.5) * 0.8,
-        radius: type === PARTICLE_WATER ? 5.2 : type === PARTICLE_LAVA ? 5.8 : 6.0,
-        alive: true
-      });
-    }
-  };
-
-  PhysicsWorld.prototype.setFish = function (x, y) {
-    this.fish = {
-      x: x,
-      y: y,
-      targetX: x,
-      targetY: y,
-      width: 58,
-      height: 40,
-      isAlive: true,
-      isSaved: false,
-      isFried: false,
-      flopOffset: 0,
-      flopSpeed: 0.15,
-      swimAnim: 0
-    };
-  };
-
-  PhysicsWorld.prototype.addCrab = function (x, y, patrolLeft, patrolRight) {
-    this.crabs.push({
-      x: x,
-      y: y,
-      origY: y,
-      patrolLeft: patrolLeft,
-      patrolRight: patrolRight,
-      vx: 0.7,
-      isAlive: true,
-      animTick: 0
-    });
-  };
-
-  PhysicsWorld.prototype.addCoin = function (x, y) {
-    this.coins.push({
-      x: x,
-      y: y,
-      radius: 12,
-      collected: false,
-      shineTick: Math.random() * 10
-    });
-  };
-
-  // Line segment distance helper for collisions
-  function pointToSegmentDistSq(px, py, x1, y1, x2, y2) {
-    var l2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
-    if (l2 === 0) return (px - x1) * (px - x1) + (py - y1) * (py - y1);
-    var t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
-    t = Math.max(0, Math.min(1, t));
-    var projX = x1 + t * (x2 - x1);
-    var projY = y1 + t * (y2 - y1);
-    return (px - projX) * (px - projX) + (py - projY) * (py - projY);
-  }
-
-  function closestPointOnSegment(px, py, x1, y1, x2, y2) {
-    var l2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
-    if (l2 === 0) return { x: x1, y: y1 };
-    var t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
-    t = Math.max(0, Math.min(1, t));
-    return { x: x1 + t * (x2 - x1), y: y1 + t * (y2 - y1) };
-  }
-
-  PhysicsWorld.prototype.update = function () {
-    if (this.isOver) return;
-
-    var i, j;
-    var gravity = 0.22;
-    var damping = 0.985;
-
-    // 1. Update Pin animations
-    for (i = 0; i < this.pins.length; i++) {
-      var pin = this.pins[i];
-      if (pin.isAnimating && !pin.isRemoved) {
-        pin.pullProgress += 0.08;
-        var dx = 0, dy = 0;
-        var shift = pin.length * 1.35 * pin.pullProgress;
-        if (pin.pullDir === 'right') dx = shift;
-        else if (pin.pullDir === 'left') dx = -shift;
-        else if (pin.pullDir === 'up') dy = -shift;
-        else if (pin.pullDir === 'down') dy = shift;
-
-        pin.x1 = pin.origX1 + dx;
-        pin.y1 = pin.origY1 + dy;
-        pin.x2 = pin.origX2 + dx;
-        pin.y2 = pin.origY2 + dy;
-
-        if (pin.pullProgress >= 1) {
-          pin.isAnimating = false;
-          pin.isRemoved = true;
-          pin.pulled = true;
-        }
-      }
-    }
-
-    // 2. Update Crabs
-    for (i = 0; i < this.crabs.length; i++) {
-      var crab = this.crabs[i];
-      if (crab.isAlive) {
-        crab.animTick += 0.12;
-        crab.x += crab.vx;
-        if (crab.x <= crab.patrolLeft || crab.x >= crab.patrolRight) {
-          crab.vx = -crab.vx;
-        }
-
-        // Check if crab touches fish
-        if (this.fish && this.fish.isAlive && !this.fish.isSaved) {
-          var distToFish = Math.hypot(crab.x - this.fish.x, crab.y - this.fish.y);
-          if (distToFish < 38) {
-            this.fish.isAlive = false;
-            this.isOver = true;
-            this.won = false;
-            AudioEngine.playFail();
-            if (this.onFail) this.onFail("The crab pinched the fish!");
-            return;
-          }
-        }
-      }
-    }
-
-    // 3. Update Particles
-    for (i = 0; i < this.particles.length; i++) {
-      var p = this.particles[i];
-      if (!p.alive) continue;
-      p.prevX = p.x;
-      p.prevY = p.y;
-
-      if (p.type === PARTICLE_STONE) {
-        // Falling stone
-        p.vy += gravity * 1.2;
-        p.vx *= 0.95;
-      } else {
-        // Fluid gravity
-        p.vy += gravity;
-        p.vx *= damping;
-        p.vy *= damping;
-      }
-
-      p.x += p.vx;
-      p.y += p.vy;
-
-      // World bounds
-      if (p.x < p.radius) { p.x = p.radius; p.vx = -p.vx * 0.4; }
-      if (p.x > V_WIDTH - p.radius) { p.x = V_WIDTH - p.radius; p.vx = -p.vx * 0.4; }
-      if (p.y > V_HEIGHT - p.radius) { p.y = V_HEIGHT - p.radius; p.vy = -p.vy * 0.3; }
-
-      // Wall Collisions
-      for (j = 0; j < this.walls.length; j++) {
-        var w = this.walls[j];
-        var cp = closestPointOnSegment(p.x, p.y, w.x1, w.y1, w.x2, w.y2);
-        var distSq = (p.x - cp.x) * (p.x - cp.x) + (p.y - cp.y) * (p.y - cp.y);
-        var minDist = p.radius + w.thickness / 2;
-        if (distSq < minDist * minDist && distSq > 0) {
-          var dist = Math.sqrt(distSq);
-          var nx = (p.x - cp.x) / dist;
-          var ny = (p.y - cp.y) / dist;
-          p.x = cp.x + nx * minDist;
-          p.y = cp.y + ny * minDist;
-
-          // Reflect velocity with friction
-          var dot = p.vx * nx + p.vy * ny;
-          p.vx = (p.vx - 1.4 * dot * nx) * 0.65;
-          p.vy = (p.vy - 1.4 * dot * ny) * 0.65;
-        }
-      }
-
-      // Pin Collisions (with strict anti-tunneling barrier containment)
-      for (j = 0; j < this.pins.length; j++) {
-        var pinEl = this.pins[j];
-        if (pinEl.isRemoved) continue;
-        var pminDist = p.radius + 6;
-
-        // Strict barrier check for horizontal pins
-        if (Math.abs(pinEl.y1 - pinEl.y2) < 3) {
-          var minX = Math.min(pinEl.x1, pinEl.x2) - 8;
-          var maxX = Math.max(pinEl.x1, pinEl.x2) + 8;
-          var pinY = (pinEl.y1 + pinEl.y2) * 0.5;
-          if (p.x >= minX && p.x <= maxX) {
-            if ((p.prevY === undefined || p.prevY <= pinY + 1) && p.y >= pinY - pminDist) {
-              p.y = pinY - pminDist;
-              p.vy = -Math.abs(p.vy) * 0.45;
-              continue;
-            } else if (p.prevY !== undefined && p.prevY >= pinY - 1 && p.y <= pinY + pminDist) {
-              p.y = pinY + pminDist;
-              p.vy = Math.abs(p.vy) * 0.45;
-              continue;
-            }
-          }
-        }
-
-        // Strict barrier check for vertical pins
-        if (Math.abs(pinEl.x1 - pinEl.x2) < 3) {
-          var minY = Math.min(pinEl.y1, pinEl.y2) - 8;
-          var maxY = Math.max(pinEl.y1, pinEl.y2) + 8;
-          var pinX = (pinEl.x1 + pinEl.x2) * 0.5;
-          if (p.y >= minY && p.y <= maxY) {
-            if ((p.prevX === undefined || p.prevX <= pinX + 1) && p.x >= pinX - pminDist) {
-              p.x = pinX - pminDist;
-              p.vx = -Math.abs(p.vx) * 0.45;
-              continue;
-            } else if (p.prevX !== undefined && p.prevX >= pinX - 1 && p.x <= pinX + pminDist) {
-              p.x = pinX + pminDist;
-              p.vx = Math.abs(p.vx) * 0.45;
-              continue;
-            }
-          }
-        }
-
-        // Segment fallback
-        var pcp = closestPointOnSegment(p.x, p.y, pinEl.x1, pinEl.y1, pinEl.x2, pinEl.y2);
-        var pdistSq = (p.x - pcp.x) * (p.x - pcp.x) + (p.y - pcp.y) * (p.y - pcp.y);
-        if (pdistSq < pminDist * pminDist && pdistSq > 0) {
-          var pdist = Math.sqrt(pdistSq);
-          var pnx = (p.x - pcp.x) / pdist;
-          var pny = (p.y - pcp.y) / pdist;
-          p.x = pcp.x + pnx * pminDist;
-          p.y = pcp.y + pny * pminDist;
-          var pdot = p.vx * pnx + p.vy * pny;
-          p.vx = (p.vx - 1.4 * pdot * pnx) * 0.65;
-          p.vy = (p.vy - 1.4 * pdot * pny) * 0.65;
-        }
-      }
-
-      // Lava hits Crab
-      if (p.type === PARTICLE_LAVA || p.type === PARTICLE_STONE) {
-        for (var k = 0; k < this.crabs.length; k++) {
-          var cr = this.crabs[k];
-          if (cr.isAlive && Math.hypot(p.x - cr.x, p.y - cr.y) < 26) {
-            cr.isAlive = false;
-            AudioEngine.playSizzle();
-            // Spawn steam
-            this.addSteam(cr.x, cr.y);
-          }
-        }
-      }
-
-      // Particle vs Fish interactions
-      if (this.fish && this.fish.isAlive) {
-        var fdx = p.x - this.fish.x;
-        var fdy = p.y - this.fish.y;
-        var fDist = Math.hypot(fdx, fdy);
-
-        // Water delivers to fish!
-        if (p.type === PARTICLE_WATER && fDist < 36) {
-          this.waterDelivered++;
-          if (this.waterDelivered % 5 === 0) {
-            AudioEngine.playWater();
-          }
-          if (this.waterDelivered >= this.waterTarget && !this.fish.isSaved) {
-            this.fish.isSaved = true;
-            this.isOver = true;
-            this.won = true;
-            AudioEngine.playWin();
-            Confetti.launch(85);
-            if (this.onWin) this.onWin();
-          }
-        }
-
-        // Lava touches fish -> BURN!
-        if (p.type === PARTICLE_LAVA && fDist < 26) {
-          this.fish.isAlive = false;
-          this.fish.isFried = true;
-          this.isOver = true;
-          this.won = false;
-          AudioEngine.playSizzle();
-          AudioEngine.playFail();
-          if (this.onFail) this.onFail("Hot lava burned the fish!");
-          return;
-        }
-      }
-
-      // Coins Collection
-      for (var ci = 0; ci < this.coins.length; ci++) {
-        var coin = this.coins[ci];
-        if (!coin.collected && Math.hypot(p.x - coin.x, p.y - coin.y) < coin.radius + p.radius) {
-          coin.collected = true;
-          AudioEngine.playCoin();
-        }
-      }
-    }
-
-    // 4. Particle-to-Particle Inter-fluid Reactions (Water + Lava -> Stone & Steam)
-    var pCount = this.particles.length;
-    for (i = 0; i < pCount; i++) {
-      var p1 = this.particles[i];
-      if (!p1.alive) continue;
-
-      for (j = i + 1; j < pCount; j++) {
-        var p2 = this.particles[j];
-        if (!p2.alive) continue;
-
-        var dx2 = p2.x - p1.x;
-        var dy2 = p2.y - p1.y;
-        var distSq2 = dx2 * dx2 + dy2 * dy2;
-        var rSum = p1.radius + p2.radius;
-
-        if (distSq2 < rSum * rSum && distSq2 > 0) {
-          var d2 = Math.sqrt(distSq2);
-          var overlap = (rSum - d2) * 0.5;
-          var normX = dx2 / d2;
-          var normY = dy2 / d2;
-
-          // Water meets Lava -> Steam & Stone transformation!
-          if ((p1.type === PARTICLE_WATER && p2.type === PARTICLE_LAVA) ||
-            (p1.type === PARTICLE_LAVA && p2.type === PARTICLE_WATER)) {
-            p1.type = PARTICLE_STONE;
-            p2.type = PARTICLE_STONE;
-            p1.radius = 6.2;
-            p2.radius = 6.2;
-            AudioEngine.playSizzle();
-            this.addSteam(p1.x, p1.y);
-          } else {
-            // Elastic fluid push-apart
-            p1.x -= normX * overlap;
-            p1.y -= normY * overlap;
-            p2.x += normX * overlap;
-            p2.y += normY * overlap;
-
-            var pushSpeed = (p1.vx - p2.vx) * normX + (p1.vy - p2.vy) * normY;
-            if (pushSpeed > 0) {
-              p1.vx -= pushSpeed * normX * 0.45;
-              p1.vy -= pushSpeed * normY * 0.45;
-              p2.vx += pushSpeed * normX * 0.45;
-              p2.vy += pushSpeed * normY * 0.45;
-            }
-          }
-        }
-      }
-    }
-
-    // 5. Update Steam particles
-    for (i = this.steamParticles.length - 1; i >= 0; i--) {
-      var st = this.steamParticles[i];
-      st.y -= 1.2;
-      st.x += (Math.random() - 0.5) * 1.2;
-      st.radius += 0.25;
-      st.alpha -= 0.025;
-      if (st.alpha <= 0) {
-        this.steamParticles.splice(i, 1);
-      }
-    }
-
-    // 6. Update Fish animation
-    if (this.fish) {
-      if (this.fish.isSaved) {
-        this.fish.swimAnim += 0.1;
-        this.fish.y = this.fish.targetY + Math.sin(this.fish.swimAnim) * 8;
-        this.fish.x = this.fish.targetX + Math.cos(this.fish.swimAnim * 0.7) * 12;
-      } else if (this.fish.isAlive) {
-        // Flapping helplessly on dry ground
-        this.fish.flopOffset += this.fish.flopSpeed;
-      }
-    }
-  };
-
-  PhysicsWorld.prototype.addSteam = function (x, y) {
-    for (var i = 0; i < 6; i++) {
-      this.steamParticles.push({
-        x: x + (Math.random() - 0.5) * 12,
-        y: y + (Math.random() - 0.5) * 8,
-        radius: 6 + Math.random() * 6,
-        alpha: 0.85
-      });
-    }
-  };
-
-  PhysicsWorld.prototype.pullPinById = function (pinId) {
-    for (var i = 0; i < this.pins.length; i++) {
-      var pin = this.pins[i];
-      if (pin.id === pinId && !pin.pulled && !pin.isAnimating) {
-        pin.isAnimating = true;
-        AudioEngine.playPin();
-        return true;
-      }
-    }
-    return false;
-  };
-
-  // Check if click hits a pin handle or body
-  PhysicsWorld.prototype.checkPinClick = function (vx, vy) {
-    for (var i = 0; i < this.pins.length; i++) {
-      var pin = this.pins[i];
-      if (pin.isRemoved || pin.pulled || pin.isAnimating) continue;
-
-      // Handle circle check
-      var hx = pin.handleSide === 'end' ? pin.x2 : pin.x1;
-      var hy = pin.handleSide === 'end' ? pin.y2 : pin.y1;
-      var distToHandle = Math.hypot(vx - hx, vy - hy);
-
-      if (distToHandle < 28) {
-        this.pullPinById(pin.id);
-        return true;
-      }
-
-      // Segment check
-      var distToSeg = Math.sqrt(pointToSegmentDistSq(vx, vy, pin.x1, pin.y1, pin.x2, pin.y2));
-      if (distToSeg < 18) {
-        this.pullPinById(pin.id);
-        return true;
-      }
-    }
-    return false;
-  };
-
-  // ==========================================================================
-  // RENDERER
-  // ==========================================================================
-  function renderWorld(ctx, world, scaleX, scaleY) {
-    ctx.clearRect(0, 0, V_WIDTH * scaleX, V_HEIGHT * scaleY);
-
-    ctx.save();
-    ctx.scale(scaleX, scaleY);
-
-    var i;
-
-    // 1. Draw Chambers / Solid Walls
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    for (i = 0; i < world.walls.length; i++) {
-      var w = world.walls[i];
-      // Outer border
-      ctx.strokeStyle = '#0f172a';
-      ctx.lineWidth = w.thickness + 5;
-      ctx.beginPath();
-      ctx.moveTo(w.x1, w.y1);
-      ctx.lineTo(w.x2, w.y2);
-      ctx.stroke();
-
-      // Metallic pipe core
-      ctx.strokeStyle = '#475569';
-      ctx.lineWidth = w.thickness;
-      ctx.beginPath();
-      ctx.moveTo(w.x1, w.y1);
-      ctx.lineTo(w.x2, w.y2);
-      ctx.stroke();
-
-      // Top pipe highlight
-      ctx.strokeStyle = '#94a3b8';
-      ctx.lineWidth = Math.max(2, w.thickness * 0.3);
-      ctx.beginPath();
-      ctx.moveTo(w.x1, w.y1);
-      ctx.lineTo(w.x2, w.y2);
-      ctx.stroke();
-    }
-
-    // 2. Draw Interactive Pins
-    for (i = 0; i < world.pins.length; i++) {
-      var pin = world.pins[i];
-      if (pin.isRemoved) continue;
-
-      // Golden Pin Shadow
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
-      ctx.lineWidth = 14;
-      ctx.beginPath();
-      ctx.moveTo(pin.x1 + 3, pin.y1 + 4);
-      ctx.lineTo(pin.x2 + 3, pin.y2 + 4);
-      ctx.stroke();
-
-      // Pin Outer Border
-      ctx.strokeStyle = '#2d3748';
-      ctx.lineWidth = 13;
-      ctx.beginPath();
-      ctx.moveTo(pin.x1, pin.y1);
-      ctx.lineTo(pin.x2, pin.y2);
-      ctx.stroke();
-
-      // Pin Golden Body
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 9;
-      ctx.beginPath();
-      ctx.moveTo(pin.x1, pin.y1);
-      ctx.lineTo(pin.x2, pin.y2);
-      ctx.stroke();
-
-      // Pin Golden Center Highlight
-      ctx.strokeStyle = '#fef08a';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(pin.x1, pin.y1);
-      ctx.lineTo(pin.x2, pin.y2);
-      ctx.stroke();
-
-      // Golden Ring Handle
-      var hx = pin.handleSide === 'end' ? pin.x2 : pin.x1;
-      var hy = pin.handleSide === 'end' ? pin.y2 : pin.y1;
-
-      // Outer Handle Ring
-      ctx.fillStyle = '#f59e0b';
-      ctx.strokeStyle = '#2d3748';
-      ctx.lineWidth = 3.5;
-      ctx.beginPath();
-      ctx.arc(hx, hy, 16, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      // Inner Handle Hole
-      ctx.fillStyle = '#0c4a6e';
-      ctx.beginPath();
-      ctx.arc(hx, hy, 7, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-    }
-
-    // 3. Draw Coins
-    for (i = 0; i < world.coins.length; i++) {
-      var c = world.coins[i];
-      if (c.collected) continue;
-      c.shineTick += 0.08;
-
-      ctx.save();
-      ctx.translate(c.x, c.y);
-      ctx.fillStyle = '#facc15';
-      ctx.strokeStyle = '#ca8a04';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.arc(0, 0, c.radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      // Star / Stamp inside coin
-      ctx.fillStyle = '#ca8a04';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('★', 0, 1);
-      ctx.restore();
-    }
-
-    // 4. Draw Crabs
-    for (i = 0; i < world.crabs.length; i++) {
-      var crab = world.crabs[i];
-      if (!crab.isAlive) continue;
-
-      ctx.save();
-      ctx.translate(crab.x, crab.y);
-
-      // Pincers snapping
-      var clawAngle = Math.sin(crab.animTick) * 0.3;
-      ctx.fillStyle = '#dc2626';
-      ctx.strokeStyle = '#2d3748';
-      ctx.lineWidth = 2;
-
-      // Left claw
-      ctx.save();
-      ctx.translate(-14, -8);
-      ctx.rotate(-clawAngle);
-      ctx.beginPath();
-      ctx.arc(0, 0, 7, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-
-      // Right claw
-      ctx.save();
-      ctx.translate(14, -8);
-      ctx.rotate(clawAngle);
-      ctx.beginPath();
-      ctx.arc(0, 0, 7, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-
-      // Crab Body
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 15, 10, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      // Eyes
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(-5, -6, 3.5, 0, Math.PI * 2);
-      ctx.arc(5, -6, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#0f172a';
-      ctx.beginPath();
-      ctx.arc(-5, -6, 1.8, 0, Math.PI * 2);
-      ctx.arc(5, -6, 1.8, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.restore();
-    }
-
-    // 5. Draw Fluid Particles
-    for (i = 0; i < world.particles.length; i++) {
-      var p = world.particles[i];
-      if (!p.alive) continue;
-
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-
-      if (p.type === PARTICLE_WATER) {
-        ctx.fillStyle = '#00b4d8';
-        ctx.fill();
-        // Highlight dot
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.beginPath();
-        ctx.arc(p.x - 1.2, p.y - 1.2, p.radius * 0.4, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (p.type === PARTICLE_LAVA) {
-        // Glowing hot magma
-        ctx.fillStyle = '#ef4444';
-        ctx.fill();
-        ctx.fillStyle = '#fbbf24';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius * 0.55, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (p.type === PARTICLE_STONE) {
-        // Hardened rock
-        ctx.fillStyle = '#475569';
-        ctx.strokeStyle = '#1e293b';
-        ctx.lineWidth = 1.5;
-        ctx.fill();
-        ctx.stroke();
-      }
-    }
-
-    // 6. Draw Steam Vapors
-    for (i = 0; i < world.steamParticles.length; i++) {
-      var st = world.steamParticles[i];
-      ctx.fillStyle = 'rgba(255, 255, 255, ' + st.alpha + ')';
-      ctx.beginPath();
-      ctx.arc(st.x, st.y, st.radius, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // 7. Draw The Fish
-    if (world.fish) {
-      var f = world.fish;
-      ctx.save();
-      ctx.translate(f.x, f.y);
-
-      if (f.isFried) {
-        // Charred fishbone
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(-18, 0);
-        ctx.lineTo(18, 0);
-        // ribs
-        ctx.moveTo(-8, -10); ctx.lineTo(-8, 10);
-        ctx.moveTo(2, -10); ctx.lineTo(2, 10);
-        ctx.moveTo(12, -8); ctx.lineTo(12, 8);
-        ctx.stroke();
-        // Skull
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(18, 0, 8, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (!f.isSaved) {
-        // Flapping dry on floor
-        var flopRot = Math.sin(f.flopOffset) * 0.28;
-        ctx.rotate(flopRot);
-
-        // Flapping Tail
-        ctx.fillStyle = '#ff7a00';
-        ctx.strokeStyle = '#2d3748';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(-16, 0);
-        ctx.lineTo(-32, -12);
-        ctx.lineTo(-32, 12);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        // Fish Body
-        ctx.fillStyle = '#ff8c00';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 20, 14, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-
-        // White Stripe
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.ellipse(-4, 0, 4, 13, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Gasping Mouth
-        ctx.strokeStyle = '#2d3748';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(17, 3, 4, 0, Math.PI);
-        ctx.stroke();
-
-        // Worried Eye
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(10, -4, 4.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = '#1e293b';
-        ctx.beginPath();
-        ctx.arc(11, -4, 2.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Sweat droplet
-        ctx.fillStyle = '#38bdf8';
-        ctx.font = '14px sans-serif';
-        ctx.fillText('💧', -4, -18);
-      } else {
-        // Joyfully swimming in water
-        var swimAngle = Math.sin(f.swimAnim * 1.5) * 0.15;
-        ctx.rotate(swimAngle);
-
-        // Happy swimming tail
-        ctx.fillStyle = '#ff7a00';
-        ctx.strokeStyle = '#2d3748';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(-18, 0);
-        ctx.lineTo(-36, -14);
-        ctx.lineTo(-36, 14);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        // Body
-        ctx.fillStyle = '#ff8c00';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 22, 15, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-
-        // White stripes
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.ellipse(-5, 0, 5, 14, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Happy wink eye
-        ctx.strokeStyle = '#2d3748';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(12, -4, 4, Math.PI, 0);
-        ctx.stroke();
-
-        // Cute smiling mouth
-        ctx.beginPath();
-        ctx.arc(16, 2, 4, 0, Math.PI);
-        ctx.stroke();
-
-        // Bubble
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-        ctx.beginPath();
-        ctx.arc(28, -8, 4, 0, Math.PI * 2);
-        ctx.arc(36, -16, 6, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-
-    ctx.restore();
-  }
-
-  // ==========================================================================
-  // LEVEL DEFINITIONS (20 Levels with progressive mechanics)
-  // ==========================================================================
-  var LEVEL_CONFIGS = [
-    // ------------------------------------------------------------------------
-    // LEVEL 1: Tutorial — 1 pin, pure water above fish
-    // ------------------------------------------------------------------------
-    {
-      level: 1,
-      objective: "Pull the golden pin to release water onto the fish!",
-      hint: "Click or tap the golden pin handle on the right to slide it out!",
-      setup: function (world) {
-        // Outer box
-        world.addWall(100, 60, 100, 480, 10);
-        world.addWall(300, 60, 300, 480, 10);
-        world.addWall(100, 480, 300, 480, 10);
-
-        // Single Pin in middle
-        world.addPin('pin1', 98, 260, 302, 260, 'right', 'end');
-
-        // Water above pin
-        world.addFluid(PARTICLE_WATER, 200, 160, 35, 45);
-
-        // Fish below
-        world.setFish(200, 440);
-      }
-    },
-
-    // ------------------------------------------------------------------------
-    // LEVEL 2: Water meets Lava — Cool lava into stone first!
-    // ------------------------------------------------------------------------
-    {
-      level: 2,
-      objective: "Extinguish the hot lava with water before reaching the fish!",
-      hint: "Pull the top pin first so water turns lava into solid stone!",
-      setup: function (world) {
-        // Outer vertical shaft
-        world.addWall(100, 60, 100, 480, 10);
-        world.addWall(300, 60, 300, 480, 10);
-        world.addWall(100, 480, 300, 480, 10);
-
-        // Pin 1 (Top: separates Water from Lava)
-        world.addPin('pin1', 98, 180, 302, 180, 'right', 'end');
-
-        // Pin 2 (Bottom: separates Lava from Fish)
-        world.addPin('pin2', 98, 320, 302, 320, 'left', 'start');
-
-        // Top chamber: Pure cool water (52 particles)
-        world.addFluid(PARTICLE_WATER, 200, 120, 52, 40);
-
-        // Middle chamber: Hot bubbling lava (16 particles)
-        world.addFluid(PARTICLE_LAVA, 200, 250, 16, 28);
-
-        // Bottom chamber: The Fish waiting to be saved
-        world.setFish(200, 440);
-      }
-    },
-
-    // ------------------------------------------------------------------------
-    // LEVEL 3: Crab Hazard — Eliminate the crab with lava!
-    // ------------------------------------------------------------------------
-    {
-      level: 3,
-      objective: "Defeat the nasty crab with lava, then rescue the fish!",
-      hint: "Drop the lava onto the crab to defeat it, then pour water for the fish!",
-      setup: function (world) {
-        world.addWall(80, 60, 80, 480, 10);
-        world.addWall(320, 60, 320, 480, 10);
-        world.addWall(80, 480, 320, 480, 10);
-
-        // Divider between left (crab/lava) and right (fish/water)
-        world.addWall(200, 60, 200, 360, 10);
-
-        // Pin 1 (Lava above crab on left)
-        world.addPin('pin1', 85, 200, 195, 200, 'left', 'start');
-
-        // Pin 2 (Water above fish on right)
-        world.addPin('pin2', 205, 240, 315, 240, 'right', 'end');
-
-        // Lava top left
-        world.addFluid(PARTICLE_LAVA, 140, 120, 24, 30);
-
-        // Crab bottom left
-        world.addCrab(140, 440, 100, 180);
-
-        // Water top right (42 particles)
-        world.addFluid(PARTICLE_WATER, 260, 140, 42, 35);
-
-        // Fish bottom right
-        world.setFish(260, 440);
-      }
-    },
-
-    // ------------------------------------------------------------------------
-    // LEVEL 4: Sequence Puzzle — Lava, Water, and 3 Pins
-    // ------------------------------------------------------------------------
-    {
-      level: 4,
-      objective: "Pull the pins in the correct order to save the fish!",
-      hint: "Drop the water onto the lava to solidify it before pulling the bottom pin!",
-      setup: function (world) {
-        world.addWall(90, 60, 90, 490, 10);
-        world.addWall(310, 60, 310, 490, 10);
-        world.addWall(90, 490, 310, 490, 10);
-
-        // 3 Horizontal Pins in a stack
-        world.addPin('pin1', 88, 170, 312, 170, 'right', 'end');
-        world.addPin('pin2', 88, 290, 312, 290, 'left', 'start');
-        world.addPin('pin3', 88, 390, 312, 390, 'right', 'end');
-
-        // Top: Water (52 particles)
-        world.addFluid(PARTICLE_WATER, 200, 110, 52, 40);
-
-        // Middle: Lava (16 particles)
-        world.addFluid(PARTICLE_LAVA, 200, 230, 16, 30);
-
-        // Bottom: Fish
-        world.setFish(200, 450);
-      }
-    },
-
-    // ------------------------------------------------------------------------
-    // LEVEL 5: Collect Bonus Coins!
-    // ------------------------------------------------------------------------
-    {
-      level: 5,
-      objective: "Wash the gold coins into the fish bowl!",
-      hint: "Release the water so it sweeps through the coins and fills the fish chamber!",
-      setup: function (world) {
-        world.addWall(80, 60, 80, 480, 10);
-        world.addWall(320, 60, 320, 480, 10);
-        world.addWall(80, 480, 320, 480, 10);
-
-        world.addWall(80, 260, 220, 260, 10);
-        world.addPin('pin1', 225, 260, 315, 260, 'right', 'end');
-
-        world.addCoin(140, 230);
-        world.addCoin(250, 350);
-        world.addCoin(150, 420);
-
-        world.addFluid(PARTICLE_WATER, 150, 150, 40, 45);
-        world.setFish(240, 440);
-      }
-    },
-
-    // ------------------------------------------------------------------------
-    // LEVEL 6: Dual Lava Pits — Double Neutralization
-    // ------------------------------------------------------------------------
-    {
-      level: 6,
-      objective: "Neutralize both lava pits with clean water!",
-      hint: "Release water so it flows across both lava chambers, then free the fish!",
-      setup: function (world) {
-        world.addWall(70, 60, 70, 490, 10);
-        world.addWall(330, 60, 330, 490, 10);
-        world.addWall(70, 490, 330, 490, 10);
-
-        world.addWall(195, 180, 205, 360, 10);
-        world.addPin('pinTop', 75, 180, 325, 180, 'right', 'end');
-        world.addPin('pinBot', 75, 360, 325, 360, 'left', 'start');
-
-        world.addFluid(PARTICLE_WATER, 200, 110, 56, 45);
-        world.addFluid(PARTICLE_LAVA, 130, 280, 14, 25);
-        world.addFluid(PARTICLE_LAVA, 270, 280, 14, 25);
-
-        world.setFish(200, 450);
-      }
-    },
-
-    // ------------------------------------------------------------------------
-    // LEVEL 7: Cross Chambers
-    // ------------------------------------------------------------------------
-    {
-      level: 7,
-      objective: "Guide water through the diagonal chute!",
-      hint: "Make sure lava doesn't touch the fish! Turn lava to rock first!",
-      setup: function (world) {
-        world.addWall(80, 60, 80, 480, 10);
-        world.addWall(320, 60, 320, 480, 10);
-        world.addWall(80, 480, 320, 480, 10);
-
-        world.addWall(80, 220, 210, 220, 10);
-        world.addPin('pin1', 215, 220, 315, 220, 'right', 'end');
-        world.addPin('pin2', 85, 340, 195, 340, 'left', 'start');
-        world.addWall(195, 340, 320, 340, 10);
-
-        world.addFluid(PARTICLE_WATER, 150, 140, 36, 40);
-        world.addFluid(PARTICLE_LAVA, 260, 290, 18, 28);
-
-        world.setFish(140, 440);
-      }
-    },
-
-    // ------------------------------------------------------------------------
-    // LEVEL 8: Defeat the Double Crabs!
-    // ------------------------------------------------------------------------
-    {
-      level: 8,
-      objective: "Defeat both crabs with lava before sending water!",
-      hint: "The crabs will pinch the fish! Pour lava down the left shoot to cook them!",
-      setup: function (world) {
-        world.addWall(80, 60, 80, 480, 10);
-        world.addWall(320, 60, 320, 480, 10);
-        world.addWall(80, 480, 320, 480, 10);
-
-        world.addWall(190, 60, 190, 360, 10);
-        world.addPin('pinLava', 85, 180, 185, 180, 'left', 'start');
-        world.addPin('pinWater', 195, 180, 315, 180, 'right', 'end');
-
-        world.addFluid(PARTICLE_LAVA, 135, 110, 25, 28);
-        world.addCrab(135, 330, 95, 175);
-        world.addCrab(135, 440, 95, 175);
-
-        world.addFluid(PARTICLE_WATER, 255, 110, 40, 35);
-        world.setFish(255, 440);
-      }
-    },
-
-    // ------------------------------------------------------------------------
-    // LEVEL 9: T-Junction Trap
-    // ------------------------------------------------------------------------
-    {
-      level: 9,
-      objective: "Navigate the T-junction pipes!",
-      hint: "Cool down the lava reservoir before opening the fish passage!",
-      setup: function (world) {
-        world.addWall(80, 60, 80, 480, 10);
-        world.addWall(320, 60, 320, 480, 10);
-        world.addWall(80, 480, 320, 480, 10);
-
-        world.addPin('pinTop', 85, 190, 315, 190, 'right', 'end');
-        world.addPin('pinMid', 85, 310, 200, 310, 'left', 'start');
-        world.addWall(200, 310, 320, 310, 10);
-
-        world.addFluid(PARTICLE_WATER, 200, 120, 42, 40);
-        world.addFluid(PARTICLE_LAVA, 140, 250, 16, 25);
-        world.setFish(250, 430);
-      }
-    },
-
-    // ------------------------------------------------------------------------
-    // LEVEL 10: The Triple Chamber Lock
-    // ------------------------------------------------------------------------
-    {
-      level: 10,
-      objective: "Three chambers, one true path!",
-      hint: "Mix water with lava on the right, then clear the lower gate!",
-      setup: function (world) {
-        world.addWall(70, 60, 70, 490, 10);
-        world.addWall(330, 60, 330, 490, 10);
-        world.addWall(70, 490, 330, 490, 10);
-
-        world.addWall(195, 60, 195, 260, 10);
-        world.addPin('p1', 75, 260, 190, 260, 'left', 'start');
-        world.addPin('p2', 200, 260, 325, 260, 'right', 'end');
-        world.addPin('p3', 75, 380, 325, 380, 'right', 'end');
-
-        world.addFluid(PARTICLE_WATER, 135, 150, 42, 40);
-        world.addFluid(PARTICLE_LAVA, 260, 150, 22, 35);
-
-        world.setFish(200, 450);
-      }
-    },
-
-    // ------------------------------------------------------------------------
-    // LEVELS 11 - 20 (Master puzzle challenges with coins & mixed hazards)
-    // ------------------------------------------------------------------------
-    {
-      level: 11,
-      objective: "Keep the fish safe from cascading lava!",
-      hint: "Let water flow down first to create a solid rock barrier!",
-      setup: function (world) {
-        world.addWall(80, 60, 80, 480, 10);
-        world.addWall(320, 60, 320, 480, 10);
-        world.addWall(80, 480, 320, 480, 10);
-
-        world.addPin('p1', 85, 170, 315, 170, 'right', 'end');
-        world.addPin('p2', 85, 310, 315, 310, 'left', 'start');
-
-        world.addFluid(PARTICLE_WATER, 200, 110, 44, 40);
-        world.addFluid(PARTICLE_LAVA, 200, 240, 20, 35);
-        world.setFish(200, 430);
-      }
-    },
-    {
-      level: 12,
-      objective: "Gather the shiny sunken gems!",
-      hint: "Direct the water flow through the gems into the fish tank!",
-      setup: function (world) {
-        world.addWall(80, 60, 80, 480, 10);
-        world.addWall(320, 60, 320, 480, 10);
-        world.addWall(80, 480, 320, 480, 10);
-
-        world.addWall(80, 240, 220, 240, 10);
-        world.addPin('p1', 225, 240, 315, 240, 'right', 'end');
-
-        world.addCoin(140, 200);
-        world.addCoin(260, 320);
-        world.addCoin(140, 420);
-
-        world.addFluid(PARTICLE_WATER, 150, 130, 42, 40);
-        world.setFish(230, 430);
-      }
-    },
-    {
-      level: 13,
-      objective: "Crab patrol ahead! Use lava strategically!",
-      hint: "Drop the lava onto the crab before pulling the water pin!",
-      setup: function (world) {
-        world.addWall(80, 60, 80, 480, 10);
-        world.addWall(320, 60, 320, 480, 10);
-        world.addWall(80, 480, 320, 480, 10);
-
-        world.addWall(200, 60, 200, 360, 10);
-        world.addPin('pLava', 85, 190, 195, 190, 'left', 'start');
-        world.addPin('pWater', 205, 190, 315, 190, 'right', 'end');
-
-        world.addFluid(PARTICLE_LAVA, 140, 110, 20, 30);
-        world.addCrab(140, 420, 95, 185);
-
-        world.addFluid(PARTICLE_WATER, 260, 110, 40, 35);
-        world.setFish(260, 430);
-      }
-    },
-    {
-      level: 14,
-      objective: "Build a stone dam with water and lava!",
-      hint: "Solid stone will plug the dangerous bottom gap!",
-      setup: function (world) {
-        world.addWall(70, 60, 70, 490, 10);
-        world.addWall(330, 60, 330, 490, 10);
-        world.addWall(70, 490, 330, 490, 10);
-
-        world.addPin('p1', 75, 180, 325, 180, 'right', 'end');
-        world.addPin('p2', 75, 330, 325, 330, 'left', 'start');
-
-        world.addFluid(PARTICLE_WATER, 200, 110, 46, 40);
-        world.addFluid(PARTICLE_LAVA, 200, 250, 22, 35);
-        world.setFish(200, 440);
-      }
-    },
-    {
-      level: 15,
-      objective: "Split flow chamber challenge!",
-      hint: "Cool the left lava and right lava one at a time!",
-      setup: function (world) {
-        world.addWall(70, 60, 70, 490, 10);
-        world.addWall(330, 60, 330, 490, 10);
-        world.addWall(70, 490, 330, 490, 10);
-
-        world.addWall(195, 180, 205, 360, 10);
-        world.addPin('pTop', 75, 180, 325, 180, 'right', 'end');
-        world.addPin('pBot', 75, 360, 325, 360, 'left', 'start');
-
-        world.addFluid(PARTICLE_WATER, 200, 110, 56, 45);
-        world.addFluid(PARTICLE_LAVA, 130, 270, 16, 25);
-        world.addFluid(PARTICLE_LAVA, 270, 270, 16, 25);
-
-        world.setFish(200, 445);
-      }
-    },
-    {
-      level: 16,
-      objective: "Clean the water reservoir!",
-      hint: "Let water stream down smoothly to extinguish any threats!",
-      setup: function (world) {
-        world.addWall(80, 60, 80, 480, 10);
-        world.addWall(320, 60, 320, 480, 10);
-        world.addWall(80, 480, 320, 480, 10);
-
-        world.addPin('p1', 85, 220, 315, 220, 'right', 'end');
-        world.addCoin(150, 340);
-        world.addCoin(250, 340);
-
-        world.addFluid(PARTICLE_WATER, 200, 130, 44, 40);
-        world.setFish(200, 430);
-      }
-    },
-    {
-      level: 17,
-      objective: "Careful timing with the golden pins!",
-      hint: "Remove pins in order: top first, then bottom!",
-      setup: function (world) {
-        world.addWall(80, 60, 80, 480, 10);
-        world.addWall(320, 60, 320, 480, 10);
-        world.addWall(80, 480, 320, 480, 10);
-
-        world.addPin('p1', 85, 170, 315, 170, 'left', 'start');
-        world.addPin('p2', 85, 320, 315, 320, 'right', 'end');
-
-        world.addFluid(PARTICLE_WATER, 200, 110, 44, 40);
-        world.addFluid(PARTICLE_LAVA, 200, 240, 18, 30);
-        world.setFish(200, 435);
-      }
-    },
-    {
-      level: 18,
-      objective: "Crabs and coins in the deep!",
-      hint: "Eliminate the crab with lava, collect the gems, and refresh the fish!",
-      setup: function (world) {
-        world.addWall(80, 60, 80, 480, 10);
-        world.addWall(320, 60, 320, 480, 10);
-        world.addWall(80, 480, 320, 480, 10);
-
-        world.addWall(190, 60, 190, 350, 10);
-        world.addPin('pL', 85, 180, 185, 180, 'left', 'start');
-        world.addPin('pR', 195, 180, 315, 180, 'right', 'end');
-
-        world.addFluid(PARTICLE_LAVA, 135, 110, 20, 25);
-        world.addCrab(135, 320, 95, 175);
-        world.addCoin(250, 280);
-
-        world.addFluid(PARTICLE_WATER, 255, 110, 42, 35);
-        world.setFish(255, 435);
-      }
-    },
-    {
-      level: 19,
-      objective: "The Grand Chamber Lock!",
-      hint: "Step 1: Cool top lava. Step 2: Open passage to the fish tank!",
-      setup: function (world) {
-        world.addWall(70, 60, 70, 490, 10);
-        world.addWall(330, 60, 330, 490, 10);
-        world.addWall(70, 490, 330, 490, 10);
-
-        world.addPin('p1', 75, 160, 325, 160, 'right', 'end');
-        world.addPin('p2', 75, 290, 325, 290, 'left', 'start');
-        world.addPin('p3', 75, 400, 325, 400, 'right', 'end');
-
-        world.addFluid(PARTICLE_WATER, 200, 100, 46, 40);
-        world.addFluid(PARTICLE_LAVA, 200, 220, 20, 35);
-        world.setFish(200, 455);
-      }
-    },
-    {
-      level: 20,
-      objective: "Master Level: The Ultimate Rescue!",
-      hint: "You have all the skills! Extinguish lava, defeat the crab, and free the fish!",
-      setup: function (world) {
-        world.addWall(70, 60, 70, 490, 10);
-        world.addWall(330, 60, 330, 490, 10);
-        world.addWall(70, 490, 330, 490, 10);
-
-        world.addWall(195, 60, 195, 340, 10);
-        world.addPin('p1', 75, 180, 190, 180, 'left', 'start');
-        world.addPin('p2', 200, 180, 325, 180, 'right', 'end');
-        world.addPin('p3', 75, 340, 325, 340, 'right', 'end');
-
-        world.addFluid(PARTICLE_LAVA, 135, 110, 22, 28);
-        world.addCrab(135, 280, 95, 175);
-
-        world.addCoin(260, 240);
-        world.addFluid(PARTICLE_WATER, 260, 110, 48, 38);
-
-        world.setFish(200, 450);
-      }
-    }
+  const $ = (id) => document.getElementById(id);
+
+  // ------------------------------------------------------------ constants
+  const LH = 480;                 // logical height (width adapts to the screen)
+  const TILE = 44;
+  const EDGE = 34;                // outside strip above the ceiling / below the floor
+  const TY0 = EDGE + TILE;        // inner ceiling surface
+  const TY1 = LH - EDGE - TILE;   // inner floor surface
+  const R = 18;                   // Splotch radius
+  const GRAVITY = 2400;
+  const FLIP_KICK = 140;          // small push away from the surface when flipping
+  const COYOTE = 0.09;            // s: you can still flip just after rolling off an edge
+  const FLIP_BUF = 0.13;          // s: a tap slightly before landing still counts
+  const FIX_DT = 1 / 120;
+  const SPIKE_H = 20;
+  const LEVEL_COUNT = 30;
+  const SAVE_KEY = 'gravityFlipPainter.v2';
+
+  const PALETTES = [
+    { paint: '#fb923c', deep: '#c2410c', sky: ['#bae6fd', '#e0e7ff'], name: 'Tangerine' },
+    { paint: '#22c55e', deep: '#15803d', sky: ['#bbf7d0', '#e0f2fe'], name: 'Mint' },
+    { paint: '#ec4899', deep: '#be185d', sky: ['#fbcfe8', '#ede9fe'], name: 'Bubblegum' },
+    { paint: '#3b82f6', deep: '#1d4ed8', sky: ['#bfdbfe', '#e0e7ff'], name: 'Ocean' },
+    { paint: '#a855f7', deep: '#7e22ce', sky: ['#e9d5ff', '#fae8ff'], name: 'Grape' },
+    { paint: '#eab308', deep: '#a16207', sky: ['#fef08a', '#ffedd5'], name: 'Lemon' },
+    { paint: '#14b8a6', deep: '#0f766e', sky: ['#99f6e4', '#e0f2fe'], name: 'Lagoon' },
+    { paint: '#ef4444', deep: '#b91c1c', sky: ['#fecaca', '#ffe4e6'], name: 'Cherry' },
   ];
 
-  // ==========================================================================
-  // GAME CONTROLLER & UI WIRING
-  // ==========================================================================
-  var currentLevelIdx = 0;
-  var currentWorld = null;
-  var animFrameId = null;
+  // Each level gets its own look: theme (6) x paint colour (8), so no two levels in a row look alike.
+  const THEMES = [
+    { name: 'Meadow', out: ['#7dd3fc', '#c4b5fd'], inner: null, deco: 'clouds' },
+    { name: 'Sunset', out: ['#fdba74', '#f472b6'], inner: ['#fed7aa', '#fce7f3'], deco: 'sun' },
+    { name: 'Starry Night', out: ['#312e81', '#6d28d9'], inner: ['#c7d2fe', '#ddd6fe'], deco: 'stars' },
+    { name: 'Candy', out: ['#f9a8d4', '#c4b5fd'], inner: ['#fce7f3', '#fdf4ff'], deco: 'dots' },
+    { name: 'Ocean', out: ['#38bdf8', '#2563eb'], inner: ['#bae6fd', '#cffafe'], deco: 'bubbles' },
+    { name: 'Space', out: ['#1e1b4b', '#4c1d95'], inner: ['#e0e7ff', '#f5d0fe'], deco: 'planets' },
+  ];
+  // New mechanics are introduced gradually (0-based level -> [title, explanation]).
+  const INTROS = {
+    2: ['Spikes!', "Don't land on the spikes."],
+    4: ['Double gaps!', 'Flip away, then flip straight back!'],
+    7: ['Spike strips!', 'Spikes on your side: flip over them.'],
+    10: ['Tricky drops!', 'Some paint drops wait on the far side of a gap.'],
+  };
 
-  var canvas = document.getElementById('gameCanvas');
-  var ctx = canvas ? canvas.getContext('2d') : null;
-
-  // DOM Elements
-  var screenMenu = document.getElementById('screenMenu');
-  var screenLevels = document.getElementById('screenLevels');
-  var screenGame = document.getElementById('screenGame');
-
-  var hudLevelBadge = document.getElementById('hudLevelBadge');
-  var hudObjectiveText = document.getElementById('hudObjectiveText');
-  var menuProgressLabel = document.getElementById('menuProgressLabel');
-  var menuProgFill = document.getElementById('menuProgFill');
-  var levelsGrid = document.getElementById('levelsGrid');
-  var soundIconSpan = document.getElementById('soundIconSpan');
-
-  var modalWin = document.getElementById('modalWin');
-  var modalFail = document.getElementById('modalFail');
-  var failReasonText = document.getElementById('failReasonText');
-  var modalHint = document.getElementById('modalHint');
-  var hintBodyText = document.getElementById('hintBodyText');
-  var modalHelp = document.getElementById('modalHelp');
-
-  function showScreen(targetScreen) {
-    [screenMenu, screenLevels, screenGame].forEach(function (s) {
-      s.classList.remove('active');
-    });
-    targetScreen.classList.add('active');
-  }
-
-  function resizeCanvas() {
-    if (!canvas) return;
-    var rect = canvas.parentElement.getBoundingClientRect();
-    var dpr = window.devicePixelRatio || 1;
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    if (ctx) {
-      ctx.imageSmoothingEnabled = true;
-    }
-  }
-  window.addEventListener('resize', resizeCanvas);
-
-  function getCanvasCoords(clientX, clientY) {
-    if (!canvas) return { x: 0, y: 0 };
-    var rect = canvas.getBoundingClientRect();
-    var scaleX = V_WIDTH / rect.width;
-    var scaleY = V_HEIGHT / rect.height;
+  // ------------------------------------------------------------ save data
+  const save = (() => {
+    const blank = () => ({ unlocked: 1, stars: {}, paint: {}, coins: 0, sound: true, vibe: true });
+    let d = blank();
+    try { Object.assign(d, JSON.parse(localStorage.getItem(SAVE_KEY)) || {}); } catch (e) { /* private mode */ }
     return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY
+      get: () => d,
+      write() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); } catch (e) { /* ignore */ } },
+      reset() { const s = d.sound, v = d.vibe; d = blank(); d.sound = s; d.vibe = v; this.write(); },
+      addCoins(n) { d.coins = Math.max(0, (d.coins || 0) + n); this.write(); },
     };
+  })();
+
+  // ------------------------------------------------------------ sound (synth, no files)
+  const Sound = (() => {
+    let ctx = null;
+    const ac = () => {
+      if (!save.get().sound) return null;
+      if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    };
+    function tone(f, dur, type, vol, slide, delay) {
+      const a = ac(); if (!a) return;
+      const t = a.currentTime + (delay || 0), o = a.createOscillator(), g = a.createGain();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f, t);
+      if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+      g.gain.setValueAtTime(vol || 0.15, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+    }
+    return {
+      warm: () => ac(),
+      flip: () => { tone(420, 0.12, 'triangle', 0.12, 820); },
+      land: () => tone(140, 0.08, 'sine', 0.22, 90),
+      drop: () => [660, 880, 1175].forEach((f, i) => tone(f, 0.12, 'sine', 0.12, null, i * 0.06)),
+      die: () => { tone(320, 0.35, 'sawtooth', 0.09, 60); tone(120, 0.3, 'sine', 0.2, 50); },
+      win: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.22, 'triangle', 0.12, null, i * 0.09)),
+      click: () => tone(700, 0.06, 'triangle', 0.08, 1000),
+      // each coin in a combo plays one semitone higher: the classic "rising reward" sound
+      coin: (combo) => { const f = 880 * Math.pow(2, Math.min(combo, 24) / 12); tone(f, 0.09, 'square', 0.05); tone(f * 1.5, 0.12, 'sine', 0.06, null, 0.04); },
+      gem: () => [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, 0.12, 'triangle', 0.09, null, i * 0.05)),
+      boost: () => tone(300, 0.35, 'sawtooth', 0.06, 1200),
+      cheer: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, 0.16, 'triangle', 0.1, null, i * 0.07)),
+    };
+  })();
+  const vibrate = (p) => { if (save.get().vibe && navigator.vibrate) try { navigator.vibrate(p); } catch (e) { /* ignore */ } };
+
+  // ------------------------------------------------------------ level generation
+  function mkRng(seed) {
+    let s = (seed ^ 0xdeadbeef) >>> 0 || 1;
+    return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return (s >>> 0) / 4294967296; };
   }
+  const speedOf = (lvl) => 200 + lvl * 6.5;           // faster every single level: 200 → 389 px/s
+  // Horizontal tiles travelled while crossing from one side to the other.
+  const airTiles = (lvl) => speedOf(lvl) * Math.sqrt(2 * (TY1 - TY0 - 2 * R) / GRAVITY) / TILE;
 
-  function updateMenuProgress() {
-    var maxLvl = TOTAL_LEVELS;
-    var unlocked = Math.min(gameState.unlockedLevels, maxLvl);
-    menuProgressLabel.textContent = 'Level ' + unlocked + ' of ' + maxLvl;
-    menuProgFill.style.width = ((unlocked / maxLvl) * 100) + '%';
-  }
+  // One candidate layout for a level. `score` estimates how many flips it demands.
+  function genVariant(lvl, variant) {
+    const rng = mkRng(lvl * 987654321 + 777 + variant * 7919);
+    let score = 0;
+    const cols = [], coins = [];
+    const push = (floor, ceil, floorSpike = false, ceilSpike = false) => cols.push({ floor, ceil, floorSpike, ceilSpike, drop: null });
+    // Difficulty grows every level: more hazards, shorter safe stretches, longer gaps, more spikes and double gaps.
+    const segs = Math.min(4 + Math.round(lvl * 0.75), 26) + Math.floor(variant / 6); // later variants add a hazard
+    const spikes = lvl >= 2;
+    const spikeChance = Math.min(0.12 + lvl * 0.014, 0.52);
+    const air = Math.ceil(airTiles(lvl));
+    const dropSegs = new Set([0, 1, 2].map((k) => Math.floor((segs * (k + 0.5)) / 3)));
+    let side = 'floor';
 
-  function renderLevelsGrid() {
-    levelsGrid.innerHTML = '';
-    for (var i = 0; i < TOTAL_LEVELS; i++) {
-      var lvlNum = i + 1;
-      var isCompleted = lvlNum < gameState.unlockedLevels;
-      var isCurrent = lvlNum === gameState.unlockedLevels;
-      var isLocked = lvlNum > gameState.unlockedLevels;
-
-      var tile = document.createElement('button');
-      tile.className = 'level-tile' + (isCompleted ? ' completed' : isCurrent ? ' current' : ' locked');
-
-      if (isLocked) {
-        tile.innerHTML = '🔒';
-        tile.disabled = true;
+    for (let i = 0; i < 8; i++) push(true, true);
+    for (let seg = 0; seg < segs; seg++) {
+      const opp = side === 'floor' ? 'ceil' : 'floor';
+      const safeLen = Math.max(2, 6 - Math.floor(lvl / 5)) + Math.floor(rng() * 3);
+      // safe stretch: spikes on the far side punish flipping too early
+      for (let i = 0; i < safeLen; i++) {
+        const spike = spikes && i > 0 && i < safeLen - 2 && rng() < spikeChance;
+        push(true, true, spike && opp === 'floor', spike && opp === 'ceil');
+        if (spike) score += 0.5;
+        else if (i > 0 && rng() < 0.3) coins.push({ x: (cols.length - 0.5) * TILE, y: side === 'floor' ? TY1 - 24 : TY0 + 24, v: 1 });
+      }
+      // paint drop: normally on the current side right before the hazard; from level 11 sometimes
+      // floating on the far side in the middle of the hazard ("tricky drop")
+      const tricky = dropSegs.has(seg) && lvl >= 10 && rng() < 0.5;
+      if (dropSegs.has(seg) && !tricky) cols[cols.length - 1].drop = side;
+      const hazStart = cols.length;
+      const hazLen = 2 + Math.floor(lvl / 6) + Math.floor(rng() * (2 + Math.min(5, Math.floor(lvl / 4))));
+      const zig = lvl >= 4 && rng() < Math.min(0.6, 0.1 + lvl * 0.02);
+      score += zig ? 2 : 1;
+      if (zig) {
+        // gap on this side (flip away), then a gap on the other side (flip back)
+        const a = Math.max(hazLen, air + 2), b = 2 + Math.floor(rng() * 3);
+        for (let i = 0; i < a; i++) push(side !== 'floor', side !== 'ceil');
+        for (let i = 0; i < b; i++) push(opp !== 'floor', opp !== 'ceil');
+        // side stays the same after a zig
+      } else if (lvl >= 7 && rng() < Math.min(0.5, 0.18 + (lvl - 7) * 0.03)) {
+        // spike strip: both surfaces exist, but your side is covered in spikes
+        for (let i = 0; i < hazLen; i++) push(true, true, side === 'floor', side === 'ceil');
+        score += 0.5;
+        side = opp;
       } else {
-        var stars = gameState.levelStars[lvlNum] || 3;
-        tile.innerHTML = [
-          '<span>' + lvlNum + '</span>',
-          isCompleted ? '<span class="tile-stars">' + '⭐'.repeat(stars) + '</span>' : ''
-        ].join('');
-
-        (function (levelIndex) {
-          tile.onclick = function () {
-            AudioEngine.playPin();
-            startLevel(levelIndex);
-            showScreen(screenGame);
-          };
-        })(i);
+        for (let i = 0; i < hazLen; i++) push(side !== 'floor', side !== 'ceil');
+        side = opp;
       }
-      levelsGrid.appendChild(tile);
-    }
-  }
-
-  // Start Level
-  function startLevel(index) {
-    if (index < 0) index = 0;
-    if (index >= LEVEL_CONFIGS.length) index = 0;
-
-    currentLevelIdx = index;
-    var config = LEVEL_CONFIGS[index];
-
-    // Hide modals
-    modalWin.classList.add('hidden');
-    modalFail.classList.add('hidden');
-    modalHint.classList.add('hidden');
-
-    // Update HUD
-    hudLevelBadge.textContent = 'LEVEL ' + config.level;
-    hudObjectiveText.textContent = config.objective;
-
-    // Build World
-    currentWorld = new PhysicsWorld();
-    config.setup(currentWorld);
-
-    currentWorld.onWin = function () {
-      if (config.level >= gameState.unlockedLevels) {
-        gameState.unlockedLevels = config.level + 1;
+      if (tricky) {
+        // the far side of the first hazard columns always has a safe surface
+        cols[hazStart + Math.floor(Math.min(hazLen, cols.length - hazStart) / 2)].drop = opp;
+        score += 0.5;
       }
-      gameState.levelStars[config.level] = 3;
-      saveGameState();
-      updateMenuProgress();
-
-      setTimeout(function () {
-        modalWin.classList.remove('hidden');
-      }, 700);
-    };
-
-    currentWorld.onFail = function (reason) {
-      failReasonText.textContent = reason || "The fish couldn't be saved!";
-      setTimeout(function () {
-        modalFail.classList.remove('hidden');
-      }, 700);
-    };
-
-    resizeCanvas();
-    startLoop();
+    }
+    for (let i = 0; i < 12; i++) push(true, true);
+    let k = 0;
+    cols.forEach((c) => { if (c.drop) c.dropIdx = k++; });
+    const paintable = cols.reduce((a, c) => a + (c.floor ? 1 : 0) + (c.ceil ? 1 : 0), 0);
+    const pal = PALETTES[lvl % PALETTES.length], theme = THEMES[lvl % THEMES.length];
+    return { cols, coins, finish: cols.length - 7, paintable, pal, theme, name: pal.name + ' ' + theme.name, speed: speedOf(lvl), score };
   }
 
-  // Animation Loop
-  function startLoop() {
-    if (animFrameId) {
-      cancelAnimationFrame(animFrameId);
+  // ------------------------------------------------------------ bonus stages (after every 3 levels)
+  // A safe, fast, coin-packed run: no gaps or spikes, coin arcs that follow the exact flip path,
+  // boost pads and gems. Pure reward between the hard levels.
+  const BONUS_THEME = { name: 'Bonus', out: ['#f472b6', '#facc15'], inner: ['#fef9c3', '#fce7f3'], deco: 'rainbow' };
+  const BONUS_PAL = { paint: '#f59e0b', deep: '#b45309', sky: ['#fef9c3', '#fce7f3'], name: 'Gold' };
+  const BOOST_TIME = 0.8, BOOST_MUL = 1.5;
+  const REVIVE_COST = 100; // coins to continue after a crash (a bonus stage pays roughly 300-400)
+  // Path of a flip from one surface to the other at a given speed (same physics as the game).
+  function flightPath(speed, fromGrav) {
+    let y = fromGrav === 1 ? TY1 - R : TY0 + R, x = 0;
+    const grav = -fromGrav; let vy = FLIP_KICK * grav;
+    const pts = [];
+    for (let t = 0; t < 2; t += FIX_DT) {
+      vy += GRAVITY * grav * FIX_DT; x += speed * FIX_DT; y += vy * FIX_DT;
+      if (grav === -1 ? y - R <= TY0 : y + R >= TY1) break;
+      pts.push({ dx: x, y });
     }
+    return pts;
+  }
+  function genBonus(k) {
+    const rng = mkRng(4242 + k * 131), speed = Math.min(360, 290 + k * 8), n = 150;
+    const cols = [], coins = [];
+    for (let i = 0; i < n; i++) cols.push({ floor: true, ceil: true, floorSpike: false, ceilSpike: false, drop: null });
+    const surfY = (g) => (g === 1 ? TY1 - 24 : TY0 + 24);
+    let ci = 8, side = 1;
+    while (ci < n - 26) {
+      const boost = rng() < 0.4;
+      const run = (boost ? 7 : 4) + Math.floor(rng() * 4);
+      if (boost) cols[ci].boost = side;
+      for (let i = 0; i < run; i++) coins.push({ x: (ci + i + 0.5) * TILE, y: surfY(side), v: 1 });
+      ci += run + (boost ? 5 : 0); // after a boost, a plain stretch lets the speed settle before the arc
+      cols[ci].flipMark = side;   // glowing ring: flip here to ride the coin arc
+      const pts = flightPath(speed, side), startX = (ci + 0.5) * TILE;
+      let lastX = -99;
+      const gemAt = rng() < 0.6 ? Math.floor(pts.length / 2) : -1;
+      pts.forEach((pt, i) => {
+        if (i === gemAt) { coins.push({ x: startX + pt.dx, y: pt.y, v: 5, gem: true }); lastX = pt.dx; return; }
+        if (pt.dx - lastX >= 34) { lastX = pt.dx; coins.push({ x: startX + pt.dx, y: pt.y, v: 1 }); }
+      });
+      ci = Math.ceil((startX + pts[pts.length - 1].dx) / TILE) + 1;
+      side = -side;
+    }
+    return { cols, coins, finish: n - 7, paintable: n * 2, pal: BONUS_PAL, theme: BONUS_THEME, name: 'Bonus Stage', speed, bonus: true, score: 0 };
+  }
+  // Every level must demand more than the one before: try a few variants, keep the first that does.
+  function genLevel(lvl, minScore) {
+    let best = null;
+    for (let v = 0; v < 48; v++) {
+      const L = genVariant(lvl, v);
+      if (L.score > minScore) return L;
+      if (!best || L.score > best.score) best = L;
+    }
+    return best;
+  }
+  const LEVELS = [];
+  for (let i = 0; i < LEVEL_COUNT; i++) LEVELS.push(genLevel(i, i ? LEVELS[i - 1].score : -1));
 
-    function loop() {
-      if (currentWorld && ctx && canvas) {
-        currentWorld.update();
-        var dpr = window.devicePixelRatio || 1;
-        var rect = canvas.parentElement.getBoundingClientRect();
-        var scaleX = (rect.width * dpr) / V_WIDTH;
-        var scaleY = (rect.height * dpr) / V_HEIGHT;
-        renderWorld(ctx, currentWorld, scaleX, scaleY);
-      }
-      animFrameId = requestAnimationFrame(loop);
-    }
-    animFrameId = requestAnimationFrame(loop);
+  // ------------------------------------------------------------ canvas sizing
+  const canvas = $('game'), stage = $('stage');
+  const gameCtx = canvas.getContext('2d');
+  let X = gameCtx; // active drawing context (the menu hero art borrows the same renderers)
+  let LW = 800, scale = 1, dpr = 1;
+  function resize() {
+    const r = stage.getBoundingClientRect();
+    if (r.width < 10 || r.height < 10) return;
+    LW = Math.max(440, Math.min(1000, Math.round(LH * (r.width / r.height)))); // narrower world on portrait phones = bigger play area
+    scale = Math.min(r.width / LW, r.height / LH);
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.style.width = Math.floor(LW * scale) + 'px';
+    canvas.style.height = Math.floor(LH * scale) + 'px';
+    canvas.width = Math.round(LW * scale * dpr);
+    canvas.height = Math.round(LH * scale * dpr);
   }
 
-  // Canvas Touch / Mouse Input
-  function handlePointerDown(e) {
-    if (!currentWorld || currentWorld.isOver) return;
-    var pt = e.touches && e.touches.length > 0 ? e.touches[0] : e;
-    var coords = getCanvasCoords(pt.clientX, pt.clientY);
-    currentWorld.checkPinClick(coords.x, coords.y);
+  // Splotch sits further left on narrow screens so you still see far enough ahead.
+  const camAnchor = () => (LW < 640 ? 0.2 : 0.3);
+
+  // ------------------------------------------------------------ game state
+  const G = {
+    scene: 'menu',  // menu | ready | playing | dead | win | paused
+    lvl: 0, L: null, ball: null, camX: 0, flipBuf: 0, acc: 0,
+    paintF: null, paintC: null, drops: [false, false, false], revived: false, lastSafe: null,
+    parts: [], time: 0, deathCause: '',
+    coins: null, coinsGot: 0, combo: 0, comboT: 0, bestCombo: 0, floats: [], speedMul: 1, boostT: 0,
+    nextAfterBonus: null, bonusIdx: 0,
+  };
+  const levelIsBonusAfter = (n) => n % 3 === 0 && n < LEVEL_COUNT; // after levels 3, 6, 9 ... (1-based)
+  const painted = () => G.paintF.reduce((a, v) => a + (v ? 1 : 0), 0) + G.paintC.reduce((a, v) => a + (v ? 1 : 0), 0);
+  const paintPct = () => (G.L.paintable ? Math.round((painted() / G.L.paintable) * 100) : 0);
+
+  function startLevel(lvl) {
+    G.lvl = Math.max(0, Math.min(LEVEL_COUNT - 1, lvl));
+    G.L = LEVELS[G.lvl];
+    G.paintF = new Array(G.L.cols.length).fill(0);
+    G.paintC = new Array(G.L.cols.length).fill(0);
+    G.drops = [false, false, false];
+    G.parts = []; G.flipBuf = 0; G.acc = 0; G.revived = false;
+    resetRun();
+    G.ball = newBall(3.5 * TILE, 1);
+    G.lastSafe = { x: G.ball.x, grav: 1 };
+    G.camX = G.ball.x - LW * camAnchor();
+    G.scene = 'ready';
+    $('hudLevel').textContent = 'Level ' + (G.lvl + 1);
+    $('hudDrops').classList.remove('hidden');
+    renderDrops(); updatePaintBar();
+    clearTimeout(G.hintTimer); // a hint timer from the previous attempt must not hide this start card
+    const intro = INTROS[G.lvl];
+    $('hintLevel').textContent = `Level ${G.lvl + 1} · ${G.L.name}`;
+    $('hintNew').classList.toggle('hidden', !intro);
+    if (intro) $('hintNew').textContent = 'NEW: ' + intro[0];
+    $('hintMain').textContent = 'Tap to start!';
+    $('hintSub').textContent = intro ? intro[1] : 'or press Space';
+    $('tapHint').classList.remove('gone');
+    hideModals(); showScreen('game');
+  }
+  function resetRun() {
+    G.coins = G.L.coins.map((c) => ({ ...c, got: false }));
+    G.coinsGot = 0; G.combo = 0; G.comboT = 0; G.bestCombo = 0; G.floats = []; G.speedMul = 1; G.boostT = 0;
+    updateCoinHud();
   }
 
-  if (canvas) {
-    canvas.addEventListener('mousedown', handlePointerDown);
-    canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
+  function startBonus(k, nextLvl) {
+    G.L = genBonus(k); G.bonusIdx = k; G.nextAfterBonus = nextLvl;
+    G.paintF = new Array(G.L.cols.length).fill(0);
+    G.paintC = new Array(G.L.cols.length).fill(0);
+    G.drops = [false, false, false];
+    G.parts = []; G.flipBuf = 0; G.acc = 0; G.revived = true;
+    resetRun();
+    G.ball = newBall(3.5 * TILE, 1);
+    G.lastSafe = { x: G.ball.x, grav: 1 };
+    G.camX = G.ball.x - LW * camAnchor();
+    G.scene = 'ready';
+    $('hudLevel').textContent = '★ BONUS ★';
+    $('hudDrops').classList.add('hidden');
+    updatePaintBar();
+    clearTimeout(G.hintTimer);
+    $('hintLevel').textContent = 'BONUS STAGE';
+    $('hintNew').classList.remove('hidden'); $('hintNew').textContent = 'BONUS! 🎁';
+    $('hintMain').textContent = 'Tap to start!';
+    $('hintSub').textContent = "Flip at the glowing rings to grab whole coin arcs. You can't fall here!";
+    $('tapHint').classList.remove('gone');
+    hideModals(); showScreen('game');
   }
 
-  // ==========================================================================
-  // BUTTON ACTIONS
-  // ==========================================================================
-  document.getElementById('btnPlay').onclick = function () {
-    AudioEngine.playPin();
-    startLevel(gameState.unlockedLevels - 1);
-    showScreen(screenGame);
-  };
+  function newBall(x, grav) {
+    return { x, y: grav === 1 ? TY1 - R : TY0 + R, vy: 0, grav, onGnd: true, coyote: COYOTE, sqx: 1, sqy: 1, svx: 0, svy: 0, roll: 0, blink: 2 };
+  }
 
-  document.getElementById('btnLevels').onclick = function () {
-    AudioEngine.playPin();
-    renderLevelsGrid();
-    showScreen(screenLevels);
-  };
-
-  document.getElementById('btnBackFromLevels').onclick = function () {
-    AudioEngine.playPin();
-    showScreen(screenMenu);
-    updateMenuProgress();
-  };
-
-  document.getElementById('btnHomeFromGame').onclick = function () {
-    AudioEngine.playPin();
-    showScreen(screenMenu);
-    updateMenuProgress();
-  };
-
-  document.getElementById('btnResetLevel').onclick = function () {
-    AudioEngine.playPin();
-    startLevel(currentLevelIdx);
-  };
-
-  document.getElementById('btnSoundToggle').onclick = function () {
-    var on = AudioEngine.toggle();
-    soundIconSpan.textContent = on ? '🔊' : '🔇';
-    AudioEngine.playPin();
-  };
-
-  document.getElementById('btnHint').onclick = function () {
-    AudioEngine.playPin();
-    if (LEVEL_CONFIGS[currentLevelIdx]) {
-      hintBodyText.textContent = LEVEL_CONFIGS[currentLevelIdx].hint;
-      modalHint.classList.remove('hidden');
-    }
-  };
-
-  document.getElementById('btnCloseHint').onclick = function () {
-    AudioEngine.playPin();
-    modalHint.classList.add('hidden');
-  };
-
-  document.getElementById('btnHowToPlay').onclick = function () {
-    AudioEngine.playPin();
-    modalHelp.classList.remove('hidden');
-  };
-
-  document.getElementById('btnCloseHelp').onclick = function () {
-    AudioEngine.playPin();
-    modalHelp.classList.add('hidden');
-  };
-
-  document.getElementById('btnExit').onclick = function () {
-    AudioEngine.playPin();
-    if (confirm('Exit Rescue The Fish? Your progress is saved!')) {
-      try { window.parent.postMessage({ action: 'exit_game' }, '*'); } catch (e) { }
-      try { window.history.back(); } catch (e) { }
-      setTimeout(function () { window.close(); }, 300);
-    }
-  };
-
-  document.getElementById('btnNextLevel').onclick = function () {
-    AudioEngine.playPin();
-    if (currentLevelIdx + 1 < TOTAL_LEVELS) {
-      startLevel(currentLevelIdx + 1);
+  function tryFlip() {
+    const b = G.ball;
+    if (b.onGnd || b.coyote > 0) {
+      b.grav *= -1; b.vy = FLIP_KICK * b.grav; b.onGnd = false; b.coyote = 0; G.flipBuf = 0;
+      b.sqx = 0.72; b.sqy = 1.36;
+      Sound.flip(); vibrate(8);
+      emit(b.x, b.grav === -1 ? TY1 : TY0, G.L.pal.paint, 6, 90);
     } else {
-      modalWin.classList.add('hidden');
-      renderLevelsGrid();
-      showScreen(screenLevels);
+      G.flipBuf = FLIP_BUF;
     }
+  }
+
+  function tap() {
+    Sound.warm();
+    if (G.scene === 'ready') {
+      G.scene = 'playing';
+      if (G.lvl < 2) { $('hintMain').textContent = 'Tap to flip gravity!'; $('hintNew').classList.add('hidden'); clearTimeout(G.hintTimer); G.hintTimer = setTimeout(() => $('tapHint').classList.add('gone'), 1600); }
+      else $('tapHint').classList.add('gone');
+      return;
+    }
+    if (G.scene === 'playing') tryFlip();
+  }
+
+  // ------------------------------------------------------------ physics
+  function step(dt) {
+    const b = G.ball, L = G.L;
+    G.flipBuf = Math.max(0, G.flipBuf - dt);
+    if (!b.onGnd) b.coyote = Math.max(0, b.coyote - dt);
+    const prevY = b.y;
+    b.vy += GRAVITY * b.grav * dt;
+    G.boostT = Math.max(0, G.boostT - dt);
+    G.speedMul += ((G.boostT > 0 ? BOOST_MUL : 1) - G.speedMul) * (1 - Math.exp(-12 * dt));
+    const speed = L.speed * G.speedMul;
+    b.x += speed * dt;
+    b.y += b.vy * dt;
+    b.roll += ((speed * dt) / R) * b.grav;     // rolls clockwise on the floor, the other way on the ceiling
+    if (G.comboT > 0) { G.comboT -= dt; if (G.comboT <= 0) G.combo = 0; }
+
+    const ci = Math.floor(b.x / TILE);
+    const col = L.cols[ci];
+    const wasGnd = b.onGnd;
+    b.onGnd = false;
+
+    if (col) {
+      if (b.grav === 1) {
+        if (b.y + R >= TY1) {
+          if (col.floor && prevY + R <= TY1 + 6) land(ci, col, TY1 - R, wasGnd);
+          else if (col.floor) return die('wall');        // slid into the side of a tile from inside a gap
+        }
+      } else if (b.y - R <= TY0) {
+        if (col.ceil && prevY - R >= TY0 - 6) land(ci, col, TY0 + R, wasGnd);
+        else if (col.ceil) return die('wall');
+      }
+    }
+    if (!b.onGnd && wasGnd) b.coyote = COYOTE;            // just rolled off an edge
+
+    // spikes: any spike column overlapping the ball's position
+    for (let k = ci - 1; k <= ci + 1; k++) {
+      const c = L.cols[k]; if (!c) continue;
+      const cx = (k + 0.5) * TILE;
+      if (Math.abs(b.x - cx) > TILE * 0.42) continue;
+      if (c.floorSpike && b.y + R > TY1 - SPIKE_H * 0.7) return die('spike');
+      if (c.ceilSpike && b.y - R < TY0 + SPIKE_H * 0.7) return die('spike');
+    }
+
+    // fell out through a gap
+    if (b.y > LH + 60 || b.y < -60) return die('gap');
+
+    // paint drops
+    L.cols.forEach((c, k) => {
+      if (!c.drop || G.drops[c.dropIdx]) return;
+      const dx = b.x - (k + 0.5) * TILE, dy = b.y - (c.drop === 'floor' ? TY1 - 22 : TY0 + 22);
+      if (dx * dx + dy * dy < (R + 16) * (R + 16)) {
+        G.drops[c.dropIdx] = true;
+        emit((k + 0.5) * TILE, b.y, '#facc15', 18, 160);
+        Sound.drop(); vibrate(15); renderDrops(c.dropIdx);
+      }
+    });
+
+    // coins & gems
+    for (const c of G.coins) {
+      if (c.got || Math.abs(c.x - b.x) > 40) continue;
+      const dx = c.x - b.x, dy = c.y - b.y, rr2 = R + (c.gem ? 16 : 12);
+      if (dx * dx + dy * dy < rr2 * rr2) collectCoin(c);
+    }
+
+    // squash & stretch spring
+    b.svx += (-20 * (b.sqx - 1) - 7 * b.svx) * dt * 60;
+    b.svy += (-20 * (b.sqy - 1) - 7 * b.svy) * dt * 60;
+    b.sqx = clamp(b.sqx + b.svx * dt, 0.6, 1.45);
+    b.sqy = clamp(b.sqy + b.svy * dt, 0.6, 1.45);
+
+    if (ci >= L.finish) return winLevel();
+    G.camX = b.x - LW * camAnchor();
+  }
+
+  function land(ci, col, y, wasGnd) {
+    const b = G.ball;
+    b.y = y; b.vy = 0; b.onGnd = true; b.coyote = COYOTE;
+    if (!wasGnd) {
+      b.sqx = 1.3; b.sqy = 0.72;
+      emit(b.x, b.grav === 1 ? TY1 : TY0, G.L.pal.paint, 10, 120);
+      Sound.land();
+      if (G.flipBuf > 0) { tryFlip(); return; }
+    }
+    const arr = b.grav === 1 ? G.paintF : G.paintC;
+    if (!arr[ci]) { arr[ci] = G.time; updatePaintBar(); }
+    if (col.boost === b.grav && G.boostT <= 0) {
+      G.boostT = BOOST_TIME; Sound.boost(); vibrate(20);
+      addFloat(b.x + 30, b.y - b.grav * 30, 'BOOST!', '#f97316', 18);
+    }
+    if (col.floor && col.ceil && !col.floorSpike && !col.ceilSpike) G.lastSafe = { x: (ci + 0.5) * TILE, grav: b.grav };
+    if (Math.random() < 0.25) G.parts.push({ x: b.x - R * 0.6, y: b.grav === 1 ? TY1 - 2 : TY0 + 2, vx: -30, vy: 0, r: 2 + Math.random() * 3, life: 0.6, color: G.L.pal.paint, g: 0 });
+  }
+
+  function collectCoin(c) {
+    c.got = true;
+    G.combo = G.comboT > 0 ? G.combo + 1 : 1;
+    G.comboT = 0.7;
+    G.bestCombo = Math.max(G.bestCombo, G.combo);
+    const mult = 1 + Math.floor(G.combo / 10);       // every 10 in a row = one more coin per pickup
+    const gain = c.v * mult;
+    G.coinsGot += gain;
+    if (c.gem) { Sound.gem(); vibrate(25); emit(c.x, c.y, '#22d3ee', 16, 180); }
+    else { Sound.coin(G.combo); emit(c.x, c.y, '#facc15', 6, 110); }
+    addFloat(c.x, c.y - 14, '+' + gain, c.gem ? '#0891b2' : '#a16207', c.gem ? 22 : 15);
+    if (G.combo > 0 && G.combo % 10 === 0) {
+      addFloat(G.ball.x + 40, (TY0 + TY1) / 2, G.combo >= 30 ? 'INCREDIBLE!' : G.combo >= 20 ? 'AMAZING!' : 'AWESOME!', '#ec4899', 30);
+      Sound.cheer(); vibrate([15, 20, 15]); confettiBurst(c.x, c.y);
+    }
+    updateCoinHud(true);
+  }
+  function addFloat(x, y, text, color, size) { G.floats.push({ x, y, text, color, size, life: 0.9 }); }
+  function updateCoinHud(bump) {
+    $('hudCoinNum').textContent = G.coinsGot;
+    if (bump) { const el = $('hudCoins'); el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+    if (G.L && G.L.bonus) updatePaintBar();
+  }
+
+  const DEATH_TEXT = { gap: 'Splotch fell into a gap!', spike: 'Ouch! Splotch hit the spikes.', wall: 'Splat! Splotch hit a wall.' };
+  function die(cause) {
+    if (G.scene !== 'playing') return;
+    G.scene = 'dead'; G.deathCause = cause;
+    const b = G.ball;
+    emit(b.x, clamp(b.y, TY0, TY1), G.L.pal.paint, 26, 220);
+    emit(b.x, clamp(b.y, TY0, TY1), '#ffffff', 10, 150);
+    Sound.die(); vibrate([40, 30, 60]);
+    $('failText').textContent = DEATH_TEXT[cause] || DEATH_TEXT.gap;
+    $('failTitle').textContent = cause === 'spike' ? 'OUCH!' : 'SPLAT!';
+    $('btnReviveAd').classList.toggle('hidden', G.revived);
+    $('btnReviveCoins').classList.toggle('hidden', G.revived);
+    $('btnReviveCoins').disabled = (save.get().coins || 0) < REVIVE_COST;
+    setTimeout(() => { if (G.scene === 'dead') openModal('modalFail'); }, 700);
+  }
+
+  function revive() {
+    G.revived = true;
+    G.ball = newBall(G.lastSafe.x, G.lastSafe.grav);
+    G.camX = G.ball.x - LW * camAnchor(); G.flipBuf = 0; G.acc = 0;
+    G.scene = 'ready';
+    clearTimeout(G.hintTimer);
+    $('hintMain').textContent = 'Tap to continue!'; $('hintNew').classList.add('hidden'); $('hintSub').textContent = 'or press Space';
+    $('tapHint').classList.remove('gone');
+    closeModal('modalFail');
+  }
+
+  function winLevel() {
+    if (G.scene !== 'playing') return;
+    G.scene = 'win';
+    if (G.L.bonus) return bonusComplete();
+    const stars = G.drops.filter(Boolean).length, pct = paintPct(), d = save.get(), n = G.lvl + 1;
+    d.stars[n] = Math.max(d.stars[n] || 0, stars);
+    d.paint[n] = Math.max(d.paint[n] || 0, pct);
+    d.unlocked = Math.max(d.unlocked, Math.min(LEVEL_COUNT, n + 1));
+    save.write();
+    save.addCoins(G.coinsGot);
+    confetti(); Sound.win(); vibrate([20, 40, 60]);
+    setTimeout(() => {
+      [...$('winStars').children].forEach((el, i) => el.classList.toggle('on', i < stars));
+      $('winText').textContent = `You painted ${pct}% of the tunnel` + (stars < 3 ? ` and found ${stars}/3 paint drops.` : ' and found every paint drop!') + (G.coinsGot ? `  +${G.coinsGot} 🪙` : '');
+      $('btnNext').textContent = G.lvl >= LEVEL_COUNT - 1 ? 'All done! 🏆' : levelIsBonusAfter(n) ? 'Bonus Stage! 🎁' : 'Next Level ➜';
+      openModal('modalWin');
+    }, 650);
+  }
+
+  function bonusComplete() {
+    confetti(); Sound.win(); vibrate([20, 40, 60]);
+    save.addCoins(G.coinsGot);
+    G.bonusDoubled = false;
+    setTimeout(() => {
+      $('bonusText').textContent = `coins collected · best combo ×${G.bestCombo}`;
+      $('btnBonusDouble').classList.toggle('hidden', G.coinsGot === 0);
+      openModal('modalBonus');
+      countUp($('bonusCount'), 0, G.coinsGot, 900);
+    }, 600);
+  }
+  // Animated number count-up with a tick sound: the payoff moment.
+  function countUp(el, from, to, ms) {
+    const t0 = performance.now(); let lastTick = from;
+    const tick = (now) => {
+      const k = Math.min(1, (now - t0) / ms), v = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)));
+      el.textContent = v;
+      if (v - lastTick >= Math.max(1, Math.floor((to - from) / 12))) { lastTick = v; Sound.coin(Math.min(24, Math.floor(k * 18))); }
+      if (k < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  // ------------------------------------------------------------ particles
+  function emit(x, y, color, n, sp) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, s = sp * (0.35 + Math.random() * 0.8);
+      G.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: 2 + Math.random() * 4, life: 0.5 + Math.random() * 0.5, color, g: 500 });
+    }
+  }
+  function confetti() {
+    const cols = ['#facc15', '#f97316', '#22c55e', '#3b82f6', '#ec4899', '#8b5cf6'];
+    for (let i = 0; i < 80; i++) {
+      G.parts.push({ x: G.camX + LW * (0.2 + Math.random() * 0.6), y: TY0 + 10, vx: (Math.random() - 0.5) * 300, vy: Math.random() * 200,
+        r: 3 + Math.random() * 4, life: 1.4 + Math.random(), color: cols[i % cols.length], g: 380, conf: true, rot: Math.random() * 6 });
+    }
+  }
+  function confettiBurst(x, y) {
+    const cols = ['#facc15', '#f97316', '#22c55e', '#3b82f6', '#ec4899', '#8b5cf6'];
+    for (let i = 0; i < 24; i++) G.parts.push({ x, y, vx: (Math.random() - 0.5) * 360, vy: -Math.random() * 300, r: 3 + Math.random() * 3, life: 1, color: cols[i % 6], g: 500, conf: true, rot: Math.random() * 6 });
+  }
+  function updateParts(dt) {
+    for (let i = G.floats.length - 1; i >= 0; i--) { const f = G.floats[i]; f.life -= dt; f.y -= 40 * dt; if (f.life <= 0) G.floats.splice(i, 1); }
+    for (let i = G.parts.length - 1; i >= 0; i--) {
+      const p = G.parts[i];
+      p.life -= dt; if (p.life <= 0) { G.parts.splice(i, 1); continue; }
+      p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.conf) p.rot += dt * 8;
+    }
+  }
+
+  // ------------------------------------------------------------ drawing
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  function rr(x, y, w, h, r) {
+    X.beginPath(); X.moveTo(x + r, y); X.arcTo(x + w, y, x + w, y + h, r); X.arcTo(x + w, y + h, x, y + h, r);
+    X.arcTo(x, y + h, x, y, r); X.arcTo(x, y, x + w, y, r); X.closePath();
+  }
+  const CLOUDS = Array.from({ length: 9 }, (_, i) => ({ x: i * 260 + Math.random() * 120, y: 6 + Math.random() * 18, s: 0.7 + Math.random() * 0.6 }));
+  const BOKEH = Array.from({ length: 16 }, (_, i) => ({ x: i * 170 + Math.random() * 90, y: TY0 + 30 + Math.random() * (TY1 - TY0 - 60), r: 18 + Math.random() * 40 }));
+
+  function drawWorld(now) {
+    const L = G.L, pal = L.pal, th = L.theme;
+    X.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+    // outside sky (visible above/below the tunnel and through gaps)
+    const sky = X.createLinearGradient(0, 0, 0, LH);
+    sky.addColorStop(0, th.out[0]); sky.addColorStop(1, th.out[1]);
+    X.fillStyle = sky; X.fillRect(0, 0, LW, LH);
+    // tunnel interior
+    const inner = X.createLinearGradient(0, TY0, 0, TY1);
+    const ic = th.inner || pal.sky;
+    inner.addColorStop(0, ic[0]); inner.addColorStop(1, ic[1]);
+    X.fillStyle = inner; X.fillRect(0, TY0, LW, TY1 - TY0);
+    drawDeco(th.deco, now);
+
+    const c0 = Math.max(0, Math.floor(G.camX / TILE) - 1), c1 = Math.min(L.cols.length, Math.ceil((G.camX + LW) / TILE) + 1);
+    for (let ci = c0; ci < c1; ci++) {
+      const col = L.cols[ci], sx = ci * TILE - G.camX;
+      tile(sx, TY1, col.floor, G.paintF[ci], false);
+      tile(sx, EDGE, col.ceil, G.paintC[ci], true);
+      if (col.floorSpike) spikes(sx, TY1, false);
+      if (col.ceilSpike) spikes(sx, TY0, true);
+      if (col.drop && !G.drops[col.dropIdx]) dropIcon(sx + TILE / 2, col.drop === 'floor' ? TY1 - 22 : TY0 + 22, now, col.dropIdx);
+      if (col.boost) boostPad(sx, col.boost, now);
+      if (col.flipMark) flipRing(sx + TILE / 2, col.flipMark, now);
+    }
+    finishGate(L.finish * TILE - G.camX);
+
+    // coins & gems (spinning + bobbing)
+    for (const c of G.coins) {
+      const x = c.x - G.camX;
+      if (c.got || x < -30 || x > LW + 30) continue;
+      coinIcon(x, c.y + Math.sin(now / 260 + c.x * 0.05) * 3, now + c.x * 4, c.gem);
+    }
+    // particles
+    for (const p of G.parts) {
+      X.globalAlpha = clamp(p.life * 2, 0, 1); X.fillStyle = p.color;
+      if (p.conf) { X.save(); X.translate(p.x - G.camX, p.y); X.rotate(p.rot); X.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); X.restore(); }
+      else { X.beginPath(); X.arc(p.x - G.camX, p.y, p.r, 0, Math.PI * 2); X.fill(); }
+    }
+    X.globalAlpha = 1;
+    // speed lines while boosting
+    if (G.speedMul > 1.05) {
+      X.strokeStyle = 'rgba(255,255,255,0.8)'; X.lineWidth = 3; X.lineCap = 'round';
+      for (let i = 0; i < 6; i++) {
+        const y = G.ball.y + (i - 2.5) * 9, len = 30 + ((now / 7 + i * 37) % 40);
+        X.globalAlpha = (G.speedMul - 1) * 1.6;
+        X.beginPath(); X.moveTo(G.ball.x - G.camX - R - 6, y); X.lineTo(G.ball.x - G.camX - R - 6 - len, y); X.stroke();
+      }
+      X.globalAlpha = 1;
+    }
+    if (G.scene !== 'dead') splotch(G.ball.x - G.camX, G.ball.y, G.ball, pal, now);
+    // floating "+1", "BOOST!", "AWESOME!" texts
+    X.textAlign = 'center'; X.textBaseline = 'middle';
+    for (const f of G.floats) {
+      X.globalAlpha = clamp(f.life * 2, 0, 1);
+      X.font = `700 ${f.size}px Fredoka, sans-serif`;
+      X.lineWidth = 4; X.strokeStyle = '#ffffff'; X.strokeText(f.text, f.x - G.camX, f.y);
+      X.fillStyle = f.color; X.fillText(f.text, f.x - G.camX, f.y);
+    }
+    X.globalAlpha = 1;
+    // combo meter
+    if (G.combo >= 3) {
+      const pulse = 1 + Math.max(0, G.comboT - 0.5) * 0.6;
+      X.save(); X.translate(LW / 2, TY0 + 34); X.scale(pulse, pulse);
+      X.font = '700 24px Fredoka, sans-serif';
+      X.lineWidth = 6; X.strokeStyle = '#ffffff'; X.strokeText(`COMBO ×${G.combo}`, 0, 0);
+      X.fillStyle = G.combo >= 20 ? '#db2777' : G.combo >= 10 ? '#7c3aed' : '#ea580c'; X.fillText(`COMBO ×${G.combo}`, 0, 0);
+      X.restore();
+    }
+  }
+
+  const wrap = (x, span) => ((x % span) + span) % span - 120;
+  // Theme decoration behind the tiles. Cheap shapes only, parallax with the camera.
+  function drawDeco(kind, now) {
+    if (kind === 'clouds') {
+      for (const o of BOKEH) { X.fillStyle = 'rgba(255,255,255,0.35)'; X.beginPath(); X.arc(wrap(o.x - G.camX * 0.25, 2720), o.y, o.r, 0, Math.PI * 2); X.fill(); }
+      for (const c of CLOUDS) { const x = wrap(c.x - G.camX * 0.15, 2340); cloud(x, c.y, c.s); cloud(x + 90, LH - EDGE + 4 + c.y * 0.5, c.s * 0.8); cloud(x + 40, TY0 + 50 + c.y * 3, c.s * 1.3); }
+    } else if (kind === 'sun') {
+      const sx = LW * 0.72 - ((G.camX * 0.02) % 60);
+      X.fillStyle = 'rgba(255,237,213,0.9)'; X.beginPath(); X.arc(sx, TY1 - 20, 90, Math.PI, 0); X.fill();
+      X.fillStyle = 'rgba(251,146,60,0.25)';
+      for (let i = 0; i < 4; i++) X.fillRect(0, TY1 - 30 - i * 26, LW, 6);
+      for (const c of CLOUDS) cloud(wrap(c.x - G.camX * 0.12, 2340), c.y + 2, c.s * 0.9);
+    } else if (kind === 'stars' || kind === 'planets') {
+      for (const o of BOKEH) {
+        const tw = 0.5 + 0.5 * Math.sin(now / 400 + o.r);
+        X.fillStyle = `rgba(255,255,255,${0.35 + tw * 0.6})`;
+        X.beginPath(); X.arc(wrap(o.x - G.camX * 0.1, 2720), (o.r * 7) % EDGE, 1.6, 0, Math.PI * 2); X.fill();
+        X.fillStyle = kind === 'stars' ? `rgba(99,102,241,${0.18 + tw * 0.2})` : 'rgba(168,85,247,0.15)';
+        X.beginPath(); X.arc(wrap(o.x + 60 - G.camX * 0.2, 2720), o.y, 2.5 + (o.r % 3), 0, Math.PI * 2); X.fill();
+      }
+      if (kind === 'planets') {
+        const px = wrap(900 - G.camX * 0.08, 1800);
+        X.fillStyle = 'rgba(244,114,182,0.45)'; X.beginPath(); X.arc(px, TY0 + 110, 46, 0, Math.PI * 2); X.fill();
+        X.strokeStyle = 'rgba(124,58,237,0.45)'; X.lineWidth = 6; X.beginPath(); X.ellipse(px, TY0 + 110, 78, 16, -0.3, 0, Math.PI * 2); X.stroke();
+        const qx = wrap(1500 - G.camX * 0.12, 1800);
+        X.fillStyle = 'rgba(56,189,248,0.4)'; X.beginPath(); X.arc(qx, TY1 - 80, 26, 0, Math.PI * 2); X.fill();
+      }
+    } else if (kind === 'dots') {
+      for (let gx = 0; gx < LW + 80; gx += 56) for (let gy = TY0 + 20; gy < TY1; gy += 56) {
+        X.fillStyle = (gx / 56 + gy / 56) % 2 < 1 ? 'rgba(236,72,153,0.16)' : 'rgba(255,255,255,0.6)';
+        X.beginPath(); X.arc(gx - ((G.camX * 0.3) % 56), gy, 9, 0, Math.PI * 2); X.fill();
+      }
+    } else if (kind === 'rainbow') {
+      const cx = wrap(700 - G.camX * 0.1, 1400), cy = TY1 + 40;
+      ['#f87171', '#fb923c', '#facc15', '#4ade80', '#60a5fa', '#a78bfa'].forEach((c, i) => {
+        X.strokeStyle = c; X.globalAlpha = 0.35; X.lineWidth = 14;
+        X.beginPath(); X.arc(cx, cy, 240 - i * 14, Math.PI, 0); X.stroke();
+      });
+      X.globalAlpha = 1;
+      for (const o of BOKEH) {
+        const tw = 0.5 + 0.5 * Math.sin(now / 250 + o.r);
+        X.fillStyle = `rgba(255,255,255,${0.4 + tw * 0.6})`;
+        const x = wrap(o.x - G.camX * 0.3, 2720), y = o.y;
+        X.beginPath(); X.moveTo(x, y - 6); X.lineTo(x + 2, y - 2); X.lineTo(x + 6, y); X.lineTo(x + 2, y + 2); X.lineTo(x, y + 6); X.lineTo(x - 2, y + 2); X.lineTo(x - 6, y); X.lineTo(x - 2, y - 2); X.closePath(); X.fill();
+      }
+    } else if (kind === 'bubbles') {
+      for (const o of BOKEH) {
+        const y = TY1 - ((now / 40 + o.r * 37) % (TY1 - TY0));
+        X.strokeStyle = 'rgba(255,255,255,0.7)'; X.lineWidth = 2;
+        X.beginPath(); X.arc(wrap(o.x - G.camX * 0.3, 2720), y, 4 + (o.r % 10), 0, Math.PI * 2); X.stroke();
+      }
+      X.fillStyle = 'rgba(14,165,233,0.25)';
+      for (let i = 0; i < 3; i++) { X.beginPath(); X.ellipse(wrap(i * 600 - G.camX * 0.2, 1800), TY1 - 6, 120, 30, 0, Math.PI, 0); X.fill(); }
+    }
+  }
+
+  function coinIcon(x, y, t, gem) {
+    X.save(); X.translate(x, y);
+    if (gem) {
+      const s = 1 + Math.sin(t / 150) * 0.08;
+      X.scale(s, s);
+      X.fillStyle = 'rgba(34,211,238,0.3)'; X.beginPath(); X.arc(0, 0, 18, 0, Math.PI * 2); X.fill();
+      X.fillStyle = '#22d3ee'; X.strokeStyle = '#0e7490'; X.lineWidth = 2;
+      X.beginPath(); X.moveTo(0, -14); X.lineTo(12, -3); X.lineTo(0, 14); X.lineTo(-12, -3); X.closePath(); X.fill(); X.stroke();
+      X.fillStyle = 'rgba(255,255,255,0.75)'; X.beginPath(); X.moveTo(-6, -4); X.lineTo(0, -10); X.lineTo(3, -4); X.closePath(); X.fill();
+    } else {
+      const w = Math.max(0.18, Math.abs(Math.cos(t / 180)));   // spinning
+      X.scale(w, 1);
+      X.fillStyle = '#a16207'; X.beginPath(); X.arc(0, 1.5, 10, 0, Math.PI * 2); X.fill();
+      X.fillStyle = '#facc15'; X.beginPath(); X.arc(0, 0, 10, 0, Math.PI * 2); X.fill();
+      X.fillStyle = '#fde68a'; X.beginPath(); X.arc(0, 0, 6, 0, Math.PI * 2); X.fill();
+      X.fillStyle = '#ca8a04'; X.fillRect(-1.5, -4, 3, 8);
+    }
+    X.restore();
+  }
+  function boostPad(sx, side, now) {
+    const surf = side === 1 ? TY1 : TY0, d = side === 1 ? -1 : 1;
+    X.fillStyle = '#f97316'; rr(sx + 3, side === 1 ? surf - 6 : surf, TILE - 6, 6, 3); X.fill();
+    const glow = 0.5 + 0.5 * Math.sin(now / 90);
+    X.strokeStyle = `rgba(255,255,255,${0.6 + glow * 0.4})`; X.lineWidth = 3; X.lineJoin = 'round';
+    for (let i = 0; i < 2; i++) {
+      const x0 = sx + 10 + i * 12, y0 = surf + d * 14;
+      X.beginPath(); X.moveTo(x0, y0 - 6); X.lineTo(x0 + 7, y0); X.lineTo(x0, y0 + 6); X.stroke();
+    }
+  }
+  function flipRing(x, side, now) {
+    const y = side === 1 ? TY1 - R : TY0 + R, k = (now % 900) / 900;
+    X.strokeStyle = `rgba(250,204,21,${1 - k})`; X.lineWidth = 3;
+    X.beginPath(); X.arc(x, y, R + 4 + k * 16, 0, Math.PI * 2); X.stroke();
+    X.strokeStyle = '#facc15'; X.lineWidth = 3;
+    X.beginPath(); X.arc(x, y, R + 4, 0, Math.PI * 2); X.stroke();
+    // arrow pointing to the other side: "flip here"
+    const d = side === 1 ? -1 : 1, ay = y + d * (R + 12);
+    X.fillStyle = '#facc15'; X.beginPath(); X.moveTo(x, ay + d * 10); X.lineTo(x - 8, ay); X.lineTo(x + 8, ay); X.closePath(); X.fill();
+  }
+
+  function cloud(x, y, s) {
+    X.fillStyle = 'rgba(255,255,255,0.9)';
+    X.beginPath(); X.ellipse(x, y + 10 * s, 34 * s, 10 * s, 0, 0, Math.PI * 2); X.fill();
+    X.beginPath(); X.arc(x - 12 * s, y + 6 * s, 12 * s, 0, Math.PI * 2); X.arc(x + 8 * s, y + 2 * s, 15 * s, 0, Math.PI * 2); X.fill();
+  }
+
+  function tile(sx, y, solid, paintedAt, top) {
+    if (!solid) {
+      // a hole: dark with hazard stripes so it reads as danger at a glance
+      X.fillStyle = '#2e1065'; X.fillRect(sx, y, TILE, TILE);
+      X.save(); X.beginPath(); X.rect(sx, top ? y + TILE - 7 : y, TILE, 7); X.clip();
+      X.fillStyle = '#facc15'; X.fillRect(sx, top ? y + TILE - 7 : y, TILE, 7);
+      X.fillStyle = '#1e1b4b';
+      for (let s = -10; s < TILE + 10; s += 12) { X.beginPath(); X.moveTo(sx + s, top ? y + TILE : y + 7); X.lineTo(sx + s + 6, top ? y + TILE : y + 7); X.lineTo(sx + s + 13, top ? y + TILE - 7 : y); X.lineTo(sx + s + 7, top ? y + TILE - 7 : y); X.fill(); }
+      X.restore();
+      return;
+    }
+    const pal = G.L.pal;
+    const fresh = paintedAt ? clamp((G.time - paintedAt) / 0.25, 0, 1) : 0;
+    // base block
+    X.fillStyle = paintedAt ? pal.deep : '#cbd5e1';
+    rr(sx + 1, y + 1, TILE - 2, TILE - 2, 7); X.fill();
+    X.fillStyle = paintedAt ? pal.paint : '#ffffff';
+    rr(sx + 1, top ? y + 1 : y + 1, TILE - 2, TILE - 6, 7); X.fill();
+    if (paintedAt) {
+      // paint splash grows in, with drips toward the tunnel
+      X.fillStyle = 'rgba(255,255,255,0.35)';
+      rr(sx + 6, y + 6, TILE - 14, 6, 3); X.fill();
+      X.fillStyle = pal.paint;
+      const dir = top ? 1 : -1, base = top ? y + TILE - 3 : y + 3;
+      X.beginPath(); X.arc(sx + 12, base + dir * 2, 4 * fresh, 0, Math.PI * 2); X.fill();
+      X.beginPath(); X.arc(sx + 30, base + dir * 3, 3 * fresh, 0, Math.PI * 2); X.fill();
+      if (fresh < 1) { X.globalAlpha = 1 - fresh; X.fillStyle = '#ffffff'; rr(sx + 1, y + 1, TILE - 2, TILE - 6, 7); X.fill(); X.globalAlpha = 1; }
+    } else {
+      X.fillStyle = '#eef2ff';
+      X.beginPath(); X.arc(sx + 13, y + 15, 3, 0, Math.PI * 2); X.arc(sx + 30, y + 26, 2.5, 0, Math.PI * 2); X.fill();
+    }
+  }
+
+  function spikes(sx, surf, down) {
+    for (let i = 0; i < 3; i++) {
+      const x0 = sx + 4 + i * 12, d = down ? 1 : -1;
+      X.fillStyle = '#4c1d95';
+      X.beginPath(); X.moveTo(x0, surf); X.lineTo(x0 + 6, surf + d * SPIKE_H); X.lineTo(x0 + 12, surf); X.closePath(); X.fill();
+      X.strokeStyle = '#ffffff'; X.lineWidth = 1.5; X.stroke();
+    }
+  }
+
+  function dropIcon(x, y, now, idx) {
+    const bob = Math.sin(now / 300 + idx * 1.4) * 4;
+    X.save(); X.translate(x, y + bob);
+    X.fillStyle = 'rgba(250,204,21,0.35)'; X.beginPath(); X.arc(0, 0, 17 + Math.sin(now / 200) * 2, 0, Math.PI * 2); X.fill();
+    X.fillStyle = '#facc15'; X.strokeStyle = '#a16207'; X.lineWidth = 2;
+    X.beginPath(); X.moveTo(0, -13); X.bezierCurveTo(10, -1, 10, 10, 0, 11); X.bezierCurveTo(-10, 10, -10, -1, 0, -13); X.fill(); X.stroke();
+    X.fillStyle = 'rgba(255,255,255,0.8)'; X.beginPath(); X.ellipse(-3, 2, 2.5, 4, -0.4, 0, Math.PI * 2); X.fill();
+    X.restore();
+  }
+
+  function finishGate(sx) {
+    if (sx < -60 || sx > LW + 60) return;
+    const h = TY1 - TY0, sq = 11;
+    for (let r = 0; r * sq < h; r++) for (let c = 0; c < 2; c++) {
+      X.fillStyle = (r + c) % 2 ? '#2e1065' : '#ffffff';
+      X.fillRect(sx + c * sq, TY0 + r * sq, sq, Math.min(sq, h - r * sq));
+    }
+    X.fillStyle = '#2e1065'; rr(sx + sq - 34, 4, 68, 24, 12); X.fill();
+    X.fillStyle = '#facc15'; X.font = '700 15px Fredoka, sans-serif'; X.textAlign = 'center'; X.textBaseline = 'middle';
+    X.fillText('FINISH', sx + sq, 17);
+  }
+
+  // Splotch: a round paint-blob with big eyes, rolling paint spots and squash & stretch.
+  function splotch(x, y, b, pal, now) {
+    X.save(); X.translate(x, y);
+    // soft shadow on the surface it is rolling on (floor or ceiling)
+    X.fillStyle = 'rgba(46,16,101,0.18)'; X.beginPath(); X.ellipse(0, (b.grav || 1) * (R + 2), R * 0.85, 4, 0, 0, Math.PI * 2); X.fill();
+    X.scale(b.sqx, b.sqy);   // squash & stretch stays lined up with the floor/ceiling
+    X.rotate(b.roll);        // the whole blob (face included) rolls
+    // body + paint spots
+    X.fillStyle = '#2e1065'; X.beginPath(); X.arc(0, 0, R + 2.5, 0, Math.PI * 2); X.fill();
+    X.fillStyle = pal.paint; X.beginPath(); X.arc(0, 0, R, 0, Math.PI * 2); X.fill();
+    X.fillStyle = pal.deep;
+    X.beginPath(); X.arc(-R * 0.55, R * 0.5, 4.5, 0, Math.PI * 2); X.arc(-R * 0.62, -R * 0.38, 3.5, 0, Math.PI * 2); X.arc(R * 0.1, R * 0.72, 3, 0, Math.PI * 2); X.fill();
+    // eyes (look ahead), blink every few seconds
+    b.blink -= 1 / 60;
+    const blinking = b.blink < 0.12;
+    if (b.blink < 0) b.blink = 2 + Math.random() * 3;
+    for (const ex of [R * 0.05, R * 0.5]) {
+      X.fillStyle = '#ffffff';
+      X.beginPath(); X.ellipse(ex, -R * 0.12, 5.2, blinking ? 1 : 6.4, 0, 0, Math.PI * 2); X.fill();
+      if (!blinking) { X.fillStyle = '#2e1065'; X.beginPath(); X.arc(ex + 1.6, -R * 0.08, 3, 0, Math.PI * 2); X.fill(); X.fillStyle = '#fff'; X.beginPath(); X.arc(ex + 2.6, -R * 0.2, 1.1, 0, Math.PI * 2); X.fill(); }
+    }
+    // cheeks + smile (open "wee!" mouth in the air)
+    X.fillStyle = 'rgba(255,255,255,0.35)';
+    X.beginPath(); X.arc(-R * 0.25, R * 0.25, 3.4, 0, Math.PI * 2); X.arc(R * 0.78, R * 0.22, 2.6, 0, Math.PI * 2); X.fill();
+    X.fillStyle = '#2e1065';
+    if (b.onGnd) { X.strokeStyle = '#2e1065'; X.lineWidth = 2; X.lineCap = 'round'; X.beginPath(); X.arc(R * 0.3, R * 0.2, 4.5, 0.15 * Math.PI, 0.85 * Math.PI); X.stroke(); }
+    else { X.beginPath(); X.ellipse(R * 0.3, R * 0.3, 3.4, 4.2, 0, 0, Math.PI * 2); X.fill(); }
+    // shine stays fixed (light from the top-left) while the body rolls underneath it
+    X.rotate(-b.roll);
+    X.fillStyle = 'rgba(255,255,255,0.45)'; X.beginPath(); X.ellipse(-R * 0.35, -R * 0.45, R * 0.32, R * 0.2, -0.5, 0, Math.PI * 2); X.fill();
+    X.restore();
+  }
+
+  // ------------------------------------------------------------ loop
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (G.L && !screens.game.classList.contains('hidden')) {
+      G.time += dt;
+      if (G.scene === 'playing') {
+        G.acc += dt;
+        while (G.acc >= FIX_DT) { G.acc -= FIX_DT; step(FIX_DT); if (G.scene !== 'playing') break; }
+      }
+      if (G.scene !== 'paused') updateParts(dt);
+      drawWorld(now);
+    } else if (!screens.menu.classList.contains('hidden')) {
+      drawHero(now);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // menu hero: Splotch rolling over freshly painted tiles
+  const hero = $('heroArt'), H = hero.getContext('2d');
+  const heroBall = newBall(0, 1);
+  function drawHero(now) {
+    const w = 300, h = 120, d = Math.min(window.devicePixelRatio || 1, 2);
+    if (hero.width !== w * d) { hero.width = w * d; hero.height = h * d; }
+    H.setTransform(d, 0, 0, d, 0, 0); H.clearRect(0, 0, w, h);
+    const pal = PALETTES[Math.floor(now / 2500) % PALETTES.length];
+    const t = (now / 1000) % 3;
+    const bx = 30 + (t / 3) * 240;
+    for (let i = 0; i < 7; i++) {
+      const tx = 10 + i * 40, paintedTile = tx + 20 < bx;
+      H.fillStyle = paintedTile ? pal.deep : '#cbd5e1'; rrOn(H, tx, 84, 38, 30, 7); H.fill();
+      H.fillStyle = paintedTile ? pal.paint : '#ffffff'; rrOn(H, tx, 84, 38, 26, 7); H.fill();
+    }
+    heroBall.roll = bx / R; heroBall.onGnd = true; heroBall.sqx = 1 + Math.sin(now / 120) * 0.04; heroBall.sqy = 2 - heroBall.sqx;
+    drawSplotchOn(H, bx, 84 - R, heroBall, pal, now);
+  }
+  function rrOn(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function drawSplotchOn(ctx, x, y, b, pal, now) {
+    X = ctx; splotch(x, y, b, pal, now); X = gameCtx; // splotch() draws on X: point it at the hero canvas for one call
+  }
+
+  // ------------------------------------------------------------ HUD helpers
+  function renderDrops(popIdx) {
+    const el = $('hudDrops'); el.innerHTML = '';
+    G.drops.forEach((got, i) => {
+      const s = document.createElement('span');
+      s.className = 'd' + (got ? '' : ' off') + (popIdx === i ? ' pop' : '');
+      s.textContent = '💧'; el.appendChild(s);
+    });
+  }
+  function updatePaintBar() {
+    if (G.L && G.L.bonus) {
+      const total = G.L.coins.reduce((a, c) => a + c.v, 0);
+      $('paintFill').style.width = Math.min(100, (G.coinsGot / total) * 100) + '%';
+      $('paintText').textContent = `🪙 ${G.coinsGot} / ${total} coins`;
+      return;
+    }
+    const pct = paintPct();
+    $('paintFill').style.width = pct + '%';
+    $('paintText').textContent = '🖌 ' + pct + '% painted';
+  }
+  let toastT;
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1800); }
+
+  // ------------------------------------------------------------ screens & modals
+  const screens = { menu: $('screenMenu'), game: $('screenGame') };
+  function showScreen(name) {
+    Object.entries(screens).forEach(([k, el]) => el.classList.toggle('hidden', k !== name));
+    if (name === 'menu') refreshMenu();
+    if (name === 'game') requestAnimationFrame(resize);
+  }
+  const openModal = (id) => $(id).classList.remove('hidden');
+  const closeModal = (id) => $(id).classList.add('hidden');
+  const hideModals = () => document.querySelectorAll('.modal').forEach((m) => m.classList.add('hidden'));
+  document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => { Sound.click(); closeModal(b.dataset.close); }));
+
+  function refreshMenu() {
+    const d = save.get();
+    $('playLevelLabel').textContent = 'Level ' + Math.min(d.unlocked, LEVEL_COUNT);
+    const stars = Object.values(d.stars).reduce((a, b) => a + b, 0);
+    $('menuStars').textContent = `⭐ ${stars} / ${LEVEL_COUNT * 3}`;
+    $('menuCleared').textContent = Object.keys(d.stars).length + ' levels cleared';
+    $('menuCoins').textContent = '🪙 ' + (d.coins || 0);
+  }
+  function buildLevelGrid() {
+    const d = save.get(), g = $('levelGrid'); g.innerHTML = '';
+    for (let i = 1; i <= LEVEL_COUNT; i++) {
+      const b = document.createElement('button'), locked = i > d.unlocked, st = d.stars[i];
+      b.className = 'lvl' + (locked ? ' locked' : st !== undefined ? ' done' : i === d.unlocked ? ' current' : '');
+      b.innerHTML = locked ? '🔒' : `${i}<small>${st !== undefined ? '★'.repeat(st) || '✓' : ''}</small>`;
+      if (!locked) b.addEventListener('click', () => { Sound.click(); startLevel(i - 1); });
+      g.appendChild(b);
+    }
+  }
+  function pause() { if (G.scene !== 'playing' && G.scene !== 'ready') return; G.prevScene = G.scene; G.scene = 'paused'; openModal('modalPause'); }
+  function resume() { closeModal('modalPause'); G.scene = G.prevScene === 'playing' ? 'ready' : G.prevScene || 'ready'; G.acc = 0; last = performance.now();
+    if (G.scene === 'ready') { $('hintMain').textContent = 'Tap to continue!'; $('hintNew').classList.add('hidden'); $('hintSub').textContent = 'or press Space'; $('tapHint').classList.remove('gone'); } }
+
+  let confirmYes = null;
+  function askConfirm(title, text, yes, fn) { $('confirmTitle').textContent = title; $('confirmText').textContent = text; $('btnConfirmYes').textContent = yes; confirmYes = fn; openModal('modalConfirm'); }
+  $('btnConfirmNo').onclick = () => { Sound.click(); closeModal('modalConfirm'); };
+  $('btnConfirmYes').onclick = () => { closeModal('modalConfirm'); if (confirmYes) confirmYes(); };
+  function exitGame() {
+    try { if (window.parent && window.parent !== window) { window.parent.postMessage({ action: 'closeModal', type: 'GAME_ENDED' }, '*'); return; } } catch (e) { /* ignore */ }
+    try { window.close(); } catch (e) { /* ignore */ }
+    setTimeout(() => { if (history.length > 1) history.back(); else toast('You can close this tab now'); }, 250);
+  }
+
+  // menu
+  $('btnPlay').onclick = () => { Sound.click(); startLevel(Math.min(save.get().unlocked, LEVEL_COUNT) - 1); };
+  $('btnLevels').onclick = () => { Sound.click(); buildLevelGrid(); openModal('modalLevels'); };
+  $('btnHowTo').onclick = () => { Sound.click(); openModal('modalHowTo'); };
+  $('btnSettings').onclick = () => { Sound.click(); syncSettings(); openModal('modalSettings'); };
+  $('btnExit').onclick = () => { Sound.click(); askConfirm('LEAVE GAME?', 'Your progress is saved. Come back any time!', 'Leave', exitGame); };
+  function syncSettings() {
+    $('setSound').setAttribute('aria-checked', String(save.get().sound));
+    $('setVibe').setAttribute('aria-checked', String(save.get().vibe));
+    $('btnSound').classList.toggle('muted', !save.get().sound);
+  }
+  $('setSound').onclick = () => { save.get().sound = !save.get().sound; save.write(); syncSettings(); Sound.click(); };
+  $('setVibe').onclick = () => { save.get().vibe = !save.get().vibe; save.write(); syncSettings(); vibrate(30); };
+  $('btnReset').onclick = () => askConfirm('RESET PROGRESS?', 'All stars and unlocked levels will be erased.', 'Reset', () => { save.reset(); refreshMenu(); toast('Progress reset'); });
+
+  // game
+  $('btnPause').onclick = () => { Sound.click(); pause(); };
+  $('btnSound').onclick = () => { save.get().sound = !save.get().sound; save.write(); syncSettings(); Sound.click(); };
+  $('btnResume').onclick = () => { Sound.click(); resume(); };
+  $('btnPauseMenu').onclick = () => { Sound.click(); hideModals(); showScreen('menu'); G.scene = 'menu'; };
+  $('btnPauseRestart').onclick = () => { Sound.click(); if (G.L.bonus) startBonus(G.bonusIdx, G.nextAfterBonus); else startLevel(G.lvl); };
+  $('btnRetry').onclick = () => { Sound.click(); startLevel(G.lvl); };
+  $('btnFailMenu').onclick = () => { Sound.click(); hideModals(); showScreen('menu'); G.scene = 'menu'; };
+  $('btnReviveAd').onclick = () => {
+    if (!window.CielAds) { revive(); return; }
+    CielAds.showRewarded(revive, () => toast('Ad not finished'), 'revive');
+  };
+  $('btnWinReplay').onclick = () => { Sound.click(); startLevel(G.lvl); };
+  $('btnWinMenu').onclick = () => { Sound.click(); hideModals(); showScreen('menu'); G.scene = 'menu'; };
+  $('btnNext').onclick = () => {
+    Sound.click();
+    if (G.lvl >= LEVEL_COUNT - 1) { hideModals(); showScreen('menu'); return; }
+    const next = G.lvl + 1;
+    closeModal('modalWin');
+    if (levelIsBonusAfter(G.lvl + 1)) startBonus((G.lvl + 1) / 3 - 1, next); // reward stage after every 3 levels
+    else startLevel(next);
+  };
+  $('btnBonusDouble').onclick = () => {
+    const extra = G.coinsGot;
+    const doubled = () => {
+      save.addCoins(extra); G.coinsGot += extra; $('btnBonusDouble').classList.add('hidden');
+      countUp($('bonusCount'), extra, G.coinsGot, 700); Sound.cheer(); refreshMenu();
+    };
+    if (!window.CielAds) { doubled(); return; }
+    CielAds.showRewarded(doubled, () => toast('Ad not finished'), 'bonus_double');
+  };
+  $('btnBonusNext').onclick = () => {
+    Sound.click(); closeModal('modalBonus');
+    const next = G.nextAfterBonus;
+    // the interstitial sits here, after the reward, not in the middle of the challenge
+    if (window.CielAds) CielAds.showInterstitial(() => startLevel(next), 'after_bonus');
+    else startLevel(next);
+  };
+  $('btnReviveCoins').onclick = () => {
+    if ((save.get().coins || 0) < REVIVE_COST) { toast('Not enough coins yet'); return; }
+    save.addCoins(-REVIVE_COST); Sound.coin(12); revive();
   };
 
-  document.getElementById('btnReplayWin').onclick = function () {
-    AudioEngine.playPin();
-    startLevel(currentLevelIdx);
-  };
+  // input: tap anywhere on the play area, or Space / Up / W
+  stage.addEventListener('pointerdown', (e) => { e.preventDefault(); tap(); });
+  window.addEventListener('keydown', (e) => {
+    const open = [...document.querySelectorAll('.modal:not(.hidden)')].pop();
+    if (e.code === 'Escape') {
+      if (open && ['modalLevels', 'modalHowTo', 'modalSettings', 'modalConfirm'].includes(open.id)) { closeModal(open.id); return; }
+      if (G.scene === 'paused') resume(); else if (!screens.game.classList.contains('hidden')) pause();
+      return;
+    }
+    if (['Space', 'ArrowUp', 'KeyW'].includes(e.code) && !open && !screens.game.classList.contains('hidden')) { e.preventDefault(); if (!e.repeat) tap(); }
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && G.scene === 'playing') pause(); });
+  if (window.CielAds) CielAds.setGameHooks({ pause: () => { G.adPaused = G.scene; if (G.scene === 'playing') G.scene = 'paused'; }, resume: () => { if (G.adPaused === 'playing') G.scene = 'ready'; last = performance.now(); } });
+  const warm = () => { ['pointerdown', 'keydown'].forEach((t) => window.removeEventListener(t, warm, true)); Sound.warm(); };
+  ['pointerdown', 'keydown'].forEach((t) => window.addEventListener(t, warm, true));
 
-  document.getElementById('btnRetryFail').onclick = function () {
-    AudioEngine.playPin();
-    startLevel(currentLevelIdx);
-  };
-
-  // ==========================================================================
-  // INITIALIZATION
-  // ==========================================================================
-  updateMenuProgress();
-  showScreen(screenMenu);
-
+  new ResizeObserver(resize).observe(stage);
+  window.addEventListener('resize', resize);
+  syncSettings();
+  showScreen('menu');
+  window.GFP = { G, LEVELS, airTiles, startLevel, step, tap };
+  requestAnimationFrame(frame);
 })();
-
