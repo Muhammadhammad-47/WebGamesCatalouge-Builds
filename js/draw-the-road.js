@@ -908,7 +908,7 @@
       this.sound.startEngine();
       this.state = 'DRIVING';
       this.car.driveActive = true;
-      this.car.vx = 240; // Punchy initial roll
+      this.car.vx = 0; // Starts at rest: drives ONLY when arrow key / pedal is pressed!
       const btnDriveText = document.getElementById('btnDriveText');
       if (btnDriveText) btnDriveText.textContent = 'RETRY';
 
@@ -1103,10 +1103,11 @@
           groundHits++;
           avgSlope += (col.slopeAngle !== undefined ? col.slopeAngle : 0);
 
-          // Direct position penetration resolution (prevents sinking into surface)
-          const pushFraction = 0.65;
-          c.y += col.normalY * col.depth * pushFraction;
-          c.x += col.normalX * col.depth * 0.2;
+          // Direct position penetration resolution (prevents sinking into surface, clamped to prevent catapulting)
+          const maxPush = Math.min(col.depth, 5.0);
+          const pushFraction = 0.55;
+          c.y += col.normalY * maxPush * pushFraction;
+          c.x += col.normalX * maxPush * 0.15;
 
           // Absorb downward velocity into ground
           if (c.vy > 0 && col.normalY < -0.3) {
@@ -1118,23 +1119,11 @@
           const driveX = Math.cos(driveAngle);
           const driveY = Math.sin(driveAngle);
 
-          // Cruise towards vehicle top speed
-          const cruiseSpeed = v.speed; // e.g. 260-320
-          if (c.vx < cruiseSpeed) {
-            c.vx += driveX * motorAccel * dt;
-            c.vy += driveY * motorAccel * dt * 0.4;
-          }
-
-          // Minimum forward drive assist so it never stalls on flat or gentle climbs
-          if (c.vx < 180) {
-            c.vx += 360 * dt;
-          }
-
-          // Wheel spin visual
+          // Wheel spin visual based on actual car velocity
           w.rot += (c.vx * dt) / v.wheelR;
 
-          // Tire smoke puff
-          if (Math.abs(c.vx) > 160 && Math.random() < 0.2) {
+          // Tire smoke puff when driving forward
+          if (this.input.right && Math.abs(c.vx) > 120 && Math.random() < 0.25) {
             this.particles.push({
               x: w.x,
               y: w.y + v.wheelR,
@@ -1168,9 +1157,14 @@
         c.angularVelocity *= Math.exp(-2.5 * dt);
       }
 
-      // Apply direct user driving inputs (Continuous Gas, Brake, Tilt, Nitro)
-      if (this.input.boost) {
-        c.vx += 850 * dt;
+      // ARROW KEY / PEDAL CONTROLS:
+      // Pressing arrow key moves car forward; releasing it STOPS the car completely!
+      const isGas = this.input.right;
+      const isReverse = this.input.left;
+      const isBoost = this.input.boost;
+
+      if (isBoost) {
+        c.vx += 880 * dt;
         // Nitro flame exhaust particles
         if (Math.random() < 0.5) {
           this.particles.push({
@@ -1186,29 +1180,37 @@
         }
       }
 
-      if (this.input.right) {
+      if (isGas) {
+        // Accelerate forward along road slope
         if (anyGrounded) {
-          c.vx += Math.cos(c.angle) * 750 * dt;
-          c.vy += Math.sin(c.angle) * 750 * dt * 0.4;
+          c.vx += Math.cos(c.angle) * 820 * dt;
+          c.vy += Math.sin(c.angle) * 820 * dt * 0.4;
         } else {
           // Mid-air pitch down
           c.angularVelocity += 3.5 * dt;
           c.vx += 160 * dt;
         }
-      }
-
-      if (this.input.left) {
+      } else if (isReverse) {
+        // Reverse / Brake
         if (anyGrounded) {
-          c.vx = Math.max(-120, c.vx - 850 * dt);
+          c.vx -= 750 * dt;
         } else {
           // Mid-air pitch up (prevent nose dive crashes)
           c.angularVelocity -= 4.5 * dt;
         }
+      } else if (!isBoost) {
+        // ARROW KEY RELEASED: Rapidly decelerate to a complete stop!
+        if (anyGrounded) {
+          c.vx *= Math.exp(-6.5 * dt);
+          if (Math.abs(c.vx) < 12) c.vx = 0;
+        } else {
+          c.vx *= Math.exp(-1.5 * dt);
+        }
       }
 
-      // Apply drag
-      c.vx *= Math.exp(-0.35 * dt);
-      c.vy *= Math.exp(-0.2 * dt);
+      // Drag on velocity
+      c.vx *= Math.exp(-0.25 * dt);
+      c.vy *= Math.exp(-0.15 * dt);
       c.angularVelocity *= Math.exp(-4.0 * dt);
 
       // Integrate velocities
@@ -1218,7 +1220,14 @@
 
       // Update sound engine pitch
       const speed = Math.hypot(c.vx, c.vy);
-      this.sound.updateEngine(speed / v.speed);
+      if (isGas || isBoost) {
+        this.sound.updateEngine(Math.min(1.4, speed / v.speed + 0.35));
+      } else if (isReverse) {
+        this.sound.updateEngine(0.5);
+      } else {
+        // Idle/stopped sound when arrow key is released
+        this.sound.updateEngine(speed > 15 ? 0.25 : 0.08);
+      }
 
       // Check Spring Pads
       for (const sp of this.stageSprings) {
@@ -1311,17 +1320,34 @@
         this.stuckTimer = 0;
       }
 
-      // Check Finish Line — ONLY triggers when car touches the finish line on the platform deck
+      // Check Finish Line & Platform Landing
+      // The car MUST physically land on the deck and cross the finish line to complete the level.
+      // If the car overshoots the platform into empty air or the sky, it fails instead of winning.
       if (this.stageFinish) {
         const f = this.stageFinish;
-        const wheelBottomY = c.y + 12 + v.wheelR;
-        // 1. Car must be on or touching the platform deck (wheels touching the floor, NOT flying high in the sky)
-        const isTouchingDeck = (Math.abs(wheelBottomY - f.y) <= 18) || (anyGrounded && Math.abs(c.y - (f.y - 12 - v.wheelR)) <= 22);
-        // 2. Car front or wheels must actually be at or crossing the finish line on the platform
-        const isAtFinishLine = (c.x >= f.x - 8) && (c.x <= f.x + 80);
+        const finishPlat = this.stagePlatforms.find(p => f.x >= p.x && f.x <= p.x + p.w);
+        const platY = finishPlat ? finishPlat.y : f.y;
+        const platRight = finishPlat ? (finishPlat.x + finishPlat.w) : (f.x + 120);
 
-        if (isTouchingDeck && isAtFinishLine) {
+        // 1. Overshot platform edge into canyon/sky check
+        if (c.x > platRight + 25) {
+          this.triggerCrash("You overshot the finish platform!");
+          return;
+        }
+
+        // 2. Strict deck contact (wheels physically touching finish platform deck)
+        const wheelBottomY = c.y + 12 + v.wheelR;
+        const isLandedOnDeck = anyGrounded && (Math.abs(wheelBottomY - platY) <= 15 || Math.abs(c.y - (platY - 12 - v.wheelR)) <= 16);
+
+        // 3. Car at or crossing finish line on the platform
+        const isAtFinish = (c.x >= f.x - 5) && (c.x <= platRight);
+
+        // 4. Must not be airborne / soaring in the sky (must be settled on the deck)
+        const notAirborne = Math.abs(c.vy) < 160 && Math.abs(c.angle) < 0.65;
+
+        if (isLandedOnDeck && isAtFinish && notAirborne) {
           this.triggerVictory();
+          return;
         }
       }
     }
