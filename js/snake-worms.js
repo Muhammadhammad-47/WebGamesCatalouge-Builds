@@ -315,13 +315,20 @@
       this.boostShedTimer = 0;
       this.spawnImmunity = 3.0; // 3 seconds spawn protection
 
-      // Segments array: starts compact with 8 baby segments
+      // Segments array & high-resolution path trail for silky-smooth slither movement
       this.segments = [];
+      this.path = [];
       const initLength = 8;
       for (let i = 0; i < initLength; i++) {
         this.segments.push({
-          x: x - Math.cos(this.angle) * i * 8,
-          y: y - Math.sin(this.angle) * i * 8
+          x: x - Math.cos(this.angle) * i * 7,
+          y: y - Math.sin(this.angle) * i * 7
+        });
+      }
+      for (let d = 0; d <= initLength * 12; d += 2) {
+        this.path.push({
+          x: x - Math.cos(this.angle) * d,
+          y: y - Math.sin(this.angle) * d
         });
       }
 
@@ -393,34 +400,75 @@
       curSpeed = this.moveSpeed;
 
       if (curSpeed > 0.5) {
-        // 3. Smooth Angular Rotation
+        // 3. Smooth Frame-Rate Independent Angular Rotation
         let diff = this.targetAngle - this.angle;
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
-        const turnRate = this.isPlayer ? 8.5 : this.turnSpeed;
-        this.angle += Math.max(-turnRate * dt, Math.min(turnRate * dt, diff * 14 * dt));
+        const turnRate = this.isPlayer ? 9.5 : this.turnSpeed;
+        const maxTurn = turnRate * dt;
+        const desiredTurn = diff * (1 - Math.exp(-14 * dt));
+        this.angle += Math.max(-maxTurn, Math.min(maxTurn, desiredTurn));
 
         // 4. Move Head
         this.x += Math.cos(this.angle) * curSpeed * dt;
         this.y += Math.sin(this.angle) * curSpeed * dt;
 
-        // 5. Constrain Segments Kinematics - Dynamic spacing that scales with snake thickness
-        const r = this.getRadius();
-        const spacing = Math.max(7.5, Math.min(14, r * 0.72));
-        let prevX = this.x;
-        let prevY = this.y;
+        // 5. Record Head Trail & Sample Segments by Exact Arc-Length (eliminates clumping & jitter)
+        if (!this.path || this.path.length === 0) {
+          this.path = [{ x: this.x, y: this.y }];
+        } else {
+          const headPt = this.path[0];
+          if (Math.hypot(this.x - headPt.x, this.y - headPt.y) >= 1.5) {
+            this.path.unshift({ x: this.x, y: this.y });
+          } else {
+            headPt.x = this.x;
+            headPt.y = this.y;
+          }
+        }
 
-        for (let i = 0; i < this.segments.length; i++) {
-          const seg = this.segments[i];
-          const dx = seg.x - prevX;
-          const dy = seg.y - prevY;
+        const r = this.getRadius();
+        const spacing = Math.max(6.5, Math.min(11.5, r * 0.58));
+        let pathIdx = 0;
+        let pathDist = 0;
+        let segIdx = 0;
+
+        while (segIdx < this.segments.length && pathIdx < this.path.length - 1) {
+          const targetDist = segIdx * spacing;
+          if (targetDist === 0) {
+            this.segments[0].x = this.x;
+            this.segments[0].y = this.y;
+            segIdx++;
+            continue;
+          }
+          const p0 = this.path[pathIdx];
+          const p1 = this.path[pathIdx + 1];
+          const segLen = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+          if (pathDist + segLen >= targetDist && segLen > 0.0001) {
+            const t = (targetDist - pathDist) / segLen;
+            this.segments[segIdx].x = p0.x + (p1.x - p0.x) * t;
+            this.segments[segIdx].y = p0.y + (p1.y - p0.y) * t;
+            segIdx++;
+          } else {
+            pathDist += segLen;
+            pathIdx++;
+          }
+        }
+        // Fallback for any remaining tail segments if trail is still extending
+        while (segIdx < this.segments.length) {
+          const prev = this.segments[segIdx - 1] || { x: this.x, y: this.y };
+          const cur = this.segments[segIdx];
+          const dx = cur.x - prev.x;
+          const dy = cur.y - prev.y;
           const dist = Math.hypot(dx, dy) || 0.001;
           if (dist > spacing) {
-            seg.x = prevX + (dx / dist) * spacing;
-            seg.y = prevY + (dy / dist) * spacing;
+            cur.x = prev.x + (dx / dist) * spacing;
+            cur.y = prev.y + (dy / dist) * spacing;
           }
-          prevX = seg.x;
-          prevY = seg.y;
+          segIdx++;
+        }
+        // Trim excess path history beyond tail
+        if (this.path.length > pathIdx + 24) {
+          this.path.length = pathIdx + 24;
         }
       }
 
@@ -1391,8 +1439,8 @@
         let targetZoom = Math.max(0.68, 1.0 - (p.mass - 20) * 0.001);
         if (p.powerups.zoom) targetZoom = 0.54; // Eagle Eye Zoom
         // Frame-rate independent smoothing: same feel at 60 Hz and 120 Hz.
-        this.camera.zoom += (targetZoom - this.camera.zoom) * (1 - Math.exp(-3.5 * dt));
-        const follow = 1 - Math.exp(-10 * dt);
+        this.camera.zoom += (targetZoom - this.camera.zoom) * (1 - Math.exp(-4.5 * dt));
+        const follow = 1 - Math.exp(-14 * dt);
         this.camera.x += (p.x - this.camera.x) * follow;
         this.camera.y += (p.y - this.camera.y) * follow;
       }
