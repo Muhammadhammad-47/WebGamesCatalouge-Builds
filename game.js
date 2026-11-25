@@ -404,11 +404,13 @@
       if (dx * dx + dy * dy < rr2 * rr2) collectCoin(c);
     }
 
-    // squash & stretch spring
-    b.svx += (-20 * (b.sqx - 1) - 7 * b.svx) * dt * 60;
-    b.svy += (-20 * (b.sqy - 1) - 7 * b.svy) * dt * 60;
-    b.sqx = clamp(b.sqx + b.svx * dt, 0.6, 1.45);
-    b.sqy = clamp(b.sqy + b.svy * dt, 0.6, 1.45);
+    // squash & stretch spring (critically damped, stable at any dt)
+    const springK = 220;
+    const dampC = 22;
+    b.svx += (-springK * (b.sqx - 1) - dampC * b.svx) * dt;
+    b.svy += (-springK * (b.sqy - 1) - dampC * b.svy) * dt;
+    b.sqx = clamp(b.sqx + b.svx * dt, 0.72, 1.35);
+    b.sqy = clamp(b.sqy + b.svy * dt, 0.72, 1.35);
 
     if (ci >= L.finish) return winLevel();
     G.camX = b.x - LW * camAnchor();
