@@ -1134,3 +1134,163 @@ html, body {
     font-size: 17px;
   }
 }
+
+/* ==========================================================================
+   10. ON-SCREEN DRIVE & STUNT CONTROLS (Active on Drive & Free Drive Levels)
+   ========================================================================== */
+.drive-controls-overlay {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 24px;
+  pointer-events: none;
+  z-index: 45;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.drive-controls-overlay.hidden {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none !important;
+}
+
+.drive-ctrl-group {
+  display: flex;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.drive-touch-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 86px;
+  height: 66px;
+  border-radius: 18px;
+  border: 3px solid rgba(255, 255, 255, 0.45);
+  font-family: var(--font-display);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  transition: transform 0.06s ease, filter 0.06s ease, box-shadow 0.06s ease;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3), inset 0 2px 2px rgba(255, 255, 255, 0.5);
+}
+
+.drive-touch-btn .btn-ctrl-icon {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.drive-touch-btn .btn-ctrl-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.drive-touch-btn:active,
+.drive-touch-btn.active {
+  transform: translateY(4px) scale(0.95);
+  filter: brightness(1.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.btn-brake {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  color: #ffffff;
+  border-color: #fca5a5;
+}
+
+.btn-nitro {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+  color: #ffffff;
+  border-color: #7dd3fc;
+  width: 76px;
+}
+
+.btn-gas {
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  color: #ffffff;
+  border-color: #86efac;
+  width: 96px;
+}
+
+.drive-ctrl-center-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 18px;
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  pointer-events: none;
+  margin-bottom: 8px;
+}
+
+.ctrl-hint-badge {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 900;
+  color: #facc15;
+  letter-spacing: 0.6px;
+}
+
+.ctrl-hint-text {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 800;
+  color: #e2e8f0;
+}
+
+.level-btn.free-drive-level {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.5) !important;
+}
+
+.level-btn.free-drive-level::after {
+  content: '🎮';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .drive-controls-overlay {
+    bottom: 12px;
+    padding: 0 12px;
+  }
+  .drive-touch-btn {
+    width: 68px;
+    height: 54px;
+    border-radius: 14px;
+  }
+  .btn-gas {
+    width: 76px;
+  }
+  .btn-nitro {
+    width: 62px;
+  }
+  .drive-touch-btn .btn-ctrl-icon {
+    font-size: 18px;
+  }
+  .drive-touch-btn .btn-ctrl-label {
+    font-size: 9px;
+  }
+  .drive-ctrl-center-hint {
+    display: none;
+  }
+}
