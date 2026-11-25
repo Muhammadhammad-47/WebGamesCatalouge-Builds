@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Gravity Flip Painter | CIEL Games</title>
+  <meta name="description" content="Roll through the tunnel, flip gravity at the right moment and paint every tile. Avoid gaps and spikes, collect the paint drops!">
+  <meta name="theme-color" content="#6366f1">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236366f1'/><circle cx='16' cy='17' r='9' fill='%23fb923c'/><circle cx='13' cy='15' r='2' fill='white'/><circle cx='19' cy='15' r='2' fill='white'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=2">
+  <!-- CIEL Ads SDK: simulated test ads on localhost, Google H5 ads on the live site once data-client is set -->
+  <script src="ciel-ads.js?v=1" data-client="" data-gap="90" data-first-delay="45"></script>
+</head>
+<body>
+  <!-- CIEL Games loading screen -->
+  <script src="ciel-loader.js?v=1"></script>
+
+  <div class="bg-shapes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+  <!-- ================= MAIN MENU ================= -->
+  <section class="screen" id="screenMenu">
+    <div class="menu-card">
+      <div class="brand-chip"><b>CIEL</b><span>GAMES</span></div>
+      <canvas class="hero-art" id="heroArt" width="300" height="120" aria-hidden="true"></canvas>
+      <h1 class="logo">Gravity <span>Flip</span><br><small>Painter</small></h1>
+      <p class="tagline">Flip gravity. Paint the tunnel!</p>
+
+      <button class="btn btn-big btn-green" id="btnPlay">
+        <svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>
+        <span>Play <small id="playLevelLabel">Level 1</small></span>
+      </button>
+      <div class="menu-row">
+        <button class="btn btn-orange" id="btnLevels">
+          <svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="currentColor"/></svg>Levels
+        </button>
+        <button class="btn btn-blue" id="btnHowTo">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M9.4 9.3a2.7 2.7 0 1 1 3.6 2.6c-.7.3-1 .8-1 1.5v.6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="17.3" r="1.5" fill="currentColor"/></svg>How to Play
+        </button>
+      </div>
+      <div class="menu-row">
+        <button class="btn btn-purple" id="btnSettings">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.6-2-3.4-2.4.9a7.4 7.4 0 0 0-2.6-1.5L14 2.4h-4l-.4 2.5A7.4 7.4 0 0 0 7 6.4l-2.4-.9-2 3.4 2 1.6a7.6 7.6 0 0 0 0 3l-2 1.6 2 3.4 2.4-.9a7.4 7.4 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 2.6-1.5l2.4.9 2-3.4Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>Settings
+        </button>
+        <button class="btn btn-red" id="btnExit">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Exit
+        </button>
+      </div>
+      <div class="menu-stats"><span id="menuStars">⭐ 0 / 90</span><span id="menuCoins">🪙 0</span><span id="menuCleared">0 levels cleared</span></div>
+    </div>
+    <div class="copyright">© 2026 CIEL Games</div>
+  </section>
+
+  <!-- ================= GAME ================= -->
+  <section class="screen hidden" id="screenGame">
+    <header class="hud">
+      <button class="icon-btn" id="btnPause" aria-label="Pause">
+        <svg viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
+      </button>
+      <div class="hud-center">
+        <div class="level-pill" id="hudLevel">Level 1</div>
+        <div class="drops" id="hudDrops" aria-label="Paint drops"></div>
+      </div>
+      <div class="hud-right">
+        <div class="coin-pill" id="hudCoins"><i class="coin-ico"></i><b id="hudCoinNum">0</b></div>
+        <button class="icon-btn" id="btnSound" aria-label="Sound">
+          <svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path class="wave" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+    <div class="progress"><i id="paintFill"></i><span id="paintText">🖌 0% painted</span></div>
+    <div class="stage" id="stage">
+      <canvas id="game"></canvas>
+      <div class="tap-hint" id="tapHint">
+        <i class="hint-level" id="hintLevel">Level 1</i>
+        <em class="new-badge hidden" id="hintNew">NEW!</em>
+        <span class="tap-finger">👆</span>
+        <b id="hintMain">Tap to start!</b>
+        <small id="hintSub">or press Space</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MODALS ================= -->
+  <div class="modal hidden" id="modalWin">
+    <div class="card">
+      <div class="badge badge-green">LEVEL CLEAR!</div>
+      <div class="stars" id="winStars"><i>★</i><i>★</i><i>★</i></div>
+      <p class="card-text" id="winText">You painted 0% of the tunnel.</p>
+      <div class="card-actions">
+        <button class="btn btn-white" id="btnWinReplay">Replay</button>
+        <button class="btn btn-green" id="btnNext">Next Level ➜</button>
+      </div>
+      <button class="link-btn" id="btnWinMenu">Back to menu</button>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalFail">
+    <div class="card">
+      <div class="badge badge-red" id="failTitle">SPLAT!</div>
+      <div class="big-emoji">💥</div>
+      <p class="card-text" id="failText">Splotch fell into a gap.</p>
+      <button class="btn btn-ad" id="btnReviveAd">▶ Watch ad: keep going</button>
+      <button class="btn btn-coin" id="btnReviveCoins">Continue for <i class="coin-ico"></i> 100</button>
+      <div class="card-actions">
+        <button class="btn btn-white" id="btnFailMenu">Menu</button>
+        <button class="btn btn-orange" id="btnRetry">Retry</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalBonus">
+    <div class="card">
+      <div class="badge badge-gold">BONUS COMPLETE!</div>
+      <div class="bonus-total"><i class="coin-ico big"></i><b id="bonusCount">0</b></div>
+      <p class="card-text" id="bonusText">coins collected · best combo ×0</p>
+      <button class="btn btn-ad" id="btnBonusDouble">▶ Watch ad: ×2 coins</button>
+      <button class="btn btn-green btn-block" id="btnBonusNext">Continue ➜</button>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalPause">
+    <div class="card">
+      <div class="badge badge-blue">PAUSED</div>
+      <div class="big-emoji">⏸️</div>
+      <div class="card-actions">
+        <button class="btn btn-white" id="btnPauseMenu">Menu</button>
+        <button class="btn btn-green" id="btnResume">Resume</button>
+      </div>
+      <button class="link-btn" id="btnPauseRestart">Restart level</button>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalLevels">
+    <div class="card card-wide">
+      <div class="card-head"><h2>Levels</h2><button class="close-btn" data-close="modalLevels">✕</button></div>
+      <div class="level-grid" id="levelGrid"></div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalHowTo">
+    <div class="card">
+      <div class="card-head"><h2>How to Play</h2><button class="close-btn" data-close="modalHowTo">✕</button></div>
+      <ol class="howto">
+        <li><b>Splotch rolls on its own.</b> Tap (or press Space) to <b>flip gravity</b> between the floor and the ceiling.</li>
+        <li>Every tile you roll over gets <b>painted</b>. Paint as much of the tunnel as you can!</li>
+        <li><b>Gaps</b> and <b>spikes</b> are deadly. Flip to the other side to get past them.</li>
+        <li>Grab the 3 <b>paint drops 💧</b> in each level for 3 stars.</li>
+      </ol>
+      <button class="btn btn-green btn-block" data-close="modalHowTo">Got it!</button>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalSettings">
+    <div class="card">
+      <div class="card-head"><h2>Settings</h2><button class="close-btn" data-close="modalSettings">✕</button></div>
+      <div class="set-row"><span>🔊 Sound</span><button class="switch" id="setSound" role="switch" aria-checked="true"><i></i></button></div>
+      <div class="set-row"><span>📳 Vibration</span><button class="switch" id="setVibe" role="switch" aria-checked="true"><i></i></button></div>
+      <div class="set-row"><span>🗑️ Reset progress</span><button class="btn btn-red btn-small" id="btnReset">Reset</button></div>
+      <button class="btn btn-green btn-block" data-close="modalSettings">Done</button>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="modalConfirm">
+    <div class="card">
+      <div class="badge badge-red" id="confirmTitle">LEAVE GAME?</div>
+      <p class="card-text" id="confirmText">Your progress is saved.</p>
+      <div class="card-actions">
+        <button class="btn btn-white" id="btnConfirmNo">Cancel</button>
+        <button class="btn btn-red" id="btnConfirmYes">Yes</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="game.js?v=2"></script>
+</body>
+</html>
