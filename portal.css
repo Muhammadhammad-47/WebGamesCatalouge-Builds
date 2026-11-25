@@ -810,7 +810,7 @@ footer {
 
 .info-downloads-section {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 
@@ -825,11 +825,17 @@ footer {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  text-decoration: none;
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
 .btn-download:hover {
   transform: translateY(-2px);
+}
+
+.btn-view-thumb {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: #fff;
 }
 
 .btn-download-json {
