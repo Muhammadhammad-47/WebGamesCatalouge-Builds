@@ -10,7 +10,8 @@
     "plays": "24.6K",
     "featured": true,
     "orientation": "landscape",
-    "description": "Draw custom roads, bridge dangerous canyons, drive stunt vehicles with arrow key controls, and conquer 20 challenging stages!"
+    "description": "Draw custom roads, bridge dangerous canyons, drive stunt vehicles with arrow key controls, and conquer 20 challenging stages!",
+    "addedDate": "2026-11-25"
   },
   {
     "id": "nuts-and-bolts",
@@ -49,7 +50,8 @@
     "plays": "11.4K",
     "featured": false,
     "orientation": "landscape",
-    "description": "Roll through tunnels, flip gravity with precise timing, paint every tile, dodge deadly spikes, and clear 90 exciting levels!"
+    "description": "Roll through tunnels, flip gravity with precise timing, paint every tile, dodge deadly spikes, and clear 90 exciting levels!",
+    "addedDate": "2026-11-25"
   },
   {
     "id": "traffic-jam",
@@ -166,7 +168,8 @@
     "plays": "21.3K",
     "featured": true,
     "orientation": "landscape",
-    "description": "Slither around the arena, eat tasty fruit & burgers, unlock campaign levels, and grow into the biggest snake!"
+    "description": "Slither around the arena, eat tasty fruit & burgers, unlock campaign levels, and grow into the biggest snake!",
+    "addedDate": "2026-11-25"
   },
   {
     "id": "blocky-blast-puzzle",
