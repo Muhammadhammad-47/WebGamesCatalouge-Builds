@@ -243,18 +243,18 @@
   //    Colors are assigned in exact multiples of 3 so every level is 100% solvable.
   // --------------------------------------------------------------------------
   const LEVEL_THEMES = [
-    { name: 'Teddy Bear',       icon: '🧸', colors: ['cream', 'peach', 'coral', 'sky'],           baskets: 2 },
-    { name: 'Cute Bunny',       icon: '🐰', colors: ['cream', 'berry', 'lavender', 'mint'],       baskets: 2 },
-    { name: 'Cute Kitty',       icon: '🐱', colors: ['peach', 'cream', 'berry', 'sky'],           baskets: 2 },
-    { name: 'Cozy Sheep',       icon: '🐑', colors: ['cream', 'coral', 'sky', 'amber'],           baskets: 3 },
-    { name: 'Panda Bear',       icon: '🐼', colors: ['cream', 'sky', 'mint', 'coral'],            baskets: 3 },
-    { name: 'Little Duckling',  icon: '🐥', colors: ['amber', 'peach', 'sky', 'mint'],            baskets: 3 },
-    { name: 'Happy Frog',       icon: '🐸', colors: ['mint', 'amber', 'coral', 'sky', 'cream'],   baskets: 3 },
-    { name: 'Winter Penguin',   icon: '🐧', colors: ['sky', 'cream', 'coral', 'amber', 'mint'],   baskets: 3 },
-    { name: 'Sleepy Fox',       icon: '🦊', colors: ['peach', 'cream', 'mint', 'lavender', 'sky'],baskets: 3 },
-    { name: 'Little Piggy',     icon: '🐷', colors: ['coral', 'berry', 'cream', 'sky', 'mint'],   baskets: 3 },
-    { name: 'Puppy Dog',        icon: '🐶', colors: ['cream', 'peach', 'sky', 'coral', 'amber'],  baskets: 3 },
-    { name: 'Cute Koala',       icon: '🐨', colors: ['lavender', 'cream', 'mint', 'sky', 'coral'],baskets: 3 }
+    { name: 'Teddy Bear',       icon: '🧸', colors: ['cream', 'peach', 'coral', 'sky'],            baskets: 2 },
+    { name: 'Potted Cactus',    icon: '🌵', colors: ['mint', 'peach', 'berry', 'amber'],           baskets: 2 },
+    { name: 'Cute Kitty',       icon: '🐱', colors: ['peach', 'cream', 'berry', 'sky'],            baskets: 2 },
+    { name: 'Mushroom House',   icon: '🍄', colors: ['coral', 'cream', 'mint', 'amber'],           baskets: 3 },
+    { name: 'Berry Cake',       icon: '🍰', colors: ['cream', 'berry', 'coral', 'amber'],          baskets: 3 },
+    { name: 'Little Duckling',  icon: '🐥', colors: ['amber', 'peach', 'sky', 'mint'],             baskets: 3 },
+    { name: 'Rocket Ship',      icon: '🚀', colors: ['sky', 'coral', 'amber', 'lavender', 'mint'], baskets: 3 },
+    { name: 'Friendly Octopus', icon: '🐙', colors: ['lavender', 'berry', 'sky', 'mint', 'amber'], baskets: 3 },
+    { name: 'Cozy Teapot',      icon: '🫖', colors: ['berry', 'cream', 'mint', 'lavender', 'peach'],baskets: 3 },
+    { name: 'Happy Frog',       icon: '🐸', colors: ['mint', 'amber', 'coral', 'sky', 'cream'],    baskets: 3 },
+    { name: 'Cozy Sheep',       icon: '🐑', colors: ['cream', 'coral', 'sky', 'amber', 'mint'],    baskets: 3 },
+    { name: 'Winter Penguin',   icon: '🐧', colors: ['sky', 'cream', 'coral', 'amber', 'lavender'],baskets: 3 }
   ];
 
   // Helper to build a balanced color list (exact multiples of 3)
@@ -294,108 +294,221 @@
     };
 
     const idx = levelIdx % 12;
-    let faceSpec = { headId: 1, eyePos: [0.22, 0.78, 0.56], nosePos: [0, 0.65, 0.72], noseColor: 0x3b2618, beak: false };
+    let faceSpec = null;
 
-    if (idx === 0 || idx === 4 || idx === 11) {
-      // TEDDY BEAR (idx 0), PANDA BEAR (idx 4), CUTE KOALA (idx 11) — 15 cohesive pieces
-      const isKoala = idx === 11;
-      const isPanda = idx === 4;
-      add('sphere', [0, -0.38, 0], [1.0, 1.05, 0.88], [0, 0, 0], 0); // 0: torso core
+    if (idx === 0) {
+      // 1. TEDDY BEAR (15 pieces)
+      add('sphere', [0, -0.38, 0], [1.0, 1.05, 0.88], [0, 0, 0], 0); // 0: torso
       add('sphere', [0, 0.66, 0.04], [0.95, 0.86, 0.86], [0, 0, 0], 1); // 1: head
-      add('sphere', [0, -0.36, 0.44], [0.64, 0.72, 0.34], [0, 0, 0], 2); // 2: belly patch
+      add('sphere', [0, -0.36, 0.44], [0.64, 0.72, 0.34], [0, 0, 0], 2); // 2: belly
       add('sphere', [0, 0.55, 0.48], [0.42, 0.32, 0.34], [0, 0, 0], 2); // 3: snout
-      // Ears (Koala has bigger round ears!)
-      const earScale = isKoala ? [0.44, 0.44, 0.24] : [0.34, 0.34, 0.22];
-      const earX = isKoala ? 0.62 : 0.48;
-      add('sphere', [earX, 1.12, 0.02], earScale, [0, 0, 0], 2); // 4: ear R
-      add('sphere', [-earX, 1.12, 0.02], earScale, [0, 0, 0], 2); // 5: ear L
-      // Arms hugging in front
+      add('sphere', [0.48, 1.12, 0.02], [0.34, 0.34, 0.22], [0, 0, 0], 2); // 4: ear R
+      add('sphere', [-0.48, 1.12, 0.02], [0.34, 0.34, 0.22], [0, 0, 0], 2); // 5: ear L
       add('capsule', [0.68, -0.18, 0.22], [0.26, 0.54, 0.26], [0.35, 0, -0.55], 2); // 6: arm R
       add('capsule', [-0.68, -0.18, 0.22], [0.26, 0.54, 0.26], [0.35, 0, 0.55], 2); // 7: arm L
-      // Sitting legs
       add('capsule', [0.42, -0.96, 0.32], [0.3, 0.48, 0.34], [1.15, 0, -0.2], 2); // 8: leg R
       add('capsule', [-0.42, -0.96, 0.32], [0.3, 0.48, 0.34], [1.15, 0, 0.2], 2); // 9: leg L
-      // Bow tie / Collar
       add('cone', [0.2, 0.12, 0.52], [0.18, 0.26, 0.14], [0, 0, 1.45], 2); // 10: bow R
       add('cone', [-0.2, 0.12, 0.52], [0.18, 0.26, 0.14], [0, 0, -1.45], 2); // 11: bow L
-      // Fluffy round tail & back head puffs
       add('sphere', [0, -0.68, -0.56], [0.28, 0.28, 0.28], [0, 0, 0], 2); // 12: tail
-      add('sphere', [0.34, 0.66, -0.42], [0.36, 0.36, 0.32], [0, 0, 0], 2); // 13: back head R
-      add('sphere', [-0.34, 0.66, -0.42], [0.36, 0.36, 0.32], [0, 0, 0], 2); // 14: back head L
-
+      add('sphere', [0.34, 0.66, -0.42], [0.36, 0.36, 0.32], [0, 0, 0], 2); // 13
+      add('sphere', [-0.34, 0.66, -0.42], [0.36, 0.36, 0.32], [0, 0, 0], 2); // 14
       specs[0].blockedBy.push(2, 6, 7, 8, 9, 12);
       specs[1].blockedBy.push(3, 4, 5, 13, 14);
-      faceSpec = {
-        headId: 1,
-        eyePos: [0.22, 0.76, 0.54],
-        nosePos: [0, 0.62, 0.68],
-        noseColor: isPanda ? 0x1e293b : (isKoala ? 0x312e81 : 0x451a03),
-        noseScale: isKoala ? [0.11, 0.15, 0.08] : [0.09, 0.07, 0.07],
-        beak: false
-      };
+      faceSpec = { headId: 1, eyePos: [0.22, 0.76, 0.54], nosePos: [0, 0.62, 0.68], noseColor: 0x451a03, beak: false };
     } else if (idx === 1) {
-      // CUTE BUNNY (15 cohesive pieces)
-      add('sphere', [0, -0.42, 0], [0.95, 1.0, 0.9], [0, 0, 0], 0); // 0: body
-      add('sphere', [0, 0.58, 0.05], [0.88, 0.82, 0.82], [0, 0, 0], 1); // 1: head
-      add('sphere', [0, -0.42, 0.42], [0.58, 0.66, 0.32], [0, 0, 0], 2); // 2: belly
-      // Tall floppy bunny ears
-      add('capsule', [0.26, 1.32, 0.02], [0.22, 0.68, 0.18], [0.1, 0, -0.18], 2); // 3: ear R
-      add('capsule', [-0.26, 1.32, 0.02], [0.22, 0.68, 0.18], [0.1, 0, 0.18], 2); // 4: ear L
-      // Chubby cheeks
-      add('sphere', [0.34, 0.5, 0.44], [0.22, 0.18, 0.18], [0, 0, 0], 2); // 5: cheek R
-      add('sphere', [-0.34, 0.5, 0.44], [0.22, 0.18, 0.18], [0, 0, 0], 2); // 6: cheek L
-      // Front paws & big bunny feet
-      add('capsule', [0.58, -0.22, 0.24], [0.22, 0.46, 0.22], [0.4, 0, -0.5], 2); // 7
-      add('capsule', [-0.58, -0.22, 0.24], [0.22, 0.46, 0.22], [0.4, 0, 0.5], 2); // 8
-      add('capsule', [0.38, -0.98, 0.36], [0.26, 0.48, 0.34], [1.3, 0, -0.15], 2); // 9
-      add('capsule', [-0.38, -0.98, 0.36], [0.26, 0.48, 0.34], [1.3, 0, 0.15], 2); // 10
-      // Cotton tail & collar
-      add('sphere', [0, -0.62, -0.54], [0.34, 0.34, 0.34], [0, 0, 0], 2); // 11
-      add('torus', [0, 0.08, 0.06], [0.52, 0.52, 0.52], [Math.PI / 2, 0, 0], 2); // 12
-      add('sphere', [0.3, 0.58, -0.4], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 13
-      add('sphere', [-0.3, 0.58, -0.4], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 14
-
-      specs[0].blockedBy.push(2, 7, 8, 9, 10, 11, 12);
-      specs[1].blockedBy.push(3, 4, 5, 6, 13, 14);
-      faceSpec = { headId: 1, eyePos: [0.2, 0.68, 0.5], nosePos: [0, 0.56, 0.56], noseColor: 0xf43f5e, beak: false };
-    } else if (idx === 2 || idx === 8 || idx === 10) {
-      // CUTE KITTY (idx 2), SLEEPY FOX (idx 8), PUPPY DOG (idx 10) — 15 cohesive pieces
-      const isPuppy = idx === 10;
-      const isFox = idx === 8;
+      // 2. POTTED CACTUS (15 pieces — distinct plant + terracotta pot + flower!)
+      add('cylinder', [0, -0.78, 0], [0.95, 0.95, 0.95], [0, 0, 0], 0); // 0: pot base
+      add('torus', [0, -0.32, 0], [0.92, 0.92, 0.92], [Math.PI / 2, 0, 0], 1); // 1: pot rim
+      add('cylinder', [0, 0.42, 0], [0.55, 1.25, 0.55], [0, 0, 0], 1); // 2: cactus trunk
+      add('sphere', [0, 1.05, 0], [0.56, 0.42, 0.56], [0, 0, 0], 2); // 3: cactus dome
+      // Cactus curved arms (Right & Left)
+      add('capsule', [0.55, 0.28, 0], [0.26, 0.24, 0.26], [0, 0, 0], 2); // 4: arm R base
+      add('capsule', [0.72, 0.66, 0], [0.24, 0.46, 0.24], [0, 0, 0], 2); // 5: arm R up
+      add('capsule', [-0.55, 0.14, 0], [0.26, 0.24, 0.26], [0, 0, 0], 2); // 6: arm L base
+      add('capsule', [-0.72, 0.52, 0], [0.24, 0.46, 0.24], [0, 0, 0], 2); // 7: arm L up
+      // Flower petals on top of cactus!
+      add('sphere', [0, 1.42, 0], [0.24, 0.22, 0.24], [0, 0, 0], 2); // 8: flower center
+      add('sphere', [0.26, 1.38, 0], [0.2, 0.16, 0.2], [0, 0, 0], 2); // 9: petal
+      add('sphere', [-0.26, 1.38, 0], [0.2, 0.16, 0.2], [0, 0, 0], 2); // 10: petal
+      add('sphere', [0, 1.38, 0.26], [0.2, 0.16, 0.2], [0, 0, 0], 2); // 11: petal
+      add('sphere', [0, 1.38, -0.26], [0.2, 0.16, 0.2], [0, 0, 0], 2); // 12: petal
+      // Decorative soil pebbles
+      add('sphere', [0.36, -0.18, 0.36], [0.24, 0.2, 0.24], [0, 0, 0], 2); // 13
+      add('sphere', [-0.36, -0.18, -0.36], [0.24, 0.2, 0.24], [0, 0, 0], 2); // 14
+      specs[0].blockedBy.push(1, 13, 14);
+      specs[2].blockedBy.push(3, 4, 5, 6, 7);
+    } else if (idx === 2) {
+      // 3. CUTE KITTY (15 pieces)
       add('sphere', [0, -0.4, 0], [0.95, 1.0, 0.9], [0, 0, 0], 0); // 0: body
       add('sphere', [0, 0.62, 0.06], [0.88, 0.8, 0.82], [0, 0, 0], 1); // 1: head
-      add('torus', [0, 0.12, 0.06], [0.52, 0.52, 0.52], [Math.PI / 2, 0, 0], 2); // 2: collar/scarf
-      if (isPuppy) {
-        // Floppy drooping ears
-        add('capsule', [0.56, 0.48, 0.08], [0.24, 0.54, 0.18], [0, 0, 0.28], 2); // 3
-        add('capsule', [-0.56, 0.48, 0.08], [0.24, 0.54, 0.18], [0, 0, -0.28], 2); // 4
-      } else {
-        // Pointy cat/fox ears
-        add('cone', [0.38, 1.18, 0.06], [0.26, 0.44, 0.24], [0, 0, -0.32], 2); // 3
-        add('cone', [-0.38, 1.18, 0.06], [0.26, 0.44, 0.24], [0, 0, 0.32], 2); // 4
-      }
+      add('torus', [0, 0.12, 0.06], [0.52, 0.52, 0.52], [Math.PI / 2, 0, 0], 2); // 2: collar
+      add('cone', [0.38, 1.18, 0.06], [0.26, 0.44, 0.24], [0, 0, -0.32], 2); // 3: ear R
+      add('cone', [-0.38, 1.18, 0.06], [0.26, 0.44, 0.24], [0, 0, 0.32], 2); // 4: ear L
       add('sphere', [0, 0.5, 0.46], [0.38, 0.28, 0.34], [0, 0, 0], 2); // 5: muzzle
       add('sphere', [0, -0.4, 0.44], [0.58, 0.64, 0.32], [0, 0, 0], 2); // 6: belly
-      // 4 paws
       add('capsule', [0.56, -0.26, 0.24], [0.22, 0.44, 0.22], [0.4, 0, -0.45], 2); // 7
       add('capsule', [-0.56, -0.26, 0.24], [0.22, 0.44, 0.22], [0.4, 0, 0.45], 2); // 8
       add('capsule', [0.36, -0.96, 0.34], [0.24, 0.44, 0.28], [1.2, 0, -0.15], 2); // 9
       add('capsule', [-0.36, -0.96, 0.34], [0.24, 0.44, 0.28], [1.2, 0, 0.15], 2); // 10
-      // Curled/bushy tail (2 segments)
-      add('capsule', [0.46, -0.45, -0.46], [isFox ? 0.32 : 0.22, 0.58, isFox ? 0.32 : 0.22], [0.5, 0, -0.6], 2); // 11
-      add('sphere', [0.68, -0.05, -0.62], [isFox ? 0.34 : 0.24, isFox ? 0.34 : 0.24, 0.26], [0, 0, 0], 2); // 12
+      add('capsule', [0.46, -0.45, -0.46], [0.22, 0.58, 0.22], [0.5, 0, -0.6], 2); // 11: tail
+      add('sphere', [0.68, -0.05, -0.62], [0.24, 0.24, 0.26], [0, 0, 0], 2); // 12: tail tip
       add('sphere', [0.32, 0.62, -0.38], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 13
       add('sphere', [-0.32, 0.62, -0.38], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 14
-
       specs[0].blockedBy.push(2, 6, 7, 8, 9, 10, 11);
       specs[1].blockedBy.push(3, 4, 5, 13, 14);
-      faceSpec = { headId: 1, eyePos: [0.2, 0.72, 0.52], nosePos: [0, 0.58, 0.66], noseColor: isFox ? 0x1e293b : 0xf43f5e, beak: false };
+      faceSpec = { headId: 1, eyePos: [0.2, 0.72, 0.52], nosePos: [0, 0.58, 0.66], noseColor: 0xf43f5e, beak: false };
     } else if (idx === 3) {
-      // COZY SHEEP (15 tightly-packed cloud wool puffs + cute peeking face!)
-      add('sphere', [0, 0, 0], [1.05, 0.92, 1.05], [0, 0, 0], 0); // 0: body core
+      // 4. MUSHROOM HOUSE (18 pieces — fairy cottage!)
+      add('cylinder', [0, -0.58, 0], [0.95, 1.15, 0.95], [0, 0, 0], 0); // 0: cottage stem
+      add('sphere', [0, 0.45, 0], [1.85, 1.05, 1.85], [0, 0, 0], 1); // 1: big mushroom roof
+      add('torus', [0, 0.08, 0], [1.15, 1.15, 1.15], [Math.PI / 2, 0, 0], 2); // 2: roof rim
+      // Door & windows
+      add('capsule', [0, -0.72, 0.52], [0.34, 0.52, 0.2], [0, 0, 0], 2); // 3: door
+      add('sphere', [0.48, -0.45, 0.38], [0.24, 0.24, 0.2], [0, 0, 0], 2); // 4: window R
+      add('sphere', [-0.48, -0.45, 0.38], [0.24, 0.24, 0.2], [0, 0, 0], 2); // 5: window L
+      add('cylinder', [0.55, 0.96, 0.2], [0.24, 0.45, 0.24], [0, 0, 0], 2); // 6: chimney!
+      // Roof spots
+      const spots = [
+        [0, 1.08, 0], [0.78, 0.65, 0.55], [-0.78, 0.65, 0.55],
+        [0.78, 0.65, -0.55], [-0.78, 0.65, -0.55], [0, 0.68, 0.98], [0, 0.68, -0.98]
+      ];
+      spots.forEach((p) => {
+        const id = specs.length;
+        add('sphere', p, [0.34, 0.24, 0.34], [0, 0, 0], 2);
+        specs[1].blockedBy.push(id);
+      });
+      // Garden bushes
+      add('sphere', [0.68, -0.96, 0.38], [0.34, 0.28, 0.34], [0, 0, 0], 2);
+      add('sphere', [-0.68, -0.96, 0.38], [0.34, 0.28, 0.34], [0, 0, 0], 2);
+      add('sphere', [0, -0.96, -0.62], [0.4, 0.3, 0.4], [0, 0, 0], 2);
+      add('sphere', [0, -0.45, -0.56], [0.34, 0.34, 0.28], [0, 0, 0], 2);
+      specs[0].blockedBy.push(3, 4, 5, 14, 15, 16, 17);
+      specs[1].blockedBy.push(2, 6);
+    } else if (idx === 4) {
+      // 5. BERRY BIRTHDAY CAKE (18 pieces — tiered cake + strawberries + candle!)
+      add('cylinder', [0, -0.82, 0], [1.65, 0.22, 1.65], [0, 0, 0], 0); // 0: plate
+      add('cylinder', [0, -0.35, 0], [1.3, 0.72, 1.3], [0, 0, 0], 1); // 1: bottom tier
+      add('cylinder', [0, 0.26, 0], [0.95, 0.58, 0.95], [0, 0, 0], 1); // 2: top tier
+      add('torus', [0, 0.02, 0], [0.92, 0.92, 0.92], [Math.PI / 2, 0, 0], 2); // 3: mid frosting
+      add('torus', [0, 0.54, 0], [0.66, 0.66, 0.66], [Math.PI / 2, 0, 0], 2); // 4: top frosting
+      // Candle + flame on top
+      add('cylinder', [0, 0.84, 0], [0.16, 0.56, 0.16], [0, 0, 0], 2); // 5: candle
+      add('cone', [0, 1.24, 0], [0.18, 0.3, 0.18], [0, 0, 0], 2); // 6: flame
+      // 6 strawberries / cream swirls around top & middle
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        add('sphere', [Math.cos(a) * 0.48, 0.68, Math.sin(a) * 0.48], [0.22, 0.24, 0.22], [0, 0, 0], 2);
+      }
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2 + 0.3;
+        add('sphere', [Math.cos(a) * 0.74, -0.32, Math.sin(a) * 0.74], [0.24, 0.24, 0.24], [0, 0, 0], 2);
+      }
+      specs[0].blockedBy.push(1);
+      specs[1].blockedBy.push(2, 3, 13, 14, 15, 16, 17);
+      specs[2].blockedBy.push(4, 5, 7, 8, 9, 10, 11, 12);
+    } else if (idx === 5) {
+      // 6. LITTLE DUCKLING (15 pieces)
+      add('sphere', [0, -0.34, 0], [0.96, 1.04, 0.9], [0, 0, 0], 0); // 0: body
+      add('sphere', [0, 0.66, 0.05], [0.84, 0.78, 0.8], [0, 0, 0], 1); // 1: head
+      add('sphere', [0, -0.34, 0.44], [0.64, 0.74, 0.32], [0, 0, 0], 2); // 2: belly
+      add('cone', [0, 0.56, 0.56], [0.24, 0.34, 0.2], [Math.PI / 2, 0, 0], 2); // 3: beak
+      add('capsule', [0.68, -0.22, 0.06], [0.22, 0.52, 0.3], [0, 0, -0.45], 2); // 4: wing R
+      add('capsule', [-0.68, -0.22, 0.06], [0.22, 0.52, 0.3], [0, 0, 0.45], 2); // 5: wing L
+      add('capsule', [0.34, -0.96, 0.24], [0.22, 0.36, 0.32], [Math.PI / 2, 0, 0], 2); // 6: foot R
+      add('capsule', [-0.34, -0.96, 0.24], [0.22, 0.36, 0.32], [Math.PI / 2, 0, 0], 2); // 7: foot L
+      add('cone', [0, 1.18, 0.04], [0.2, 0.32, 0.2], [0, 0, 0], 2); // 8: crest tuft
+      add('sphere', [0, 1.42, 0.04], [0.18, 0.18, 0.18], [0, 0, 0], 2); // 9
+      add('torus', [0, 0.14, 0.05], [0.54, 0.54, 0.54], [Math.PI / 2, 0, 0], 2); // 10: scarf
+      add('sphere', [0, -0.58, -0.52], [0.32, 0.26, 0.34], [0, 0, 0], 2); // 11: tail
+      add('sphere', [0.34, 0.64, -0.38], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 12
+      add('sphere', [-0.34, 0.64, -0.38], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 13
+      add('sphere', [0, -0.28, -0.5], [0.46, 0.46, 0.3], [0, 0, 0], 2); // 14
+      specs[0].blockedBy.push(2, 4, 5, 6, 7, 10, 11, 14);
+      specs[1].blockedBy.push(3, 8, 9, 12, 13);
+      faceSpec = { headId: 1, eyePos: [0.22, 0.78, 0.48], nosePos: [0, 0.56, 0.68], noseColor: 0xf97316, beak: true };
+    } else if (idx === 6) {
+      // 7. ROCKET SHIP (15 pieces — space rocket with fins, porthole, nose cone & flames!)
+      add('cylinder', [0, 0.05, 0], [0.78, 1.35, 0.78], [0, 0, 0], 0); // 0: rocket hull
+      add('cone', [0, 1.05, 0], [0.85, 0.78, 0.85], [0, 0, 0], 1); // 1: nose cone
+      add('sphere', [0, 1.48, 0], [0.22, 0.22, 0.22], [0, 0, 0], 2); // 2: antenna ball
+      add('torus', [0, 0.28, 0.44], [0.36, 0.36, 0.36], [0, 0, 0], 2); // 3: porthole ring
+      add('sphere', [0, 0.28, 0.42], [0.28, 0.28, 0.14], [0, 0, 0], 2); // 4: porthole glass
+      add('torus', [0, 0.72, 0], [0.58, 0.58, 0.58], [Math.PI / 2, 0, 0], 2); // 5: upper stripe
+      add('torus', [0, -0.52, 0], [0.64, 0.64, 0.64], [Math.PI / 2, 0, 0], 2); // 6: lower ring
+      // 3 rocket fins around base
+      for (let i = 0; i < 3; i++) {
+        const a = (i / 3) * Math.PI * 2;
+        add('cone', [Math.cos(a) * 0.62, -0.56, Math.sin(a) * 0.62], [0.34, 0.62, 0.18], [0, -a, Math.cos(a) > 0 ? -0.5 : 0.5], 2);
+      }
+      // Thruster flame puffs underneath
+      add('cone', [0, -0.96, 0], [0.42, 0.52, 0.42], [Math.PI, 0, 0], 2); // 10: center flame
+      add('sphere', [0.26, -0.92, 0.16], [0.24, 0.24, 0.24], [0, 0, 0], 2); // 11
+      add('sphere', [-0.26, -0.92, 0.16], [0.24, 0.24, 0.24], [0, 0, 0], 2); // 12
+      add('sphere', [0, -0.92, -0.26], [0.24, 0.24, 0.24], [0, 0, 0], 2); // 13
+      add('sphere', [0, 0.18, -0.48], [0.36, 0.44, 0.22], [0, 0, 0], 2); // 14: back hatch
+      specs[0].blockedBy.push(1, 3, 4, 5, 6, 7, 8, 9, 10, 14);
+      specs[1].blockedBy.push(2);
+    } else if (idx === 7) {
+      // 8. FRIENDLY OCTOPUS (15 pieces — big bulbous head + 8 splayed tentacles!)
+      add('sphere', [0, 0.35, 0], [1.18, 1.08, 1.18], [0, 0, 0], 0); // 0: head core
+      add('torus', [0, -0.18, 0], [0.68, 0.68, 0.68], [Math.PI / 2, 0, 0], 1); // 1: collar ring
+      add('sphere', [0, 0.96, 0], [0.44, 0.32, 0.44], [0, 0, 0], 2); // 2: crown puff
+      add('sphere', [0.46, 0.55, -0.45], [0.42, 0.42, 0.42], [0, 0, 0], 2); // 3
+      add('sphere', [-0.46, 0.55, -0.45], [0.42, 0.42, 0.42], [0, 0, 0], 2); // 4
+      add('sphere', [0.54, 0.42, 0.2], [0.34, 0.34, 0.34], [0, 0, 0], 2); // 5: cheek R
+      add('sphere', [-0.54, 0.42, 0.2], [0.34, 0.34, 0.34], [0, 0, 0], 2); // 6: cheek L
+      // 8 radial tentacles!
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        add('capsule', [Math.cos(a) * 0.78, -0.58, Math.sin(a) * 0.78], [0.24, 0.52, 0.24], [Math.sin(a) * 0.85, 0, -Math.cos(a) * 0.85], 2);
+      }
+      specs[0].blockedBy.push(1, 2, 3, 4, 5, 6);
+      specs[1].blockedBy.push(7, 8, 9, 10, 11, 12, 13, 14);
+      faceSpec = { headId: 0, eyePos: [0.26, 0.46, 0.64], nosePos: [0, 0.28, 0.68], noseColor: 0xf43f5e, beak: false };
+    } else if (idx === 8) {
+      // 9. COZY TEAPOT (15 pieces — teapot + lid + spout + handle + coaster!)
+      add('cylinder', [0, -0.82, 0], [1.45, 0.2, 1.45], [0, 0, 0], 0); // 0: coaster plate
+      add('sphere', [0, -0.15, 0], [1.28, 1.05, 1.28], [0, 0, 0], 1); // 1: teapot body
+      add('sphere', [0, 0.48, 0], [0.76, 0.34, 0.76], [0, 0, 0], 2); // 2: lid
+      add('sphere', [0, 0.78, 0], [0.24, 0.24, 0.24], [0, 0, 0], 2); // 3: lid knob
+      // Spout (Right)
+      add('capsule', [0.84, -0.1, 0], [0.24, 0.48, 0.24], [0, 0, -0.75], 2); // 4
+      add('capsule', [1.08, 0.24, 0], [0.2, 0.36, 0.2], [0, 0, -0.35], 2); // 5
+      // Handle (Left)
+      add('torus', [-0.82, -0.05, 0], [0.46, 0.46, 0.46], [0, 0, 0], 2); // 6
+      // Decorative floral band & belly puffs
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        add('sphere', [Math.cos(a) * 0.68, -0.15, Math.sin(a) * 0.68], [0.24, 0.24, 0.24], [0, 0, 0], 2);
+      }
+      specs[0].blockedBy.push(1);
+      specs[1].blockedBy.push(2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14);
+    } else if (idx === 9) {
+      // 10. HAPPY FROG (15 pieces)
+      add('sphere', [0, -0.38, 0], [1.05, 0.92, 0.92], [0, 0, 0], 0); // 0: body
+      add('sphere', [0, 0.56, 0.06], [1.02, 0.68, 0.84], [0, 0, 0], 1); // 1: wide head
+      add('sphere', [0, -0.38, 0.45], [0.68, 0.64, 0.32], [0, 0, 0], 2); // 2: belly
+      add('sphere', [0.34, 0.96, 0.14], [0.28, 0.28, 0.28], [0, 0, 0], 2); // 3: eye bump R
+      add('sphere', [-0.34, 0.96, 0.14], [0.28, 0.28, 0.28], [0, 0, 0], 2); // 4: eye bump L
+      add('sphere', [0.44, 0.5, 0.42], [0.22, 0.18, 0.18], [0, 0, 0], 2); // 5: cheek R
+      add('sphere', [-0.44, 0.5, 0.42], [0.22, 0.18, 0.18], [0, 0, 0], 2); // 6: cheek L
+      add('capsule', [0.66, -0.24, 0.22], [0.22, 0.46, 0.22], [0.3, 0, -0.5], 2); // 7
+      add('capsule', [-0.66, -0.24, 0.22], [0.22, 0.46, 0.22], [0.3, 0, 0.5], 2); // 8
+      add('capsule', [0.54, -0.88, 0.3], [0.28, 0.5, 0.32], [1.2, 0, -0.3], 2); // 9
+      add('capsule', [-0.54, -0.88, 0.3], [0.28, 0.5, 0.32], [1.2, 0, 0.3], 2); // 10
+      add('torus', [0, 0.1, 0.06], [0.56, 0.56, 0.56], [Math.PI / 2, 0, 0], 2); // 11
+      add('sphere', [0.36, 0.56, -0.4], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 12
+      add('sphere', [-0.36, 0.56, -0.4], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 13
+      add('sphere', [0, -0.38, -0.52], [0.46, 0.46, 0.3], [0, 0, 0], 2); // 14
+      specs[0].blockedBy.push(2, 7, 8, 9, 10, 11, 14);
+      specs[1].blockedBy.push(3, 4, 5, 6, 12, 13);
+      faceSpec = { headId: 1, eyePos: [0.34, 0.98, 0.32], nosePos: [0, 0.58, 0.56], noseColor: 0x065f46, beak: false };
+    } else if (idx === 10) {
+      // 11. COZY SHEEP (15 tightly-packed cloud wool puffs + peeking face!)
+      add('sphere', [0, 0, 0], [1.05, 0.92, 1.05], [0, 0, 0], 0); // 0: core
       add('sphere', [0, 0.16, 0.64], [0.62, 0.58, 0.62], [0, 0, 0], 1); // 1: face
       add('torus', [0, -0.08, 0.44], [0.48, 0.48, 0.48], [Math.PI / 2.2, 0, 0], 2); // 2: collar
-      // Tightly nestled wool puffs around body
       const puffs = [
         [0, 0.68, 0.1], [0.58, 0.28, 0.18], [-0.58, 0.28, 0.18],
         [0.54, 0.25, -0.38], [-0.54, 0.25, -0.38], [0, 0.42, -0.62],
@@ -406,84 +519,31 @@
         add('sphere', p, [0.46, 0.46, 0.46], [0, 0, 0], 2);
         specs[0].blockedBy.push(pId);
       });
-      // Cute floppy sheep ears & little tail
       add('capsule', [0.46, 0.34, 0.66], [0.18, 0.38, 0.18], [0, 0, -0.95], 2);
       add('capsule', [-0.46, 0.34, 0.66], [0.18, 0.38, 0.18], [0, 0, 0.95], 2);
       add('sphere', [0, 0.05, -0.82], [0.3, 0.3, 0.3], [0, 0, 0], 2);
       specs[0].blockedBy.push(1, 2);
       faceSpec = { headId: 1, eyePos: [0.16, 0.24, 0.96], nosePos: [0, 0.12, 1.02], noseColor: 0xf43f5e, beak: false };
-    } else if (idx === 5 || idx === 7) {
-      // LITTLE DUCKLING (idx 5) & WINTER PENGUIN (idx 7) — 15 cohesive pieces
-      const isPenguin = idx === 7;
-      add('sphere', [0, -0.34, 0], [0.96, 1.04, 0.9], [0, 0, 0], 0); // 0: body
-      add('sphere', [0, 0.66, 0.05], [0.84, 0.78, 0.8], [0, 0, 0], 1); // 1: head
-      add('sphere', [0, -0.34, 0.44], [0.64, 0.74, 0.32], [0, 0, 0], 2); // 2: belly
-      // Beak
-      add('cone', [0, 0.56, 0.56], [0.24, 0.34, 0.2], [Math.PI / 2, 0, 0], 2); // 3: beak
-      // Wings / Flippers
-      add('capsule', [0.68, -0.22, 0.06], [0.22, 0.52, 0.3], [0, 0, -0.45], 2); // 4
-      add('capsule', [-0.68, -0.22, 0.06], [0.22, 0.52, 0.3], [0, 0, 0.45], 2); // 5
-      // Feet
-      add('capsule', [0.34, -0.96, 0.24], [0.22, 0.36, 0.32], [Math.PI / 2, 0, 0], 2); // 6
-      add('capsule', [-0.34, -0.96, 0.24], [0.22, 0.36, 0.32], [Math.PI / 2, 0, 0], 2); // 7
-      // Hat / Head tuft
-      add('cone', [0, 1.18, 0.04], [isPenguin ? 0.48 : 0.2, isPenguin ? 0.52 : 0.32, isPenguin ? 0.48 : 0.2], [0, 0, 0], 2); // 8
-      add('sphere', [0, 1.46, 0.04], [0.24, 0.24, 0.24], [0, 0, 0], 2); // 9: pom-pom
-      // Scarf & back puffs
-      add('torus', [0, 0.14, 0.05], [0.54, 0.54, 0.54], [Math.PI / 2, 0, 0], 2); // 10
-      add('sphere', [0, -0.58, -0.52], [0.32, 0.26, 0.34], [0, 0, 0], 2); // 11: tail
+    } else {
+      // 12. WINTER PENGUIN (15 pieces — plump body + beanie hat + flippers!)
+      add('sphere', [0, -0.34, 0], [0.96, 1.08, 0.92], [0, 0, 0], 0); // 0: body
+      add('sphere', [0, 0.64, 0.04], [0.84, 0.78, 0.8], [0, 0, 0], 1); // 1: head
+      add('sphere', [0, -0.34, 0.45], [0.66, 0.78, 0.32], [0, 0, 0], 2); // 2: white belly
+      add('cone', [0, 0.56, 0.56], [0.22, 0.32, 0.2], [Math.PI / 2, 0, 0], 2); // 3: beak
+      add('capsule', [0.68, -0.22, 0.06], [0.2, 0.54, 0.28], [0, 0, -0.38], 2); // 4: flipper R
+      add('capsule', [-0.68, -0.22, 0.06], [0.2, 0.54, 0.28], [0, 0, 0.38], 2); // 5: flipper L
+      add('capsule', [0.34, -0.98, 0.24], [0.22, 0.36, 0.32], [Math.PI / 2, 0, 0], 2); // 6: foot R
+      add('capsule', [-0.34, -0.98, 0.24], [0.22, 0.36, 0.32], [Math.PI / 2, 0, 0], 2); // 7: foot L
+      add('cone', [0, 1.18, 0.04], [0.52, 0.56, 0.52], [0, 0, 0], 2); // 8: winter beanie
+      add('sphere', [0, 1.5, 0.04], [0.26, 0.26, 0.26], [0, 0, 0], 2); // 9: pom-pom
+      add('torus', [0, 0.14, 0.05], [0.54, 0.54, 0.54], [Math.PI / 2, 0, 0], 2); // 10: scarf
+      add('sphere', [0, -0.58, -0.52], [0.3, 0.26, 0.34], [0, 0, 0], 2); // 11: tail
       add('sphere', [0.34, 0.64, -0.38], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 12
       add('sphere', [-0.34, 0.64, -0.38], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 13
       add('sphere', [0, -0.28, -0.5], [0.46, 0.46, 0.3], [0, 0, 0], 2); // 14
-
       specs[0].blockedBy.push(2, 4, 5, 6, 7, 10, 11, 14);
       specs[1].blockedBy.push(3, 8, 9, 12, 13);
       faceSpec = { headId: 1, eyePos: [0.22, 0.78, 0.48], nosePos: [0, 0.56, 0.68], noseColor: 0xf97316, beak: true };
-    } else if (idx === 6) {
-      // HAPPY FROG (15 cohesive pieces)
-      add('sphere', [0, -0.38, 0], [1.05, 0.92, 0.92], [0, 0, 0], 0); // 0: body
-      add('sphere', [0, 0.56, 0.06], [1.02, 0.68, 0.84], [0, 0, 0], 1); // 1: wide frog head
-      add('sphere', [0, -0.38, 0.45], [0.68, 0.64, 0.32], [0, 0, 0], 2); // 2: belly
-      // Raised frog eye bumps!
-      add('sphere', [0.34, 0.96, 0.14], [0.28, 0.28, 0.28], [0, 0, 0], 2); // 3
-      add('sphere', [-0.34, 0.96, 0.14], [0.28, 0.28, 0.28], [0, 0, 0], 2); // 4
-      // Cheeks
-      add('sphere', [0.44, 0.5, 0.42], [0.22, 0.18, 0.18], [0, 0, 0], 2); // 5
-      add('sphere', [-0.44, 0.5, 0.42], [0.22, 0.18, 0.18], [0, 0, 0], 2); // 6
-      // Legs & arms
-      add('capsule', [0.66, -0.24, 0.22], [0.22, 0.46, 0.22], [0.3, 0, -0.5], 2); // 7
-      add('capsule', [-0.66, -0.24, 0.22], [0.22, 0.46, 0.22], [0.3, 0, 0.5], 2); // 8
-      add('capsule', [0.54, -0.88, 0.3], [0.28, 0.5, 0.32], [1.2, 0, -0.3], 2); // 9
-      add('capsule', [-0.54, -0.88, 0.3], [0.28, 0.5, 0.32], [1.2, 0, 0.3], 2); // 10
-      add('torus', [0, 0.1, 0.06], [0.56, 0.56, 0.56], [Math.PI / 2, 0, 0], 2); // 11
-      add('sphere', [0.36, 0.56, -0.4], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 12
-      add('sphere', [-0.36, 0.56, -0.4], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 13
-      add('sphere', [0, -0.38, -0.52], [0.46, 0.46, 0.3], [0, 0, 0], 2); // 14
-
-      specs[0].blockedBy.push(2, 7, 8, 9, 10, 11, 14);
-      specs[1].blockedBy.push(3, 4, 5, 6, 12, 13);
-      faceSpec = { headId: 1, eyePos: [0.34, 0.98, 0.32], nosePos: [0, 0.58, 0.56], noseColor: 0x065f46, beak: false };
-    } else {
-      // LITTLE PIGGY (idx 9) — 15 cohesive pieces
-      add('sphere', [0, -0.38, 0], [1.04, 0.98, 0.96], [0, 0, 0], 0); // 0: chubby body
-      add('sphere', [0, 0.6, 0.06], [0.92, 0.84, 0.84], [0, 0, 0], 1); // 1: head
-      add('cylinder', [0, 0.52, 0.56], [0.28, 0.22, 0.28], [Math.PI / 2, 0, 0], 2); // 2: pig snout
-      add('cone', [0.46, 1.06, 0.06], [0.24, 0.38, 0.2], [0.3, 0, -0.55], 2); // 3: floppy ear R
-      add('cone', [-0.46, 1.06, 0.06], [0.24, 0.38, 0.2], [0.3, 0, 0.55], 2); // 4: floppy ear L
-      add('sphere', [0, -0.38, 0.46], [0.6, 0.64, 0.32], [0, 0, 0], 2); // 5: belly
-      add('capsule', [0.62, -0.22, 0.2], [0.24, 0.44, 0.24], [0.3, 0, -0.5], 2); // 6
-      add('capsule', [-0.62, -0.22, 0.2], [0.24, 0.44, 0.24], [0.3, 0, 0.5], 2); // 7
-      add('capsule', [0.38, -0.96, 0.32], [0.26, 0.42, 0.28], [1.1, 0, -0.15], 2); // 8
-      add('capsule', [-0.38, -0.96, 0.32], [0.26, 0.42, 0.28], [1.1, 0, 0.15], 2); // 9
-      add('torus', [0, -0.45, -0.56], [0.2, 0.2, 0.2], [0, 0.4, 0], 2); // 10: curly tail
-      add('torus', [0, 0.1, 0.06], [0.54, 0.54, 0.54], [Math.PI / 2, 0, 0], 2); // 11: collar
-      add('sphere', [0.34, 0.6, -0.4], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 12
-      add('sphere', [-0.34, 0.6, -0.4], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 13
-      add('sphere', [0, -0.38, -0.52], [0.46, 0.46, 0.3], [0, 0, 0], 2); // 14
-
-      specs[0].blockedBy.push(5, 6, 7, 8, 9, 10, 11, 14);
-      specs[1].blockedBy.push(2, 3, 4, 12, 13);
-      faceSpec = { headId: 1, eyePos: [0.22, 0.74, 0.52], nosePos: [0, 0.54, 0.72], noseColor: 0xf43f5e, beak: false };
     }
 
     // Assign balanced colors (exact multiples of 3)
