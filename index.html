@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Count Control Legends — 3D Crowd Runner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/count-control.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <!-- CIEL Games Official Loading Screen -->
+  <script src="ciel-loader.js?v=1"></script>
+
+  <div class="ccl-app" id="cclApp">
+    <!-- 3D WebGL Crowd Runner Canvas -->
+    <canvas id="cclCanvas"></canvas>
+    <!-- 2D Floating Crowd Counters, Clash Pops & Confetti Overlay -->
+    <canvas id="cclOverlayCanvas"></canvas>
+
+    <!-- ================= MAIN MENU ================= -->
+    <section class="menu-overlay" id="menuScreen">
+      <div class="menu-top-bar">
+        <div class="coin-pill"><span>🪙</span> <b id="menuCoins">200</b></div>
+        <button class="icon-circle-btn" id="btnMenuSound" title="Toggle Sound">🔊</button>
+      </div>
+
+      <div class="menu-center-card">
+        <div class="level-tag" id="menuLevelTag">STAGE 1</div>
+        <h1 class="game-title">
+          <span class="t-count">COUNT CONTROL</span>
+          <span class="t-legends">LEGENDS</span>
+        </h1>
+        <p class="menu-sub">Multiply your army, dodge deadly traps, and crush the Boss Fortress!</p>
+
+        <button class="btn-start-run" id="btnStartRun">
+          <span class="run-ico">▶</span>
+          <span>TAP TO RUN</span>
+        </button>
+
+        <!-- Upgrade Cards (Starting Count & Income Multiplier) -->
+        <div class="upgrades-grid">
+          <button class="upgrade-card" id="btnUpgradeCount">
+            <div class="upg-ico">👥</div>
+            <div class="upg-info">
+              <div class="upg-title">Start Squad</div>
+              <div class="upg-lvl" id="upgCountLvl">Lv.1 (+0)</div>
+            </div>
+            <div class="upg-cost" id="upgCountCost">🪙 50</div>
+          </button>
+
+          <button class="upgrade-card" id="btnUpgradeIncome">
+            <div class="upg-ico">💰</div>
+            <div class="upg-info">
+              <div class="upg-title">Coin Bonus</div>
+              <div class="upg-lvl" id="upgIncomeLvl">Lv.1 (1.0x)</div>
+            </div>
+            <div class="upg-cost" id="upgIncomeCost">🪙 60</div>
+          </button>
+        </div>
+
+        <!-- Legend Skins Selector -->
+        <div class="skins-strip" id="skinsStrip">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <div class="controls-hint">
+        Slide / Drag Mouse or Press <b>[A / D]</b> or <b>[◄ / ►]</b> to Steer
+      </div>
+    </section>
+
+    <!-- ================= IN-GAME HUD ================= -->
+    <header class="game-hud hidden" id="gameHud">
+      <div class="hud-left">
+        <button class="icon-circle-btn" id="btnHome" title="Main Menu">🏠</button>
+        <button class="icon-circle-btn" id="btnSound" title="Toggle Sound">🔊</button>
+      </div>
+
+      <div class="hud-progress-box">
+        <div class="hud-stage-label" id="hudStageLabel">STAGE 1</div>
+        <div class="hud-track-bar">
+          <div class="hud-track-fill" id="hudTrackFill"></div>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <div class="coin-pill"><span>🪙</span> <b id="hudCoins">200</b></div>
+      </div>
+    </header>
+
+    <!-- Boss HP Bar (shown during Boss Clash) -->
+    <div class="boss-hp-wrap hidden" id="bossHpWrap">
+      <div class="boss-hp-label">👹 FORTRESS BOSS</div>
+      <div class="boss-hp-bar">
+        <div class="boss-hp-fill" id="bossHpFill"></div>
+      </div>
+    </div>
+
+    <!-- ================= VICTORY MODAL ================= -->
+    <div class="modal-backdrop hidden" id="victoryModal">
+      <div class="modal-card">
+        <div class="modal-badge badge-win">STAGE CLEARED!</div>
+        <div class="vic-mult" id="vicMultBadge">🏆 x2.0 BONUS!</div>
+        <h2 class="modal-title" id="vicTitle">Victory!</h2>
+        <p class="modal-desc" id="vicDesc">You defeated the Boss Fortress!</p>
+        <div class="reward-box">
+          <span>🪙 +<b id="vicCoinsEarned">120</b></span>
+        </div>
+        <button class="btn-start-run" id="btnNextStage" style="margin-bottom:0;">NEXT STAGE ➜</button>
+      </div>
+    </div>
+
+    <!-- ================= DEFEAT MODAL ================= -->
+    <div class="modal-backdrop hidden" id="defeatModal">
+      <div class="modal-card">
+        <div class="modal-badge badge-lose">WIPED OUT!</div>
+        <div class="lose-emoji">💥</div>
+        <h2 class="modal-title">Squad Defeated</h2>
+        <p class="modal-desc" id="loseDesc">Aim for blue multiplication gates and dodge red traps!</p>
+        <div class="modal-actions">
+          <button class="btn-secondary" id="btnLoseMenu">🏠 Menu</button>
+          <button class="btn-start-run" id="btnRetryStage" style="margin-bottom:0;">🔄 Retry</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/count-control.js"></script>
+</body>
+</html>
