@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>World of Yarn — Cozy 3D Knitting Puzzle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/world-of-yarn.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <div class="yarn-app" id="yarnApp">
+    <!-- 3D Knitted Diorama Canvas -->
+    <canvas id="yarnCanvas"></canvas>
+    <!-- 2D Flying Thread & Confetti FX Overlay -->
+    <canvas id="threadFxCanvas"></canvas>
+
+    <!-- ================= MAIN MENU ================= -->
+    <section class="menu-overlay" id="menuScreen">
+      <div class="menu-card">
+        <div class="menu-brand-pill">🧶 COZY 3D PUZZLE</div>
+        <h1 class="game-logo">
+          <span class="logo-top">WORLD OF</span>
+          <span class="logo-main">YARN</span>
+        </h1>
+        <p class="menu-subtitle">Rotate, peek, and unravel 3D knitted worlds thread by thread!</p>
+
+        <div class="menu-stats-row">
+          <div class="stat-pill"><span>🪙</span> <b id="menuCoins">150</b></div>
+          <div class="stat-pill"><span>⭐</span> <b id="menuStars">0</b></div>
+          <div class="stat-pill"><span>🧶</span> <b id="menuCleared">0 / 12</b></div>
+        </div>
+
+        <button class="btn-yarn btn-play-big" id="btnPlay">
+          <span class="btn-icon">▶</span>
+          <span>PLAY <small id="btnPlaySub">LEVEL 1</small></span>
+        </button>
+
+        <div class="menu-btn-row">
+          <button class="btn-yarn btn-amber" id="btnLevels">🧩 Levels</button>
+          <button class="btn-yarn btn-sky" id="btnHowTo">❓ How to Play</button>
+          <button class="btn-yarn btn-plum" id="btnMenuSound">🔊 Sound: ON</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= IN-GAME HUD ================= -->
+    <header class="game-hud hidden" id="gameHud">
+      <div class="hud-left">
+        <button class="hud-circle-btn" id="btnHome" title="Main Menu">🏠</button>
+        <button class="hud-circle-btn" id="btnRestart" title="Restart Level">🔄</button>
+        <button class="hud-circle-btn" id="btnSound" title="Toggle Sound">🔊</button>
+        <button class="hud-circle-btn" id="btnResetCam" title="Reset Camera">🎯</button>
+      </div>
+
+      <div class="hud-center">
+        <div class="level-badge" id="hudLevelBadge">LEVEL 1 · Cozy Sheep</div>
+        <div class="progress-wrap">
+          <div class="progress-fill" id="hudProgressFill"></div>
+          <span class="progress-label" id="hudProgressText">0 / 0 Unraveled</span>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <div class="coin-badge"><span>🪙</span> <b id="hudCoins">150</b></div>
+      </div>
+    </header>
+
+    <!-- ================= ACTIVE YARN BASKETS (TOP) ================= -->
+    <div class="baskets-tray hidden" id="basketsTray">
+      <!-- Populated dynamically: 2-3 active color baskets -->
+    </div>
+
+    <!-- ================= PEEK / HINT PILL ================= -->
+    <div class="peek-pill hidden" id="peekPill">
+      <span id="peekText">Drag to Rotate · Scroll to Zoom · Hold Piece to Peek</span>
+    </div>
+
+    <!-- ================= SPARE HOLES & BOOSTERS (BOTTOM) ================= -->
+    <footer class="bottom-tray hidden" id="bottomTray">
+      <div class="tray-section">
+        <div class="tray-header">
+          <span class="tray-title">🧵 Spare Spool Holes</span>
+          <span class="tray-sub" id="spareCountText">0 / 5 Used</span>
+        </div>
+        <div class="spare-holes-row" id="spareHolesRow">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <div class="backup-jar-box hidden" id="backupJarBox" title="Backup Jar (Temporary Storage)">
+        <div class="jar-label">🫙 JAR</div>
+        <div class="jar-slots" id="jarSlots"></div>
+      </div>
+
+      <div class="boosters-row">
+        <button class="booster-btn" id="btnBoostShuffle" title="Shuffle waiting baskets to match your threads">
+          <span class="b-ico">🔀</span>
+          <span class="b-name">Shuffle</span>
+          <span class="b-cost" id="costShuffle">FREE</span>
+        </button>
+        <button class="booster-btn" id="btnBoostHole" title="Add an extra spare spool hole">
+          <span class="b-ico">🕳️</span>
+          <span class="b-name">+1 Hole</span>
+          <span class="b-cost" id="costHole">🪙 60</span>
+        </button>
+        <button class="booster-btn" id="btnBoostJar" title="Move up to 2 spare spools into Backup Jar">
+          <span class="b-ico">🫙</span>
+          <span class="b-name">Backup Jar</span>
+          <span class="b-cost" id="costJar">🪙 50</span>
+        </button>
+      </div>
+    </footer>
+
+    <!-- ================= MODALS ================= -->
+    <!-- Level Complete Modal -->
+    <div class="modal-backdrop hidden" id="victoryModal">
+      <div class="modal-card">
+        <div class="modal-ribbon ribbon-green">LEVEL UNRAVELED!</div>
+        <div class="stars-row" id="victoryStars">
+          <span class="star">⭐</span><span class="star">⭐</span><span class="star">⭐</span>
+        </div>
+        <h2 class="modal-title" id="victoryTitle">Cozy Sheep Complete!</h2>
+        <p class="modal-desc" id="victoryDesc">Every thread neatly sorted into baskets.</p>
+        <div class="modal-reward-pill">🪙 +<b id="victoryReward">60</b> Coins</div>
+        <div class="modal-actions">
+          <button class="btn-yarn btn-cream" id="btnVictoryReplay">↻ Replay</button>
+          <button class="btn-yarn btn-play-big" id="btnNextLevel">Next Level ➜</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Out of Space / Defeat Modal -->
+    <div class="modal-backdrop hidden" id="defeatModal">
+      <div class="modal-card">
+        <div class="modal-ribbon ribbon-red">TANGLED UP!</div>
+        <div class="modal-emoji">🧶</div>
+        <h2 class="modal-title">All Spare Holes Full</h2>
+        <p class="modal-desc">Save yourself with a booster or try unraveling from another angle!</p>
+        <div class="modal-actions-col">
+          <button class="btn-yarn btn-amber" id="btnDefeatJar">🫙 Use Backup Jar (🪙 50)</button>
+          <button class="btn-yarn btn-sky" id="btnDefeatHole">🕳️ Add +1 Extra Hole (🪙 60)</button>
+          <div class="modal-actions">
+            <button class="btn-yarn btn-cream" id="btnDefeatMenu">🏠 Menu</button>
+            <button class="btn-yarn btn-play-big" id="btnRetryLevel">🔄 Retry</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Level Select Modal -->
+    <div class="modal-backdrop hidden" id="levelsModal">
+      <div class="modal-card modal-wide">
+        <div class="modal-head-row">
+          <h2>🧶 Knitted Worlds</h2>
+          <button class="close-x" data-close="levelsModal">✕</button>
+        </div>
+        <div class="levels-grid" id="levelsGrid"></div>
+      </div>
+    </div>
+
+    <!-- How To Play Modal -->
+    <div class="modal-backdrop hidden" id="howToModal">
+      <div class="modal-card">
+        <div class="modal-head-row">
+          <h2>❓ How to Play</h2>
+          <button class="close-x" data-close="howToModal">✕</button>
+        </div>
+        <ul class="howto-list">
+          <li><b>Rotate & Zoom:</b> Drag anywhere to spin the 3D knitted model; scroll or pinch to zoom in.</li>
+          <li><b>Tap to Unravel:</b> Tap outer yarn pieces (not blocked by outer layers) to wind them into matching color baskets.</li>
+          <li><b>Match 3 Spools:</b> Fill a basket with 3 matching spools to clear it and reveal a new basket!</li>
+          <li><b>Press & Hold to Peek:</b> Hold on any outer yarn piece to peek at the hidden layer underneath.</li>
+          <li><b>Manage Spare Holes:</b> Don't let all 5 spare holes fill up! Use <b>Shuffle</b>, <b>+1 Hole</b>, or <b>Backup Jar</b> if needed.</li>
+        </ul>
+        <button class="btn-yarn btn-play-big" data-close="howToModal" style="width:100%;">Got It!</button>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-msg hidden" id="toastMsg"></div>
+  </div>
+
+  <script src="js/world-of-yarn.js"></script>
+</body>
+</html>
