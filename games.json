@@ -1,5 +1,41 @@
 [
   {
+    "id": "count-control-legends",
+    "title": "Count Control Legends",
+    "category": "Arcade",
+    "branch": "CountControlLegends",
+    "path": "./CountControlLegends/",
+    "thumbnail": "./assets/count-control-legends.jpg",
+    "featured": true,
+    "orientation": "portrait",
+    "description": "Multiply your army through math gates, dodge saws, jump broken roads and crush the Fortress Boss across 30 levels!",
+    "addedDate": "2026-11-26"
+  },
+  {
+    "id": "world-of-yarn",
+    "title": "World of Yarn",
+    "category": "Puzzle",
+    "branch": "WorldofYarn",
+    "path": "./WorldofYarn/",
+    "thumbnail": "./assets/world-of-yarn.jpg",
+    "featured": true,
+    "orientation": "portrait",
+    "description": "Rotate, peek and unravel cozy 3D knitted worlds thread by thread in this relaxing puzzle!",
+    "addedDate": "2026-11-26"
+  },
+  {
+    "id": "arrow-out",
+    "title": "Arrow Escape",
+    "category": "Puzzle",
+    "branch": "ArrowOut",
+    "path": "./ArrowOut/",
+    "thumbnail": "./assets/arrow-out.jpg",
+    "featured": false,
+    "orientation": "portrait",
+    "description": "Slide every arrow off the board in the right order and clear tricky levels in this brain puzzle!",
+    "addedDate": "2026-11-24"
+  },
+  {
     "id": "draw-the-road",
     "title": "Draw The Road",
     "category": "Arcade",
