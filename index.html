@@ -128,19 +128,31 @@
         </div>
 
         <div class="info-downloads-section">
-          <a id="infoViewThumbBtn" href="#" target="_blank" class="btn-download btn-view-thumb">
-            <span>👁️</span> View Thumbnail
-          </a>
-          <button id="infoDownloadThumbBtn" class="btn-download btn-download-thumb">
-            <span>🖼️</span> Download Thumbnail
+          <button id="infoViewThumbBtn" class="btn-download btn-view-thumb">
+            <span>🖼️</span> View Thumbnail
           </button>
-          <button id="infoDownloadJsonBtn" class="btn-download btn-download-json">
-            <span>📄</span> Download JSON
+          <button id="infoViewJsonBtn" class="btn-download btn-download-json">
+            <span>📄</span> View JSON
           </button>
-          <button id="infoPlayPortalBtn" class="btn-download btn-play-now">
+          <button id="infoPlayPortalBtn" class="btn-download btn-play-now btn-span-2">
             <span>▶</span> Play in Portal
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Asset Preview Modal (thumbnail / JSON) with download at the bottom -->
+  <div class="modal-overlay preview-overlay" id="assetPreviewModal">
+    <div class="preview-container">
+      <div class="modal-header">
+        <div class="modal-title" id="previewTitle">Preview</div>
+        <button id="previewCloseBtn" class="btn-modal-icon btn-modal-close" title="Close">✕</button>
+      </div>
+      <div class="preview-body" id="previewBody"></div>
+      <div class="preview-footer">
+        <button id="previewCopyBtn" class="btn-download btn-preview-copy">📋 Copy JSON</button>
+        <button id="previewDownloadBtn" class="btn-download btn-download-thumb">⬇ Download</button>
       </div>
     </div>
   </div>

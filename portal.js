@@ -30,9 +30,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const infoModalLinkInput = document.getElementById('infoModalLinkInput');
   const infoCopyLinkBtn = document.getElementById('infoCopyLinkBtn');
   const infoOpenLinkBtn = document.getElementById('infoOpenLinkBtn');
-  const infoDownloadJsonBtn = document.getElementById('infoDownloadJsonBtn');
+  const infoViewJsonBtn = document.getElementById('infoViewJsonBtn');
   const infoViewThumbBtn = document.getElementById('infoViewThumbBtn');
-  const infoDownloadThumbBtn = document.getElementById('infoDownloadThumbBtn');
+  const assetPreviewModal = document.getElementById('assetPreviewModal');
+  const previewTitle = document.getElementById('previewTitle');
+  const previewBody = document.getElementById('previewBody');
+  const previewCopyBtn = document.getElementById('previewCopyBtn');
+  const previewDownloadBtn = document.getElementById('previewDownloadBtn');
+  const previewCloseBtn = document.getElementById('previewCloseBtn');
+  let previewKind = null;
   const infoPlayPortalBtn = document.getElementById('infoPlayPortalBtn');
 
   let currentActiveCategory = 'all';
@@ -191,7 +197,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (infoModalDesc) infoModalDesc.textContent = game.description;
     if (infoModalLinkInput) infoModalLinkInput.value = fullUrl;
     if (infoOpenLinkBtn) infoOpenLinkBtn.href = fullUrl;
-    if (infoViewThumbBtn) infoViewThumbBtn.href = game.thumbnail;
     if (infoCopyLinkBtn) infoCopyLinkBtn.textContent = '📋 Copy';
 
     gameInfoModal.classList.add('active');
@@ -200,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function closeInfoModal() {
     if (!gameInfoModal) return;
+    closePreview();
     gameInfoModal.classList.remove('active');
     document.body.style.overflow = 'auto';
   }
@@ -225,13 +231,87 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (infoDownloadJsonBtn) {
-    infoDownloadJsonBtn.addEventListener('click', () => {
+  function gameJsonText(game) {
+    const cleanObj = { ...game };
+    delete cleanObj._origIdx;
+    cleanObj.liveUrl = getGameFullUrl(game);
+    return JSON.stringify(cleanObj, null, 2);
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // Colour keys, strings, numbers and booleans in the JSON preview
+  function highlightJson(text) {
+    return escapeHtml(text).replace(/("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false|null)\b|-?\b\d+(?:\.\d+)?\b/g, (m, str, colon, lit) => {
+      if (str) return colon ? `<span class="j-key">${str}</span>${colon}` : `<span class="j-str">${str}</span>`;
+      if (lit) return `<span class="j-lit">${m}</span>`;
+      return `<span class="j-num">${m}</span>`;
+    });
+  }
+
+  function openPreview(kind) {
+    if (!assetPreviewModal || !activeInfoGame) return;
+    previewKind = kind;
+    const g = activeInfoGame;
+    previewBody.innerHTML = '';
+    if (kind === 'thumb') {
+      previewTitle.textContent = `${g.title} — Thumbnail`;
+      const img = document.createElement('img');
+      img.className = 'preview-image';
+      img.src = g.thumbnail;
+      img.alt = `${g.title} thumbnail`;
+      previewBody.appendChild(img);
+      previewDownloadBtn.innerHTML = '⬇ Download Thumbnail';
+      previewCopyBtn.style.display = 'none';
+    } else {
+      previewTitle.textContent = `${g.title} — JSON`;
+      const pre = document.createElement('pre');
+      pre.className = 'preview-json';
+      pre.innerHTML = highlightJson(gameJsonText(g));
+      previewBody.appendChild(pre);
+      previewDownloadBtn.innerHTML = '⬇ Download JSON';
+      previewCopyBtn.style.display = '';
+      previewCopyBtn.textContent = '📋 Copy JSON';
+    }
+    assetPreviewModal.classList.add('active');
+  }
+
+  function closePreview() {
+    if (assetPreviewModal) assetPreviewModal.classList.remove('active');
+  }
+
+  if (infoViewThumbBtn) infoViewThumbBtn.addEventListener('click', () => openPreview('thumb'));
+  if (infoViewJsonBtn) infoViewJsonBtn.addEventListener('click', () => openPreview('json'));
+  if (previewCloseBtn) previewCloseBtn.addEventListener('click', closePreview);
+  if (assetPreviewModal) {
+    assetPreviewModal.addEventListener('click', (e) => { if (e.target === assetPreviewModal) closePreview(); });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && assetPreviewModal && assetPreviewModal.classList.contains('active')) {
+      e.stopImmediatePropagation();
+      closePreview();
+    }
+  }, true);
+  if (previewCopyBtn) {
+    previewCopyBtn.addEventListener('click', async () => {
       if (!activeInfoGame) return;
-      const cleanObj = { ...activeInfoGame };
-      delete cleanObj._origIdx;
-      cleanObj.liveUrl = getGameFullUrl(activeInfoGame);
-      const blob = new Blob([JSON.stringify(cleanObj, null, 2)], { type: 'application/json' });
+      const text = gameJsonText(activeInfoGame);
+      try { await navigator.clipboard.writeText(text); } catch (e) { /* clipboard blocked */ }
+      previewCopyBtn.textContent = '✓ Copied!';
+      setTimeout(() => { previewCopyBtn.textContent = '📋 Copy JSON'; }, 1800);
+    });
+  }
+  if (previewDownloadBtn) {
+    previewDownloadBtn.addEventListener('click', () => {
+      if (previewKind === 'thumb') downloadThumbnail(); else downloadJson();
+    });
+  }
+
+  function downloadJson() {
+      if (!activeInfoGame) return;
+      const blob = new Blob([gameJsonText(activeInfoGame)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -240,11 +320,9 @@ document.addEventListener('DOMContentLoaded', () => {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-    });
   }
 
-  if (infoDownloadThumbBtn) {
-    infoDownloadThumbBtn.addEventListener('click', async () => {
+  async function downloadThumbnail() {
       if (!activeInfoGame) return;
       const thumbPath = activeInfoGame.thumbnail;
       const extMatch = thumbPath.match(/\.(jpg|jpeg|png|webp|svg)(\?.*)?$/i);
@@ -269,7 +347,6 @@ document.addEventListener('DOMContentLoaded', () => {
         a.click();
         a.remove();
       }
-    });
   }
 
   if (infoPlayPortalBtn) {
