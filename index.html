@@ -28,7 +28,7 @@
       </div>
 
       <div class="menu-center-card">
-        <div class="level-tag" id="menuLevelTag">STAGE 1</div>
+        <div class="level-tag" id="menuLevelTag">LEVEL 1</div>
         <h1 class="game-title">
           <span class="t-count">COUNT CONTROL</span>
           <span class="t-legends">LEGENDS</span>
@@ -39,6 +39,7 @@
           <span class="run-ico">▶</span>
           <span>TAP TO RUN</span>
         </button>
+        <button class="btn-levels" id="btnLevels">🗺️ LEVELS</button>
 
         <!-- Upgrade Cards (Starting Count & Income Multiplier) -->
         <div class="upgrades-grid">
@@ -80,7 +81,7 @@
       </div>
 
       <div class="hud-progress-box">
-        <div class="hud-stage-label" id="hudStageLabel">STAGE 1</div>
+        <div class="hud-stage-label" id="hudStageLabel">LEVEL 1</div>
         <div class="hud-track-bar">
           <div class="hud-track-fill" id="hudTrackFill"></div>
         </div>
@@ -99,10 +100,19 @@
       </div>
     </div>
 
+    <!-- ================= LEVEL SELECT ================= -->
+    <div class="modal-backdrop hidden" id="levelsModal">
+      <div class="modal-card levels-card">
+        <div class="levels-head"><h2 class="modal-title">Levels</h2><button class="btn-secondary levels-close" id="btnCloseLevels">✕</button></div>
+        <p class="modal-desc">Every level is harder than the last. ★★★ = open the gift box!</p>
+        <div class="level-grid" id="levelGrid"></div>
+      </div>
+    </div>
+
     <!-- ================= VICTORY MODAL ================= -->
     <div class="modal-backdrop hidden" id="victoryModal">
       <div class="modal-card">
-        <div class="modal-badge badge-win">STAGE CLEARED!</div>
+        <div class="modal-badge badge-win">LEVEL CLEARED!</div>
         <div class="vic-mult" id="vicMultBadge">🏆 x2.0 BONUS!</div>
         <h2 class="modal-title" id="vicTitle">Victory!</h2>
         <p class="modal-desc" id="vicDesc">You defeated the Boss Fortress!</p>
