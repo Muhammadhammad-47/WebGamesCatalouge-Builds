@@ -641,10 +641,25 @@
           }
         });
 
-        // 4. Check Enemy Squad Clashes
+        // 4. Enemy Squad Aggro Charge & Head-On Clashes (cannot slip past from the side!)
         this.enemies.forEach(en => {
           if (en.defeated) return;
-          if (Math.abs(this.crowdZ - en.z) < 1.5 && Math.abs(this.crowdX - en.x) < 2.1) {
+          const dz = this.crowdZ - en.z;
+          if (dz > 0 && dz < 8.5) {
+            // Enemy squad spots player in its zone, charges forward & homes in laterally
+            en.z += 5.2 * dt;
+            en.x += (this.crowdX - en.x) * (1 - Math.exp(-8 * dt));
+            en.group.position.set(en.x, 0, en.z);
+            en.group.children.forEach(m => {
+              const u = m.userData;
+              if (u && u.legL) {
+                const sw = Math.sin(t * 18 + u.phase) * 0.65;
+                u.legL.rotation.x = sw;
+                u.legR.rotation.x = -sw;
+              }
+            });
+          }
+          if (Math.abs(this.crowdZ - en.z) < 1.75) {
             this.state = 'CLASH';
             this.activeEnemy = en;
           }
@@ -659,6 +674,8 @@
         }
       } else if (this.state === 'CLASH' && this.activeEnemy) {
         const en = this.activeEnemy;
+        en.x += (this.crowdX - en.x) * (1 - Math.exp(-10 * dt));
+        en.group.position.set(en.x, 0, en.z);
         const clashRate = Math.max(12, Math.ceil(this.crowdCount * 2.5)) * dt;
         const step = Math.max(1, Math.round(clashRate));
         if (this.crowdCount > 0 && en.count > 0) {
