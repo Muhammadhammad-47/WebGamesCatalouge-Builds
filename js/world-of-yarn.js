@@ -11,12 +11,12 @@
   // --------------------------------------------------------------------------
   const YARN_COLORS = {
     coral:   { name: 'Coral',   hex: '#fb7185', num: 0xfb7185, dark: '#be123c' },
-    amber:   { name: 'Honey',   hex: '#fbbf24', num: 0xfbbf24, dark: '#b45309' },
+    amber:   { name: 'Honey',   hex: '#f59e0b', num: 0xf59e0b, dark: '#b45309' },
     mint:    { name: 'Mint',    hex: '#34d399', num: 0x34d399, dark: '#047857' },
     sky:     { name: 'Sky',     hex: '#38bdf8', num: 0x38bdf8, dark: '#0369a1' },
     lavender:{ name: 'Lilac',   hex: '#c084fc', num: 0xc084fc, dark: '#7e22ce' },
     peach:   { name: 'Peach',   hex: '#fb923c', num: 0xfb923c, dark: '#c2410c' },
-    cream:   { name: 'Cream',   hex: '#fef3c7', num: 0xfef3c7, dark: '#b45309' },
+    cream:   { name: 'Latte',   hex: '#e7b98a', num: 0xe7b98a, dark: '#9a6534' },
     berry:   { name: 'Berry',   hex: '#ec4899', num: 0xec4899, dark: '#9d174d' }
   };
   const COLOR_KEYS = Object.keys(YARN_COLORS);
@@ -238,28 +238,27 @@
   }
 
   // --------------------------------------------------------------------------
-  // 4. 12 HANDCRAFTED 3D KNITTED DIORAMA LEVELS
-  //    Each piece belongs to a layer: core (0), mid (1), outer (2).
+  // 4. 12 HANDCRAFTED 3D KNITTED ANIMAL DIORAMAS
+  //    Each animal has cohesive anatomy, button eyes, nose, and layered pieces.
   //    Colors are assigned in exact multiples of 3 so every level is 100% solvable.
   // --------------------------------------------------------------------------
   const LEVEL_THEMES = [
-    { name: 'Cozy Sheep',       icon: '🐑', colors: ['cream', 'coral', 'sky', 'amber'],           baskets: 2 },
-    { name: 'Cute Kitty',       icon: '🐱', colors: ['peach', 'cream', 'berry', 'mint'],          baskets: 2 },
-    { name: 'Mushroom House',   icon: '🍄', colors: ['coral', 'cream', 'mint', 'amber'],          baskets: 2 },
-    { name: 'Teddy Bear',       icon: '🧸', colors: ['peach', 'amber', 'sky', 'coral'],           baskets: 3 },
-    { name: 'Potted Cactus',    icon: '🌵', colors: ['mint', 'peach', 'berry', 'amber'],          baskets: 3 },
-    { name: 'Little Duckling',  icon: '🐥', colors: ['amber', 'peach', 'sky', 'cream'],           baskets: 3 },
-    { name: 'Berry Cake',       icon: '🍰', colors: ['cream', 'berry', 'coral', 'mint', 'amber'], baskets: 3 },
-    { name: 'Sleepy Fox',       icon: '🦊', colors: ['peach', 'cream', 'mint', 'lavender', 'sky'],baskets: 3 },
-    { name: 'Rocket Ship',      icon: '🚀', colors: ['sky', 'coral', 'amber', 'lavender', 'mint'],baskets: 3 },
-    { name: 'Friendly Octopus', icon: '🐙', colors: ['lavender', 'berry', 'sky', 'mint', 'amber'],baskets: 3 },
+    { name: 'Teddy Bear',       icon: '🧸', colors: ['cream', 'peach', 'coral', 'sky'],           baskets: 2 },
+    { name: 'Cute Bunny',       icon: '🐰', colors: ['cream', 'berry', 'lavender', 'mint'],       baskets: 2 },
+    { name: 'Cute Kitty',       icon: '🐱', colors: ['peach', 'cream', 'berry', 'sky'],           baskets: 2 },
+    { name: 'Cozy Sheep',       icon: '🐑', colors: ['cream', 'coral', 'sky', 'amber'],           baskets: 3 },
+    { name: 'Panda Bear',       icon: '🐼', colors: ['cream', 'sky', 'mint', 'coral'],            baskets: 3 },
+    { name: 'Little Duckling',  icon: '🐥', colors: ['amber', 'peach', 'sky', 'mint'],            baskets: 3 },
+    { name: 'Happy Frog',       icon: '🐸', colors: ['mint', 'amber', 'coral', 'sky', 'cream'],   baskets: 3 },
     { name: 'Winter Penguin',   icon: '🐧', colors: ['sky', 'cream', 'coral', 'amber', 'mint'],   baskets: 3 },
-    { name: 'Cozy Teapot',      icon: '🫖', colors: ['berry', 'cream', 'mint', 'lavender', 'peach'], baskets: 3 }
+    { name: 'Sleepy Fox',       icon: '🦊', colors: ['peach', 'cream', 'mint', 'lavender', 'sky'],baskets: 3 },
+    { name: 'Little Piggy',     icon: '🐷', colors: ['coral', 'berry', 'cream', 'sky', 'mint'],   baskets: 3 },
+    { name: 'Puppy Dog',        icon: '🐶', colors: ['cream', 'peach', 'sky', 'coral', 'amber'],  baskets: 3 },
+    { name: 'Cute Koala',       icon: '🐨', colors: ['lavender', 'cream', 'mint', 'sky', 'coral'],baskets: 3 }
   ];
 
   // Helper to build a balanced color list (exact multiples of 3)
   function buildColorPool(totalPieces, palette) {
-    // Ensure totalPieces is multiple of 3
     const n = Math.floor(totalPieces / 3) * 3;
     const pool = [];
     let ci = 0;
@@ -268,7 +267,6 @@
       pool.push(col, col, col);
       ci++;
     }
-    // Deterministic-ish shuffle
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -276,14 +274,13 @@
     return pool;
   }
 
-  // Generate 3D pieces for a given level index (0-based)
+  // Generate cohesive 3D knitted animal pieces for a given level index (0-based)
   function buildDioramaSpecs(levelIdx) {
     const theme = LEVEL_THEMES[levelIdx % LEVEL_THEMES.length];
     const extraTier = Math.floor(levelIdx / LEVEL_THEMES.length);
     const specs = [];
 
-    // Helper to push a piece spec
-    const add = (shape, pos, scale, rot, layer, blockedBy = []) => {
+    const add = (shape, pos, scale, rot, layer, blockedBy = [], fixedColor = null) => {
       specs.push({
         id: specs.length,
         shape,
@@ -291,125 +288,202 @@
         scale: scale || [1, 1, 1],
         rot: rot || [0, 0, 0],
         layer,
-        blockedBy
+        blockedBy,
+        fixedColor
       });
     };
 
     const idx = levelIdx % 12;
+    let faceSpec = { headId: 1, eyePos: [0.22, 0.78, 0.56], nosePos: [0, 0.65, 0.72], noseColor: 0x3b2618, beak: false };
 
-    if (idx === 0) {
-      // 1. Cozy Sheep (15 pieces)
-      add('sphere', [0, 0, 0], [1.1, 0.95, 1.2], [0, 0, 0], 0); // 0: core
-      add('sphere', [0, 0.2, 0.9], [0.65, 0.6, 0.65], [0, 0, 0], 1, [0]); // 1: head
-      add('torus', [0, 0.05, 0.65], [0.55, 0.55, 0.55], [Math.PI / 2.2, 0, 0], 2, []); // 2: scarf
-      // Fluffy outer wool puffs
+    if (idx === 0 || idx === 4 || idx === 11) {
+      // TEDDY BEAR (idx 0), PANDA BEAR (idx 4), CUTE KOALA (idx 11) — 15 cohesive pieces
+      const isKoala = idx === 11;
+      const isPanda = idx === 4;
+      add('sphere', [0, -0.38, 0], [1.0, 1.05, 0.88], [0, 0, 0], 0); // 0: torso core
+      add('sphere', [0, 0.66, 0.04], [0.95, 0.86, 0.86], [0, 0, 0], 1); // 1: head
+      add('sphere', [0, -0.36, 0.44], [0.64, 0.72, 0.34], [0, 0, 0], 2); // 2: belly patch
+      add('sphere', [0, 0.55, 0.48], [0.42, 0.32, 0.34], [0, 0, 0], 2); // 3: snout
+      // Ears (Koala has bigger round ears!)
+      const earScale = isKoala ? [0.44, 0.44, 0.24] : [0.34, 0.34, 0.22];
+      const earX = isKoala ? 0.62 : 0.48;
+      add('sphere', [earX, 1.12, 0.02], earScale, [0, 0, 0], 2); // 4: ear R
+      add('sphere', [-earX, 1.12, 0.02], earScale, [0, 0, 0], 2); // 5: ear L
+      // Arms hugging in front
+      add('capsule', [0.68, -0.18, 0.22], [0.26, 0.54, 0.26], [0.35, 0, -0.55], 2); // 6: arm R
+      add('capsule', [-0.68, -0.18, 0.22], [0.26, 0.54, 0.26], [0.35, 0, 0.55], 2); // 7: arm L
+      // Sitting legs
+      add('capsule', [0.42, -0.96, 0.32], [0.3, 0.48, 0.34], [1.15, 0, -0.2], 2); // 8: leg R
+      add('capsule', [-0.42, -0.96, 0.32], [0.3, 0.48, 0.34], [1.15, 0, 0.2], 2); // 9: leg L
+      // Bow tie / Collar
+      add('cone', [0.2, 0.12, 0.52], [0.18, 0.26, 0.14], [0, 0, 1.45], 2); // 10: bow R
+      add('cone', [-0.2, 0.12, 0.52], [0.18, 0.26, 0.14], [0, 0, -1.45], 2); // 11: bow L
+      // Fluffy round tail & back head puffs
+      add('sphere', [0, -0.68, -0.56], [0.28, 0.28, 0.28], [0, 0, 0], 2); // 12: tail
+      add('sphere', [0.34, 0.66, -0.42], [0.36, 0.36, 0.32], [0, 0, 0], 2); // 13: back head R
+      add('sphere', [-0.34, 0.66, -0.42], [0.36, 0.36, 0.32], [0, 0, 0], 2); // 14: back head L
+
+      specs[0].blockedBy.push(2, 6, 7, 8, 9, 12);
+      specs[1].blockedBy.push(3, 4, 5, 13, 14);
+      faceSpec = {
+        headId: 1,
+        eyePos: [0.22, 0.76, 0.54],
+        nosePos: [0, 0.62, 0.68],
+        noseColor: isPanda ? 0x1e293b : (isKoala ? 0x312e81 : 0x451a03),
+        noseScale: isKoala ? [0.11, 0.15, 0.08] : [0.09, 0.07, 0.07],
+        beak: false
+      };
+    } else if (idx === 1) {
+      // CUTE BUNNY (15 cohesive pieces)
+      add('sphere', [0, -0.42, 0], [0.95, 1.0, 0.9], [0, 0, 0], 0); // 0: body
+      add('sphere', [0, 0.58, 0.05], [0.88, 0.82, 0.82], [0, 0, 0], 1); // 1: head
+      add('sphere', [0, -0.42, 0.42], [0.58, 0.66, 0.32], [0, 0, 0], 2); // 2: belly
+      // Tall floppy bunny ears
+      add('capsule', [0.26, 1.32, 0.02], [0.22, 0.68, 0.18], [0.1, 0, -0.18], 2); // 3: ear R
+      add('capsule', [-0.26, 1.32, 0.02], [0.22, 0.68, 0.18], [0.1, 0, 0.18], 2); // 4: ear L
+      // Chubby cheeks
+      add('sphere', [0.34, 0.5, 0.44], [0.22, 0.18, 0.18], [0, 0, 0], 2); // 5: cheek R
+      add('sphere', [-0.34, 0.5, 0.44], [0.22, 0.18, 0.18], [0, 0, 0], 2); // 6: cheek L
+      // Front paws & big bunny feet
+      add('capsule', [0.58, -0.22, 0.24], [0.22, 0.46, 0.22], [0.4, 0, -0.5], 2); // 7
+      add('capsule', [-0.58, -0.22, 0.24], [0.22, 0.46, 0.22], [0.4, 0, 0.5], 2); // 8
+      add('capsule', [0.38, -0.98, 0.36], [0.26, 0.48, 0.34], [1.3, 0, -0.15], 2); // 9
+      add('capsule', [-0.38, -0.98, 0.36], [0.26, 0.48, 0.34], [1.3, 0, 0.15], 2); // 10
+      // Cotton tail & collar
+      add('sphere', [0, -0.62, -0.54], [0.34, 0.34, 0.34], [0, 0, 0], 2); // 11
+      add('torus', [0, 0.08, 0.06], [0.52, 0.52, 0.52], [Math.PI / 2, 0, 0], 2); // 12
+      add('sphere', [0.3, 0.58, -0.4], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 13
+      add('sphere', [-0.3, 0.58, -0.4], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 14
+
+      specs[0].blockedBy.push(2, 7, 8, 9, 10, 11, 12);
+      specs[1].blockedBy.push(3, 4, 5, 6, 13, 14);
+      faceSpec = { headId: 1, eyePos: [0.2, 0.68, 0.5], nosePos: [0, 0.56, 0.56], noseColor: 0xf43f5e, beak: false };
+    } else if (idx === 2 || idx === 8 || idx === 10) {
+      // CUTE KITTY (idx 2), SLEEPY FOX (idx 8), PUPPY DOG (idx 10) — 15 cohesive pieces
+      const isPuppy = idx === 10;
+      const isFox = idx === 8;
+      add('sphere', [0, -0.4, 0], [0.95, 1.0, 0.9], [0, 0, 0], 0); // 0: body
+      add('sphere', [0, 0.62, 0.06], [0.88, 0.8, 0.82], [0, 0, 0], 1); // 1: head
+      add('torus', [0, 0.12, 0.06], [0.52, 0.52, 0.52], [Math.PI / 2, 0, 0], 2); // 2: collar/scarf
+      if (isPuppy) {
+        // Floppy drooping ears
+        add('capsule', [0.56, 0.48, 0.08], [0.24, 0.54, 0.18], [0, 0, 0.28], 2); // 3
+        add('capsule', [-0.56, 0.48, 0.08], [0.24, 0.54, 0.18], [0, 0, -0.28], 2); // 4
+      } else {
+        // Pointy cat/fox ears
+        add('cone', [0.38, 1.18, 0.06], [0.26, 0.44, 0.24], [0, 0, -0.32], 2); // 3
+        add('cone', [-0.38, 1.18, 0.06], [0.26, 0.44, 0.24], [0, 0, 0.32], 2); // 4
+      }
+      add('sphere', [0, 0.5, 0.46], [0.38, 0.28, 0.34], [0, 0, 0], 2); // 5: muzzle
+      add('sphere', [0, -0.4, 0.44], [0.58, 0.64, 0.32], [0, 0, 0], 2); // 6: belly
+      // 4 paws
+      add('capsule', [0.56, -0.26, 0.24], [0.22, 0.44, 0.22], [0.4, 0, -0.45], 2); // 7
+      add('capsule', [-0.56, -0.26, 0.24], [0.22, 0.44, 0.22], [0.4, 0, 0.45], 2); // 8
+      add('capsule', [0.36, -0.96, 0.34], [0.24, 0.44, 0.28], [1.2, 0, -0.15], 2); // 9
+      add('capsule', [-0.36, -0.96, 0.34], [0.24, 0.44, 0.28], [1.2, 0, 0.15], 2); // 10
+      // Curled/bushy tail (2 segments)
+      add('capsule', [0.46, -0.45, -0.46], [isFox ? 0.32 : 0.22, 0.58, isFox ? 0.32 : 0.22], [0.5, 0, -0.6], 2); // 11
+      add('sphere', [0.68, -0.05, -0.62], [isFox ? 0.34 : 0.24, isFox ? 0.34 : 0.24, 0.26], [0, 0, 0], 2); // 12
+      add('sphere', [0.32, 0.62, -0.38], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 13
+      add('sphere', [-0.32, 0.62, -0.38], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 14
+
+      specs[0].blockedBy.push(2, 6, 7, 8, 9, 10, 11);
+      specs[1].blockedBy.push(3, 4, 5, 13, 14);
+      faceSpec = { headId: 1, eyePos: [0.2, 0.72, 0.52], nosePos: [0, 0.58, 0.66], noseColor: isFox ? 0x1e293b : 0xf43f5e, beak: false };
+    } else if (idx === 3) {
+      // COZY SHEEP (15 tightly-packed cloud wool puffs + cute peeking face!)
+      add('sphere', [0, 0, 0], [1.05, 0.92, 1.05], [0, 0, 0], 0); // 0: body core
+      add('sphere', [0, 0.16, 0.64], [0.62, 0.58, 0.62], [0, 0, 0], 1); // 1: face
+      add('torus', [0, -0.08, 0.44], [0.48, 0.48, 0.48], [Math.PI / 2.2, 0, 0], 2); // 2: collar
+      // Tightly nestled wool puffs around body
       const puffs = [
-        [0, 0.9, 0], [0.85, 0.35, 0.2], [-0.85, 0.35, 0.2],
-        [0.85, 0.35, -0.45], [-0.85, 0.35, -0.45], [0, 0.55, -0.95],
-        [0.55, -0.25, 0.6], [-0.55, -0.25, 0.6], [0, -0.25, -0.85]
+        [0, 0.68, 0.1], [0.58, 0.28, 0.18], [-0.58, 0.28, 0.18],
+        [0.54, 0.25, -0.38], [-0.54, 0.25, -0.38], [0, 0.42, -0.62],
+        [0.42, -0.28, 0.35], [-0.42, -0.28, 0.35], [0, -0.3, -0.58]
       ];
       puffs.forEach((p) => {
         const pId = specs.length;
-        add('sphere', p, [0.52, 0.52, 0.52], [0, 0, 0], 2, []);
+        add('sphere', p, [0.46, 0.46, 0.46], [0, 0, 0], 2);
         specs[0].blockedBy.push(pId);
       });
-      // Ears & tail
-      add('capsule', [0.62, 0.42, 0.95], [0.22, 0.42, 0.22], [0, 0, -0.8], 2, []);
-      add('capsule', [-0.62, 0.42, 0.95], [0.22, 0.42, 0.22], [0, 0, 0.8], 2, []);
-      add('sphere', [0, 0.1, -1.25], [0.35, 0.35, 0.35], [0, 0, 0], 2, []);
-    } else if (idx === 1) {
-      // 2. Cute Kitty (15 pieces)
-      add('sphere', [0, -0.35, 0], [0.95, 1.0, 0.95], [0, 0, 0], 0); // 0: core body
-      add('sphere', [0, 0.72, 0.1], [0.82, 0.76, 0.78], [0, 0, 0], 1); // 1: head
-      add('torus', [0, 0.18, 0.08], [0.62, 0.62, 0.62], [Math.PI / 2, 0, 0], 2, []); // 2: collar
-      // Ears
-      add('cone', [0.5, 1.38, 0.1], [0.28, 0.45, 0.28], [0, 0, -0.35], 2, []);
-      add('cone', [-0.5, 1.38, 0.1], [0.28, 0.45, 0.28], [0, 0, 0.35], 2, []);
-      // Cheeks & nose
-      add('sphere', [0.36, 0.65, 0.76], [0.25, 0.2, 0.2], [0, 0, 0], 2, []);
-      add('sphere', [-0.36, 0.65, 0.76], [0.25, 0.2, 0.2], [0, 0, 0], 2, []);
-      // Belly & paws & tail
-      add('sphere', [0, -0.35, 0.78], [0.55, 0.62, 0.35], [0, 0, 0], 2, []);
-      add('capsule', [0.55, -0.95, 0.55], [0.25, 0.35, 0.3], [0.5, 0, 0], 2, []);
-      add('capsule', [-0.55, -0.95, 0.55], [0.25, 0.35, 0.3], [0.5, 0, 0], 2, []);
-      add('capsule', [0.65, -0.25, -0.45], [0.24, 0.65, 0.24], [0.4, 0, -0.5], 2, []);
-      add('capsule', [0.95, 0.25, -0.65], [0.22, 0.55, 0.22], [-0.3, 0, -0.4], 2, []);
-      add('sphere', [0.55, 0.72, -0.55], [0.42, 0.42, 0.42], [0, 0, 0], 2, []);
-      add('sphere', [-0.55, 0.72, -0.55], [0.42, 0.42, 0.42], [0, 0, 0], 2, []);
-      add('sphere', [0, -0.35, -0.82], [0.48, 0.48, 0.35], [0, 0, 0], 2, []);
-      specs[0].blockedBy.push(2, 7, 8, 9, 10, 14);
-      specs[1].blockedBy.push(3, 4, 5, 6, 12, 13);
-    } else if (idx === 2) {
-      // 3. Mushroom House (15 pieces)
-      add('cylinder', [0, -0.45, 0], [0.78, 1.15, 0.78], [0, 0, 0], 0); // 0: stem core
-      add('sphere', [0, 0.55, 0], [1.35, 0.85, 1.35], [0, 0, 0], 1); // 1: cap core
-      // Spots on cap
-      const spots = [
-        [0, 1.35, 0], [0.85, 0.85, 0.65], [-0.85, 0.85, 0.65],
-        [0.85, 0.85, -0.65], [-0.85, 0.85, -0.65], [0, 0.9, 1.1], [0, 0.9, -1.1]
-      ];
-      spots.forEach((p) => {
-        const id = specs.length;
-        add('sphere', p, [0.34, 0.26, 0.34], [0, 0, 0], 2, []);
-        specs[1].blockedBy.push(id);
-      });
-      // Door, windows, grass puffs
-      add('capsule', [0, -0.65, 0.75], [0.35, 0.48, 0.2], [0, 0, 0], 2, []);
-      add('sphere', [0.72, -0.25, 0.35], [0.24, 0.24, 0.2], [0, 0, 0], 2, []);
-      add('sphere', [-0.72, -0.25, 0.35], [0.24, 0.24, 0.2], [0, 0, 0], 2, []);
-      add('sphere', [0.65, -0.95, 0.55], [0.36, 0.3, 0.36], [0, 0, 0], 2, []);
-      add('sphere', [-0.65, -0.95, 0.55], [0.36, 0.3, 0.36], [0, 0, 0], 2, []);
-      add('sphere', [0, -0.95, -0.75], [0.42, 0.32, 0.42], [0, 0, 0], 2, []);
-      specs[0].blockedBy.push(9, 10, 11, 12, 13, 14);
-    } else if (idx === 3) {
-      // 4. Teddy Bear (18 pieces)
-      add('sphere', [0, -0.35, 0], [0.95, 1.0, 0.85], [0, 0, 0], 0); // 0: torso
-      add('sphere', [0, 0.78, 0.05], [0.82, 0.78, 0.78], [0, 0, 0], 1); // 1: head
-      add('sphere', [0, -0.35, 0.68], [0.55, 0.62, 0.35], [0, 0, 0], 2, []); // belly
-      add('sphere', [0, 0.66, 0.72], [0.38, 0.28, 0.3], [0, 0, 0], 2, []); // snout
-      add('sphere', [0.65, 1.35, 0], [0.32, 0.32, 0.22], [0, 0, 0], 2, []); // ear R
-      add('sphere', [-0.65, 1.35, 0], [0.32, 0.32, 0.22], [0, 0, 0], 2, []); // ear L
-      add('capsule', [0.95, -0.1, 0.25], [0.28, 0.52, 0.28], [0.2, 0, -0.6], 2, []); // arm R
-      add('capsule', [-0.95, -0.1, 0.25], [0.28, 0.52, 0.28], [0.2, 0, 0.6], 2, []); // arm L
-      add('capsule', [0.55, -1.1, 0.45], [0.32, 0.48, 0.36], [1.1, 0, -0.2], 2, []); // leg R
-      add('capsule', [-0.55, -1.1, 0.45], [0.32, 0.48, 0.36], [1.1, 0, 0.2], 2, []); // leg L
-      add('cone', [0.24, 0.14, 0.74], [0.2, 0.28, 0.15], [0, 0, 1.4], 2, []); // bow R
-      add('cone', [-0.24, 0.14, 0.74], [0.2, 0.28, 0.15], [0, 0, -1.4], 2, []); // bow L
-      add('sphere', [0, 0.78, -0.65], [0.46, 0.46, 0.35], [0, 0, 0], 2, []);
-      add('sphere', [0.55, 0.85, -0.45], [0.38, 0.38, 0.35], [0, 0, 0], 2, []);
-      add('sphere', [-0.55, 0.85, -0.45], [0.38, 0.38, 0.35], [0, 0, 0], 2, []);
-      add('sphere', [0, -0.35, -0.72], [0.48, 0.48, 0.32], [0, 0, 0], 2, []);
-      add('sphere', [0.55, -0.45, -0.55], [0.38, 0.38, 0.32], [0, 0, 0], 2, []);
-      add('sphere', [-0.55, -0.45, -0.55], [0.38, 0.38, 0.32], [0, 0, 0], 2, []);
-      specs[0].blockedBy.push(2, 6, 7, 8, 9, 15);
-      specs[1].blockedBy.push(3, 4, 5, 12, 13, 14);
-    } else {
-      // Procedural layered knitted sculpture for levels 5-12+ (18 to 24 pieces)
-      const count = 18 + Math.min(6, Math.floor(levelIdx / 3) * 3);
-      // 1 core + 3 mid + rest outer shell around a charming silhouette
-      add('sphere', [0, 0, 0], [0.95, 1.05, 0.95], [0, 0, 0], 0);
-      add('sphere', [0, 0.85, 0], [0.68, 0.65, 0.68], [0, 0, 0], 1);
-      add('torus', [0, 0.22, 0], [0.72, 0.72, 0.72], [Math.PI / 2, 0, 0], 1);
-      add('sphere', [0, -0.78, 0], [0.75, 0.55, 0.75], [0, 0, 0], 1);
+      // Cute floppy sheep ears & little tail
+      add('capsule', [0.46, 0.34, 0.66], [0.18, 0.38, 0.18], [0, 0, -0.95], 2);
+      add('capsule', [-0.46, 0.34, 0.66], [0.18, 0.38, 0.18], [0, 0, 0.95], 2);
+      add('sphere', [0, 0.05, -0.82], [0.3, 0.3, 0.3], [0, 0, 0], 2);
+      specs[0].blockedBy.push(1, 2);
+      faceSpec = { headId: 1, eyePos: [0.16, 0.24, 0.96], nosePos: [0, 0.12, 1.02], noseColor: 0xf43f5e, beak: false };
+    } else if (idx === 5 || idx === 7) {
+      // LITTLE DUCKLING (idx 5) & WINTER PENGUIN (idx 7) — 15 cohesive pieces
+      const isPenguin = idx === 7;
+      add('sphere', [0, -0.34, 0], [0.96, 1.04, 0.9], [0, 0, 0], 0); // 0: body
+      add('sphere', [0, 0.66, 0.05], [0.84, 0.78, 0.8], [0, 0, 0], 1); // 1: head
+      add('sphere', [0, -0.34, 0.44], [0.64, 0.74, 0.32], [0, 0, 0], 2); // 2: belly
+      // Beak
+      add('cone', [0, 0.56, 0.56], [0.24, 0.34, 0.2], [Math.PI / 2, 0, 0], 2); // 3: beak
+      // Wings / Flippers
+      add('capsule', [0.68, -0.22, 0.06], [0.22, 0.52, 0.3], [0, 0, -0.45], 2); // 4
+      add('capsule', [-0.68, -0.22, 0.06], [0.22, 0.52, 0.3], [0, 0, 0.45], 2); // 5
+      // Feet
+      add('capsule', [0.34, -0.96, 0.24], [0.22, 0.36, 0.32], [Math.PI / 2, 0, 0], 2); // 6
+      add('capsule', [-0.34, -0.96, 0.24], [0.22, 0.36, 0.32], [Math.PI / 2, 0, 0], 2); // 7
+      // Hat / Head tuft
+      add('cone', [0, 1.18, 0.04], [isPenguin ? 0.48 : 0.2, isPenguin ? 0.52 : 0.32, isPenguin ? 0.48 : 0.2], [0, 0, 0], 2); // 8
+      add('sphere', [0, 1.46, 0.04], [0.24, 0.24, 0.24], [0, 0, 0], 2); // 9: pom-pom
+      // Scarf & back puffs
+      add('torus', [0, 0.14, 0.05], [0.54, 0.54, 0.54], [Math.PI / 2, 0, 0], 2); // 10
+      add('sphere', [0, -0.58, -0.52], [0.32, 0.26, 0.34], [0, 0, 0], 2); // 11: tail
+      add('sphere', [0.34, 0.64, -0.38], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 12
+      add('sphere', [-0.34, 0.64, -0.38], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 13
+      add('sphere', [0, -0.28, -0.5], [0.46, 0.46, 0.3], [0, 0, 0], 2); // 14
 
-      const outerN = count - 4;
-      for (let i = 0; i < outerN; i++) {
-        const phi = Math.acos(1 - 2 * ((i + 0.5) / outerN));
-        const theta = Math.PI * (1 + Math.sqrt(5)) * i;
-        const rad = 1.08;
-        const px = rad * Math.sin(phi) * Math.cos(theta);
-        const py = rad * Math.cos(phi) * 1.1;
-        const pz = rad * Math.sin(phi) * Math.sin(theta);
-        const shapes = ['sphere', 'capsule', 'torus'];
-        const sh = shapes[i % 3];
-        const id = specs.length;
-        add(sh, [px, py, pz], [0.42, 0.42, 0.42], [phi * 0.5, theta * 0.5, 0], 2, []);
-        if (py > 0.35) specs[1].blockedBy.push(id);
-        else if (py < -0.35) specs[3].blockedBy.push(id);
-        else specs[2].blockedBy.push(id);
-        specs[0].blockedBy.push(id);
-      }
-      specs[0].blockedBy.push(1, 2, 3);
+      specs[0].blockedBy.push(2, 4, 5, 6, 7, 10, 11, 14);
+      specs[1].blockedBy.push(3, 8, 9, 12, 13);
+      faceSpec = { headId: 1, eyePos: [0.22, 0.78, 0.48], nosePos: [0, 0.56, 0.68], noseColor: 0xf97316, beak: true };
+    } else if (idx === 6) {
+      // HAPPY FROG (15 cohesive pieces)
+      add('sphere', [0, -0.38, 0], [1.05, 0.92, 0.92], [0, 0, 0], 0); // 0: body
+      add('sphere', [0, 0.56, 0.06], [1.02, 0.68, 0.84], [0, 0, 0], 1); // 1: wide frog head
+      add('sphere', [0, -0.38, 0.45], [0.68, 0.64, 0.32], [0, 0, 0], 2); // 2: belly
+      // Raised frog eye bumps!
+      add('sphere', [0.34, 0.96, 0.14], [0.28, 0.28, 0.28], [0, 0, 0], 2); // 3
+      add('sphere', [-0.34, 0.96, 0.14], [0.28, 0.28, 0.28], [0, 0, 0], 2); // 4
+      // Cheeks
+      add('sphere', [0.44, 0.5, 0.42], [0.22, 0.18, 0.18], [0, 0, 0], 2); // 5
+      add('sphere', [-0.44, 0.5, 0.42], [0.22, 0.18, 0.18], [0, 0, 0], 2); // 6
+      // Legs & arms
+      add('capsule', [0.66, -0.24, 0.22], [0.22, 0.46, 0.22], [0.3, 0, -0.5], 2); // 7
+      add('capsule', [-0.66, -0.24, 0.22], [0.22, 0.46, 0.22], [0.3, 0, 0.5], 2); // 8
+      add('capsule', [0.54, -0.88, 0.3], [0.28, 0.5, 0.32], [1.2, 0, -0.3], 2); // 9
+      add('capsule', [-0.54, -0.88, 0.3], [0.28, 0.5, 0.32], [1.2, 0, 0.3], 2); // 10
+      add('torus', [0, 0.1, 0.06], [0.56, 0.56, 0.56], [Math.PI / 2, 0, 0], 2); // 11
+      add('sphere', [0.36, 0.56, -0.4], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 12
+      add('sphere', [-0.36, 0.56, -0.4], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 13
+      add('sphere', [0, -0.38, -0.52], [0.46, 0.46, 0.3], [0, 0, 0], 2); // 14
+
+      specs[0].blockedBy.push(2, 7, 8, 9, 10, 11, 14);
+      specs[1].blockedBy.push(3, 4, 5, 6, 12, 13);
+      faceSpec = { headId: 1, eyePos: [0.34, 0.98, 0.32], nosePos: [0, 0.58, 0.56], noseColor: 0x065f46, beak: false };
+    } else {
+      // LITTLE PIGGY (idx 9) — 15 cohesive pieces
+      add('sphere', [0, -0.38, 0], [1.04, 0.98, 0.96], [0, 0, 0], 0); // 0: chubby body
+      add('sphere', [0, 0.6, 0.06], [0.92, 0.84, 0.84], [0, 0, 0], 1); // 1: head
+      add('cylinder', [0, 0.52, 0.56], [0.28, 0.22, 0.28], [Math.PI / 2, 0, 0], 2); // 2: pig snout
+      add('cone', [0.46, 1.06, 0.06], [0.24, 0.38, 0.2], [0.3, 0, -0.55], 2); // 3: floppy ear R
+      add('cone', [-0.46, 1.06, 0.06], [0.24, 0.38, 0.2], [0.3, 0, 0.55], 2); // 4: floppy ear L
+      add('sphere', [0, -0.38, 0.46], [0.6, 0.64, 0.32], [0, 0, 0], 2); // 5: belly
+      add('capsule', [0.62, -0.22, 0.2], [0.24, 0.44, 0.24], [0.3, 0, -0.5], 2); // 6
+      add('capsule', [-0.62, -0.22, 0.2], [0.24, 0.44, 0.24], [0.3, 0, 0.5], 2); // 7
+      add('capsule', [0.38, -0.96, 0.32], [0.26, 0.42, 0.28], [1.1, 0, -0.15], 2); // 8
+      add('capsule', [-0.38, -0.96, 0.32], [0.26, 0.42, 0.28], [1.1, 0, 0.15], 2); // 9
+      add('torus', [0, -0.45, -0.56], [0.2, 0.2, 0.2], [0, 0.4, 0], 2); // 10: curly tail
+      add('torus', [0, 0.1, 0.06], [0.54, 0.54, 0.54], [Math.PI / 2, 0, 0], 2); // 11: collar
+      add('sphere', [0.34, 0.6, -0.4], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 12
+      add('sphere', [-0.34, 0.6, -0.4], [0.34, 0.34, 0.3], [0, 0, 0], 2); // 13
+      add('sphere', [0, -0.38, -0.52], [0.46, 0.46, 0.3], [0, 0, 0], 2); // 14
+
+      specs[0].blockedBy.push(5, 6, 7, 8, 9, 10, 11, 14);
+      specs[1].blockedBy.push(2, 3, 4, 12, 13);
+      faceSpec = { headId: 1, eyePos: [0.22, 0.74, 0.52], nosePos: [0, 0.54, 0.72], noseColor: 0xf43f5e, beak: false };
     }
 
     // Assign balanced colors (exact multiples of 3)
@@ -417,7 +491,7 @@
     specs.forEach((s, i) => {
       s.color = pool[i % pool.length];
     });
-    return { theme, specs, extraTier };
+    return { theme, specs, extraTier, faceSpec };
   }
 
   // --------------------------------------------------------------------------
@@ -496,15 +570,15 @@
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       this.renderer.setSize(window.innerWidth, window.innerHeight);
 
-      // Warm Cozy Lighting
-      const hemi = new THREE.HemisphereLight(0xfffaf0, 0xd8b4fe, 0.9);
+      // Warm Cozy Lighting (balanced so knitted V-stitches pop cleanly)
+      const hemi = new THREE.HemisphereLight(0xfffaf0, 0xc4b5fd, 0.78);
       this.scene.add(hemi);
 
-      const dir1 = new THREE.DirectionalLight(0xfff7ed, 0.85);
+      const dir1 = new THREE.DirectionalLight(0xfff7ed, 0.68);
       dir1.position.set(4, 6, 5);
       this.scene.add(dir1);
 
-      const dir2 = new THREE.DirectionalLight(0xe0f2fe, 0.45);
+      const dir2 = new THREE.DirectionalLight(0xe0f2fe, 0.35);
       dir2.position.set(-5, -2, 3);
       this.scene.add(dir2);
 
@@ -547,13 +621,45 @@
       if (shape === 'cylinder') return new THREE.CylinderGeometry(0.55, 0.65, 1.0, 20);
       if (shape === 'cone') return new THREE.ConeGeometry(0.55, 1.0, 20);
       if (shape === 'torus') return new THREE.TorusGeometry(0.6, 0.22, 16, 28);
-      if (shape === 'capsule') return new THREE.CylinderGeometry(0.4, 0.4, 1.0, 18);
+      if (shape === 'capsule') return new THREE.SphereGeometry(0.52, 20, 16); // Plump plush limb!
       return new THREE.SphereGeometry(0.58, 22, 18);
+    }
+
+    buildFaceDetails(faceSpec) {
+      const fg = new THREE.Group();
+      const eyeMat = new THREE.MeshStandardMaterial({ color: 0x1e1b18, roughness: 0.2, metalness: 0.1 });
+      const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const eyeGeom = new THREE.SphereGeometry(0.068, 14, 12);
+      const shineGeom = new THREE.SphereGeometry(0.022, 8, 8);
+
+      [-1, 1].forEach((side) => {
+        const eye = new THREE.Mesh(eyeGeom, eyeMat);
+        eye.position.set(side * faceSpec.eyePos[0], faceSpec.eyePos[1], faceSpec.eyePos[2]);
+        fg.add(eye);
+
+        const shine = new THREE.Mesh(shineGeom, shineMat);
+        shine.position.set(side * faceSpec.eyePos[0] + 0.02, faceSpec.eyePos[1] + 0.025, faceSpec.eyePos[2] + 0.055);
+        fg.add(shine);
+      });
+
+      // Button nose (if not a bird beak)
+      if (!faceSpec.beak) {
+        const noseMat = new THREE.MeshStandardMaterial({ color: faceSpec.noseColor || 0x3b2618, roughness: 0.35 });
+        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.08, 14, 12), noseMat);
+        nose.position.set(faceSpec.nosePos[0], faceSpec.nosePos[1], faceSpec.nosePos[2]);
+        const ns = faceSpec.noseScale || [1.1, 0.85, 0.85];
+        nose.scale.set(ns[0] * 10, ns[1] * 10, ns[2] * 10);
+        // Normalize small nose scale
+        if (faceSpec.noseScale) nose.scale.set(faceSpec.noseScale[0] * 10, faceSpec.noseScale[1] * 10, faceSpec.noseScale[2] * 10);
+        else nose.scale.set(1.1, 0.85, 0.85);
+        fg.add(nose);
+      }
+      return fg;
     }
 
     buildModel(levelIdx) {
       this.clearModel();
-      const { theme, specs } = buildDioramaSpecs(levelIdx);
+      const { theme, specs, faceSpec } = buildDioramaSpecs(levelIdx);
 
       specs.forEach((sp) => {
         const geom = this.createShapeGeometry(sp.shape);
@@ -577,6 +683,10 @@
         });
       });
 
+      this.faceHeadId = faceSpec ? faceSpec.headId : -1;
+      this.faceGroup = faceSpec ? this.buildFaceDetails(faceSpec) : null;
+      if (this.faceGroup) this.modelGroup.add(this.faceGroup);
+
       this.refreshPieceLockVisuals();
       return theme;
     }
@@ -593,8 +703,8 @@
       this.pieces.forEach(p => {
         if (p.removed) return;
         const free = this.isPieceFree(p);
-        p.mesh.material.emissiveIntensity = free ? 0.08 : 0.0;
-        p.mesh.material.color.setHex(free ? 0xffffff : 0xbdbdbd);
+        p.mesh.material.emissiveIntensity = free ? 0.02 : 0.0;
+        p.mesh.material.color.setHex(free ? 0xffffff : 0xc8c8c8);
       });
     }
 
@@ -759,6 +869,9 @@
       const startPos = this.getScreenPos(piece.mesh);
       piece.removed = true;
       piece.mesh.visible = false;
+      if (this.faceGroup && piece.id === this.faceHeadId) {
+        this.faceGroup.visible = false;
+      }
       this.removedCount++;
       this.audio.playUnravel();
       this.refreshPieceLockVisuals();
