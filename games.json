@@ -1,5 +1,19 @@
 [
   {
+    "id": "world-of-yarn",
+    "title": "World of Yarn",
+    "category": "Puzzle",
+    "branch": "WorldofYarn",
+    "path": "./WorldofYarn/",
+    "thumbnail": "./assets/WorldofYarn.jpg",
+    "rating": "4.9",
+    "plays": "15.8K",
+    "featured": true,
+    "orientation": "landscape",
+    "addedDate": "2026-11-26",
+    "description": "Rotate, peek, and unravel cozy 3D knitted models thread by thread, matching colors into 3-spool baskets!"
+  },
+  {
     "id": "draw-the-road",
     "title": "Draw The Road",
     "category": "Arcade",
