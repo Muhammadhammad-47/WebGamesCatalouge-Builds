@@ -189,6 +189,8 @@
       this.coinsList = [];
       this.enemies = [];
       this.boss = null;
+      this.giftBox = null;
+      this.giftBonus = 0;
       this.stairSteps = [];
       this.runnerMeshes = [];
       this.clouds = [];
@@ -235,16 +237,6 @@
       this.crowdGroup = new THREE.Group();
       this.scene.add(this.crowdGroup);
 
-      // Build background clouds
-      const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 });
-      for (let i = 0; i < 14; i++) {
-        const c = new THREE.Mesh(new THREE.SphereGeometry(1.6 + Math.random() * 1.4, 10, 8), cloudMat);
-        c.scale.set(1.8, 0.6, 1.2);
-        c.position.set((Math.random() - 0.5) * 45, 5 + Math.random() * 8, -Math.random() * 130);
-        this.scene.add(c);
-        this.clouds.push(c);
-      }
-
       this.handleResize();
       window.addEventListener('resize', () => this.handleResize());
     }
@@ -276,6 +268,8 @@
       this.coinsList = [];
       this.enemies = [];
       this.boss = null;
+      this.giftBox = null;
+      this.giftBonus = 0;
       this.stairSteps = [];
       this.runnerMeshes = [];
       this.particles = [];
@@ -339,7 +333,7 @@
       const bossHp = 12 + stageNum * 9;
       this.spawnBoss(-this.trackLength + 3, bossHp);
 
-      // 4. Rainbow Multiplier Staircase behind Boss
+      // 4. Rainbow Multiplier Staircase behind Boss + End Gift Box with Coins!
       const stepColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'];
       const mults = [1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 8.0];
       for (let s = 0; s < stepColors.length; s++) {
@@ -351,6 +345,12 @@
         step.position.set(0, s * 0.85, -this.trackLength - 5 - s * 3.6);
         this.worldGroup.add(step);
         this.stairSteps.push({ z: step.position.z, y: step.position.y + 0.45, mult: mults[s] });
+      }
+
+      // 5. 3D Gift Box with Coins waiting at the top / end of the track!
+      const topStep = this.stairSteps[this.stairSteps.length - 1];
+      if (topStep) {
+        this.spawnGiftBox(0, topStep.y, topStep.z);
       }
 
       this.syncCrowdVisuals();
@@ -454,6 +454,38 @@
       this.boss = { group: bossGroup, mesh: giant, z, hp, maxHp: hp, defeated: false };
     }
 
+    spawnGiftBox(x, y, z) {
+      const boxGroup = new THREE.Group();
+      boxGroup.position.set(x, y + 0.75, z);
+
+      const boxMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.35 });
+      const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.35, roughness: 0.25 });
+
+      const cube = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.3, 1.4), boxMat);
+      boxGroup.add(cube);
+
+      const lid = new THREE.Mesh(new THREE.BoxGeometry(1.56, 0.32, 1.56), boxMat);
+      lid.position.y = 0.72;
+      boxGroup.add(lid);
+
+      const rib1 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.48, 0.26), ribbonMat);
+      rib1.position.y = 0.08;
+      boxGroup.add(rib1);
+
+      const rib2 = new THREE.Mesh(new THREE.BoxGeometry(0.26, 1.48, 1.6), ribbonMat);
+      rib2.position.y = 0.08;
+      boxGroup.add(rib2);
+
+      // Gold coin emblem floating above gift box
+      const coinTop = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.12, 16), ribbonMat);
+      coinTop.rotation.x = Math.PI / 2;
+      coinTop.position.y = 1.42;
+      boxGroup.add(coinTop);
+
+      this.worldGroup.add(boxGroup);
+      this.giftBox = { group: boxGroup, baseY: y + 0.75, z, opened: false };
+    }
+
     syncCrowdVisuals() {
       const targetVis = Math.min(110, Math.max(0, this.crowdCount));
       const mat = this.getPlayerMat();
@@ -518,11 +550,11 @@
     }
 
     update(dt, t) {
-      // Animate clouds
-      this.clouds.forEach(c => {
-        c.position.x += dt * 0.4;
-        if (c.position.x > 26) c.position.x = -26;
-      });
+      // Animate Gift Box at the end of the track
+      if (this.giftBox && !this.giftBox.opened) {
+        this.giftBox.group.rotation.y += dt * 1.4;
+        this.giftBox.group.position.y = this.giftBox.baseY + Math.sin(t * 3.5) * 0.14;
+      }
 
       // Animate stickmen running
       this.runnerMeshes.forEach((m) => {
@@ -685,6 +717,13 @@
         const curY = step ? step.y : 0;
         this.crowdGroup.position.set(0, curY, this.crowdZ);
         if (this.crowdCount <= 0 || stepIdx >= this.stairSteps.length - 1) {
+          if (stepIdx >= this.stairSteps.length - 1 && this.giftBox && !this.giftBox.opened) {
+            this.giftBox.opened = true;
+            this.giftBox.group.visible = false;
+            this.giftBonus = 100;
+            this.audio.playCoin();
+            this.addPopBurst(0, curY + 1.2, this.giftBox.z, '#facc15', 36);
+          }
           this.triggerVictory();
         }
       }
@@ -730,14 +769,20 @@
       const mult = this.currentMult || 1.5;
       const baseReward = 45 + this.stage * 15;
       const incomeBonus = 1 + (this.incomeLvl - 1) * 0.2;
-      const totalCoins = Math.round(baseReward * mult * incomeBonus);
+      const giftCoins = this.giftBonus || 0;
+      const totalCoins = Math.round(baseReward * mult * incomeBonus) + giftCoins;
 
       this.coins += totalCoins;
       this.stage++;
       localStorage.setItem('ccl_coins', String(this.coins));
       localStorage.setItem('ccl_stage', String(this.stage));
 
-      document.getElementById('vicMultBadge').textContent = `🏆 ${mult}x RAINBOW BONUS!`;
+      document.getElementById('vicMultBadge').textContent = giftCoins > 0
+        ? `🎁 GIFT BOX +${giftCoins} 🪙 · ${mult}x BONUS!`
+        : `🏆 ${mult}x RAINBOW BONUS!`;
+      document.getElementById('vicDesc').textContent = giftCoins > 0
+        ? 'You reached the end and opened the Treasure Gift Box!'
+        : 'You defeated the Boss Fortress!';
       document.getElementById('vicCoinsEarned').textContent = totalCoins;
       document.getElementById('hudCoins').textContent = this.coins;
       document.getElementById('victoryModal').classList.remove('hidden');
