@@ -289,7 +289,7 @@
       this.crowdX = 0;
       this.targetX = 0;
       this.crowdCount = 1 + (this.countLvl - 1) * 2;
-      this.runSpeed = 13.5 + Math.min(4.5, stageNum * 0.35);
+      this.runSpeed = 8.8 + Math.min(2.8, stageNum * 0.25);
 
       // 1. Skybridge Track
       const trackMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.8 });
@@ -318,13 +318,13 @@
 
         // Alternate Math Gate Pairs & Obstacles/Enemies
         if (i % 2 === 1 || i === 1) {
-          this.spawnGatePair(z, stageNum, i > 2 && stageNum >= 2);
+          this.spawnGatePair(z, stageNum, i > 2 && stageNum >= 2, i === 1);
         } else {
-          // Saw Blade or Enemy Squad
+          // Saw Blade or Enemy Squad (balanced so multiplied player army outnumbers enemies)
           if (i % 4 === 2) {
             this.spawnSawTrap(z);
           } else {
-            const enemyCnt = Math.max(4, Math.floor((6 + i * 3 + stageNum * 4) * 0.75));
+            const enemyCnt = Math.max(3, Math.floor(3 + i * 1.8 + stageNum * 2));
             this.spawnEnemySquad(z, enemyCnt);
           }
         }
@@ -336,7 +336,7 @@
       }
 
       // 3. Giant Fortress Boss at end of bridge
-      const bossHp = 18 + stageNum * 14;
+      const bossHp = 12 + stageNum * 9;
       this.spawnBoss(-this.trackLength + 3, bossHp);
 
       // 4. Rainbow Multiplier Staircase behind Boss
@@ -359,26 +359,28 @@
       }
     }
 
-    spawnGatePair(z, stageNum, moving = false) {
+    spawnGatePair(z, stageNum, moving = false, bothGood = false) {
       const opsGood = [
-        { op: '+', val: 4 + stageNum * 2 },
-        { op: '+', val: 8 + stageNum * 3 },
+        { op: '+', val: 8 + stageNum * 2 },
+        { op: '+', val: 12 + stageNum * 3 },
         { op: '×', val: 2 },
-        { op: '×', val: stageNum >= 4 ? 3 : 2 }
+        { op: '×', val: 3 },
+        { op: '×', val: stageNum >= 3 ? 4 : 2 }
       ];
       const opsBad = [
-        { op: '-', val: 3 + stageNum * 2 },
-        { op: '÷', val: 2 }
+        { op: '-', val: 2 + stageNum },
+        { op: '-', val: 4 + stageNum }
       ];
 
       const goodFirst = Math.random() < 0.5;
       const gSpec = opsGood[Math.floor(Math.random() * opsGood.length)];
-      const bSpec = opsBad[Math.floor(Math.random() * opsBad.length)];
+      const gSpec2 = { op: '×', val: 2 };
+      const bSpec = bothGood ? gSpec2 : opsBad[Math.floor(Math.random() * opsBad.length)];
 
       const pair = { z, triggered: false, moving, phase: Math.random() * Math.PI * 2, gates: [] };
       const defs = [
-        { x: -1.55, isGood: goodFirst, spec: goodFirst ? gSpec : bSpec },
-        { x:  1.55, isGood: !goodFirst, spec: !goodFirst ? gSpec : bSpec }
+        { x: -1.55, isGood: goodFirst || bothGood, spec: goodFirst ? gSpec : bSpec },
+        { x:  1.55, isGood: !goodFirst || bothGood, spec: !goodFirst ? gSpec : bSpec }
       ];
 
       defs.forEach(d => {
@@ -453,7 +455,7 @@
     }
 
     syncCrowdVisuals() {
-      const targetVis = Math.min(60, Math.max(0, this.crowdCount));
+      const targetVis = Math.min(110, Math.max(0, this.crowdCount));
       const mat = this.getPlayerMat();
 
       while (this.runnerMeshes.length < targetVis) {
