@@ -5,11 +5,13 @@
     "category": "Arcade",
     "branch": "CountControlLegends",
     "path": "./CountControlLegends/",
-    "thumbnail": "./assets/count-control-legends.jpg",
+    "thumbnail": "./assets/CountControlLegends.jpg",
+    "rating": "4.9",
+    "plays": "22.4K",
     "featured": true,
     "orientation": "portrait",
-    "description": "Multiply your army through math gates, dodge saws, jump broken roads and crush the Fortress Boss across 30 levels!",
-    "addedDate": "2026-11-26"
+    "addedDate": "2026-11-26",
+    "description": "Steer your stickman squad through blue math gates, dodge spinning saws, defeat the Boss Fortress, and climb the rainbow multiplier stairs!"
   },
   {
     "id": "world-of-yarn",
@@ -17,11 +19,13 @@
     "category": "Puzzle",
     "branch": "WorldofYarn",
     "path": "./WorldofYarn/",
-    "thumbnail": "./assets/world-of-yarn.jpg",
+    "thumbnail": "./assets/WorldofYarn.jpg",
+    "rating": "4.9",
+    "plays": "15.8K",
     "featured": true,
-    "orientation": "portrait",
-    "description": "Rotate, peek and unravel cozy 3D knitted worlds thread by thread in this relaxing puzzle!",
-    "addedDate": "2026-11-26"
+    "orientation": "landscape",
+    "addedDate": "2026-11-26",
+    "description": "Rotate, peek, and unravel cozy 3D knitted models thread by thread, matching colors into 3-spool baskets!"
   },
   {
     "id": "arrow-out",

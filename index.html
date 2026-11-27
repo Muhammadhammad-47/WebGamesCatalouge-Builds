@@ -107,7 +107,12 @@
       </div>
       <div class="info-modal-body">
         <div class="info-modal-top">
-          <img id="infoModalThumb" class="info-modal-thumb" src="" alt="Game Thumbnail">
+          <div class="info-thumb-wrap">
+            <img id="infoModalThumb" class="info-modal-thumb" src="" alt="Game Thumbnail" title="Click to view full size">
+            <button id="infoDownloadThumbBtn" class="thumb-download-btn" title="Download thumbnail" aria-label="Download thumbnail">
+              <svg viewBox="0 0 24 24"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
           <div class="info-modal-meta">
             <div class="info-badges">
               <span class="info-badge-cat" id="infoModalCategory">Arcade</span>
@@ -127,17 +132,20 @@
           </div>
         </div>
 
-        <div class="info-downloads-section">
-          <button id="infoViewThumbBtn" class="btn-download btn-view-thumb">
-            <span>🖼️</span> View Thumbnail
-          </button>
-          <button id="infoViewJsonBtn" class="btn-download btn-download-json">
-            <span>📄</span> View JSON
-          </button>
-          <button id="infoPlayPortalBtn" class="btn-download btn-play-now btn-span-2">
-            <span>▶</span> Play in Portal
-          </button>
+        <div class="info-link-section">
+          <label class="info-label">📄 Game JSON</label>
+          <div class="info-link-row info-json-row">
+            <pre id="infoJsonBox" class="info-json-box"></pre>
+            <div class="info-json-actions">
+              <button id="infoCopyJsonBtn" class="btn-info-action btn-copy">📋 Copy</button>
+              <button id="infoDownloadJsonBtn" class="btn-info-action btn-open">⬇ Download</button>
+            </div>
+          </div>
         </div>
+
+        <button id="infoPlayPortalBtn" class="btn-download btn-play-now btn-play-full">
+          <span>▶</span> Play in Portal
+        </button>
       </div>
     </div>
   </div>
