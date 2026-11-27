@@ -30,8 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const infoModalLinkInput = document.getElementById('infoModalLinkInput');
   const infoCopyLinkBtn = document.getElementById('infoCopyLinkBtn');
   const infoOpenLinkBtn = document.getElementById('infoOpenLinkBtn');
-  const infoViewJsonBtn = document.getElementById('infoViewJsonBtn');
-  const infoViewThumbBtn = document.getElementById('infoViewThumbBtn');
   const assetPreviewModal = document.getElementById('assetPreviewModal');
   const previewTitle = document.getElementById('previewTitle');
   const previewBody = document.getElementById('previewBody');
@@ -198,6 +196,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (infoModalLinkInput) infoModalLinkInput.value = fullUrl;
     if (infoOpenLinkBtn) infoOpenLinkBtn.href = fullUrl;
     if (infoCopyLinkBtn) infoCopyLinkBtn.textContent = '📋 Copy';
+    const jsonBox = document.getElementById('infoJsonBox');
+    if (jsonBox) { jsonBox.innerHTML = highlightJson(gameJsonText(game)); jsonBox.scrollTop = 0; }
+    const copyJsonBtn = document.getElementById('infoCopyJsonBtn');
+    if (copyJsonBtn) copyJsonBtn.textContent = '📋 Copy';
 
     gameInfoModal.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -282,8 +284,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (assetPreviewModal) assetPreviewModal.classList.remove('active');
   }
 
-  if (infoViewThumbBtn) infoViewThumbBtn.addEventListener('click', () => openPreview('thumb'));
-  if (infoViewJsonBtn) infoViewJsonBtn.addEventListener('click', () => openPreview('json'));
+  if (infoModalThumb) infoModalThumb.addEventListener('click', () => openPreview('thumb'));
+
+  // Direct actions on the details popup itself
+  const infoDownloadThumbBtn = document.getElementById('infoDownloadThumbBtn');
+  const infoDownloadJsonBtn = document.getElementById('infoDownloadJsonBtn');
+  const infoCopyJsonBtn = document.getElementById('infoCopyJsonBtn');
+  if (infoDownloadThumbBtn) infoDownloadThumbBtn.addEventListener('click', () => downloadThumbnail());
+  if (infoDownloadJsonBtn) infoDownloadJsonBtn.addEventListener('click', () => downloadJson());
+  if (infoCopyJsonBtn) {
+    infoCopyJsonBtn.addEventListener('click', async () => {
+      if (!activeInfoGame) return;
+      try { await navigator.clipboard.writeText(gameJsonText(activeInfoGame)); } catch (e) { /* clipboard blocked */ }
+      infoCopyJsonBtn.textContent = '✓ Copied!';
+      setTimeout(() => { infoCopyJsonBtn.textContent = '📋 Copy'; }, 1800);
+    });
+  }
   if (previewCloseBtn) previewCloseBtn.addEventListener('click', closePreview);
   if (assetPreviewModal) {
     assetPreviewModal.addEventListener('click', (e) => { if (e.target === assetPreviewModal) closePreview(); });
